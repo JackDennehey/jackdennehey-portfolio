@@ -6,11 +6,19 @@ import {
   JackDocumentIcon,
   JackIdIcon,
   JackMailIcon,
+  JackPersonalizeIcon,
   JackProjectsIcon,
   JackSystemIcon,
 } from './jack-icons'
 
-export type WindowId = 'home' | 'about' | 'projects' | 'certifications' | 'resume' | 'contact'
+export type WindowId =
+  | 'home'
+  | 'about'
+  | 'projects'
+  | 'certifications'
+  | 'resume'
+  | 'contact'
+  | 'personalize'
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
 
@@ -36,6 +44,13 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   },
   resume: { id: 'resume', title: 'Resume', Icon: JackDocumentIcon, width: 560, height: 560 },
   contact: { id: 'contact', title: 'Contact', Icon: JackMailIcon, width: 420, height: 520 },
+  personalize: {
+    id: 'personalize',
+    title: 'Personalize',
+    Icon: JackPersonalizeIcon,
+    width: 640,
+    height: 640,
+  },
 }
 
 export type DesktopItem =

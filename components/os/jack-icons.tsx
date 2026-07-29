@@ -100,3 +100,13 @@ export function JackScanlinesOffIcon(props: IconProps) {
     </JackIcon>
   )
 }
+
+export function JackPersonalizeIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="4" y="5" width="16" height="12" />
+      <path d="M7 9h6M7 13h4M9 20h6" />
+      <path d="M15 8v7M13 10h4M13 13h4" />
+    </JackIcon>
+  )
+}

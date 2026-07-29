@@ -1,19 +1,29 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
 import { OsWindow } from './os-window'
 import { DESKTOP_ITEMS, WINDOW_APPS, type WindowId } from './apps'
+import { DesktopCalendar } from './desktop-calendar'
+import { DesktopClock } from './desktop-clock'
+import { DesktopContextMenu } from './desktop-context-menu'
+import { useDesktopPreferences } from './use-desktop-preferences'
+import { WallpaperManager } from './wallpaper-manager'
 import { HomeContent } from './content/home-content'
 import { AboutContent } from './content/about-content'
 import { ProjectsContent } from './content/projects-content'
 import { CertificationsContent } from './content/certifications-content'
 import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
+import { PersonalizeContent } from './content/personalize-content'
 
 type OpenWindow = { id: WindowId; x: number; y: number }
+type ContextMenuPosition = { x: number; y: number } | null
+
+const CONTEXT_MENU_WIDTH = 176
+const CONTEXT_MENU_HEIGHT = 92
 
 export function Desktop() {
   const [booted, setBooted] = useState(false)
@@ -21,6 +31,8 @@ export function Desktop() {
   const [isMobile, setIsMobile] = useState(false)
   const [windows, setWindows] = useState<OpenWindow[]>([])
   const [order, setOrder] = useState<WindowId[]>([])
+  const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
+  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences()
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -62,6 +74,40 @@ export function Desktop() {
     setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, x, y } : w)))
   }, [])
 
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null)
+  }, [])
+
+  const openPersonalize = useCallback(() => {
+    openWindow('personalize')
+  }, [openWindow])
+
+  const handleDesktopContextMenu = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      event.preventDefault()
+
+      if (isMobile) {
+        closeContextMenu()
+        return
+      }
+
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        target.closest('[data-desktop-interactive="true"], [role="dialog"], button, a')
+      ) {
+        closeContextMenu()
+        return
+      }
+
+      setContextMenu({
+        x: Math.max(8, Math.min(event.clientX, window.innerWidth - CONTEXT_MENU_WIDTH - 8)),
+        y: Math.max(40, Math.min(event.clientY, window.innerHeight - CONTEXT_MENU_HEIGHT - 8)),
+      })
+    },
+    [closeContextMenu, isMobile],
+  )
+
   // Auto-open the welcome window on desktop after boot.
   useEffect(() => {
     if (booted && !isMobile && windows.length === 0) {
@@ -73,13 +119,14 @@ export function Desktop() {
   // Escape closes the top-most window.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (contextMenu) return
       if (e.key === 'Escape' && order.length > 0) {
         closeWindow(order[order.length - 1])
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [order, closeWindow])
+  }, [contextMenu, order, closeWindow])
 
   const renderContent = (id: WindowId) => {
     switch (id) {
@@ -95,6 +142,14 @@ export function Desktop() {
         return <ResumeContent />
       case 'contact':
         return <ContactContent />
+      case 'personalize':
+        return (
+          <PersonalizeContent
+            preferences={preferences}
+            onUpdatePreferences={updatePreferences}
+            onResetWallpaper={resetWallpaper}
+          />
+        )
     }
   }
 
@@ -111,9 +166,12 @@ export function Desktop() {
         onToggleScanlines={() => setScanlines((s) => !s)}
       />
 
-      <main
-        className="paper-texture relative min-h-[100dvh] bg-desktop pt-8"
+      <WallpaperManager
+        wallpaperId={preferences.wallpaperId}
+        className="relative min-h-[100dvh] pt-8"
         aria-label="Jack OS desktop"
+        onContextMenu={handleDesktopContextMenu}
+        onPointerDown={contextMenu ? closeContextMenu : undefined}
       >
         {/* Desktop watermark */}
         <p
@@ -124,6 +182,19 @@ export function Desktop() {
           <br />
           {isMobile ? 'Tap an icon to open' : 'Double-click an icon to open'}
         </p>
+
+        {/* Desktop widgets */}
+        {!isMobile && booted && (preferences.showClock || preferences.showCalendar) ? (
+          <div
+            data-desktop-interactive="true"
+            className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
+          >
+            {preferences.showClock ? <DesktopClock /> : null}
+            {preferences.showCalendar ? (
+              <DesktopCalendar onOpenCalendar={() => undefined} />
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
@@ -200,7 +271,17 @@ export function Desktop() {
             ◄ Close
           </button>
         ) : null}
-      </main>
+
+        {contextMenu ? (
+          <DesktopContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onClose={closeContextMenu}
+            onPersonalize={openPersonalize}
+            onResetWallpaper={resetWallpaper}
+          />
+        ) : null}
+      </WallpaperManager>
     </div>
   )
 }
