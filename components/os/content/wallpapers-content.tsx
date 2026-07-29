@@ -15,14 +15,20 @@ import { WallpaperPreview } from '../wallpaper-manager'
 
 type WallpapersContentProps = {
   preferences: DesktopPreferences
+  soundEffectsEnabled: boolean
   onUpdatePreferences: (patch: Partial<DesktopPreferences>) => void
   onResetWallpaper: () => void
+  onSetSoundEffectsEnabled: (enabled: boolean) => void
+  onFirstCustomWallpaperSet: () => void
 }
 
 export function WallpapersContent({
   preferences,
+  soundEffectsEnabled,
   onUpdatePreferences,
   onResetWallpaper,
+  onSetSoundEffectsEnabled,
+  onFirstCustomWallpaperSet,
 }: WallpapersContentProps) {
   const [previewedWallpaperId, setPreviewedWallpaperId] = useState<WallpaperId>(
     preferences.wallpaperId,
@@ -37,14 +43,23 @@ export function WallpapersContent({
   const canSetWallpaper = previewedWallpaper.selectable
   const isActiveWallpaper = previewedWallpaper.id === preferences.wallpaperId
 
+  const applyWallpaper = (wallpaper: Wallpaper) => {
+    if (!wallpaper.selectable) return
+    onUpdatePreferences({ wallpaperId: wallpaper.id })
+    if (wallpaper.id !== DEFAULT_WALLPAPER_ID) {
+      onFirstCustomWallpaperSet()
+    }
+  }
+
   const setWallpaper = () => {
     if (!canSetWallpaper) return
-    onUpdatePreferences({ wallpaperId: previewedWallpaper.id })
+    applyWallpaper(previewedWallpaper)
   }
 
   const setWallpaperFromCard = (wallpaperId: WallpaperId) => {
-    setPreviewedWallpaperId(wallpaperId)
-    onUpdatePreferences({ wallpaperId })
+    const wallpaper = getWallpaperAsset(wallpaperId)
+    setPreviewedWallpaperId(wallpaper.id)
+    applyWallpaper(wallpaper)
   }
 
   const resetWallpaper = () => {
@@ -158,6 +173,16 @@ export function WallpapersContent({
             className="size-4 accent-foreground"
           />
           Calendar Widget
+        </label>
+        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <input
+            type="checkbox"
+            data-preference-toggle="sound-effects"
+            checked={soundEffectsEnabled}
+            onChange={(event) => onSetSoundEffectsEnabled(event.target.checked)}
+            className="size-4 accent-foreground"
+          />
+          Sound Effects: {soundEffectsEnabled ? 'On' : 'Off'}
         </label>
       </section>
 

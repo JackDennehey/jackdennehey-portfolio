@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
@@ -18,12 +18,51 @@ import { CertificationsContent } from './content/certifications-content'
 import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
+import { useSoundEffects } from './use-sound-effects'
+import {
+  DEFAULT_WALLPAPER_ID,
+  type WallpaperId,
+} from '@/lib/wallpapers'
 
-type OpenWindow = { id: WindowId; x: number; y: number }
+type WindowStatus = 'open' | 'closing'
+type OpenWindow = { id: WindowId; x: number; y: number; status: WindowStatus }
+type OpenWindowOptions = { playSound?: boolean }
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
 const CONTEXT_MENU_HEIGHT = 92
+const WINDOW_CLOSE_DURATION_MS = 160
+const WALLPAPER_TRANSITION_DURATION_MS = 210
+const DESKTOP_EDGE_PADDING = 8
+const MENU_BAR_HEIGHT = 32
+const MIN_VISIBLE_TITLEBAR_WIDTH = 128
+
+function clampWindowPosition(id: WindowId, x: number, y: number) {
+  if (typeof window === 'undefined') {
+    return { x, y }
+  }
+
+  const app = WINDOW_APPS[id]
+  const minX = DESKTOP_EDGE_PADDING
+  const minY = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
+  const maxX = Math.max(minX, window.innerWidth - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, app.width))
+  const maxY = Math.max(minY, window.innerHeight - 48)
+
+  return {
+    x: Math.min(Math.max(x, minX), maxX),
+    y: Math.min(Math.max(y, minY), maxY),
+  }
+}
+
+function getInitialWindowPosition(id: WindowId, count: number) {
+  if (typeof window === 'undefined') {
+    return { x: 80, y: 60 }
+  }
+
+  const app = WINDOW_APPS[id]
+  const baseX = Math.max(24, (window.innerWidth - app.width) / 2 - 80)
+  return clampWindowPosition(id, baseX + count * 30, 60 + count * 30)
+}
 
 export function Desktop() {
   const [booted, setBooted] = useState(false)
@@ -32,7 +71,18 @@ export function Desktop() {
   const [windows, setWindows] = useState<OpenWindow[]>([])
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
+  const [transitionFromWallpaperId, setTransitionFromWallpaperId] =
+    useState<WallpaperId | null>(null)
   const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences()
+  const soundEffects = useSoundEffects()
+  const windowsRef = useRef<OpenWindow[]>([])
+  const windowOpenSequence = useRef(0)
+  const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
+  const wallpaperTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    windowsRef.current = windows
+  }, [windows])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -47,32 +97,89 @@ export function Desktop() {
   }, [])
 
   const openWindow = useCallback(
-    (id: string) => {
+    (id: string, options: OpenWindowOptions = {}) => {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
-      setWindows((prev) => {
-        if (prev.some((w) => w.id === windowId)) return prev
-        const app = WINDOW_APPS[windowId]
-        const count = prev.length
-        const baseX =
-          typeof window !== 'undefined'
-            ? Math.max(24, (window.innerWidth - app.width) / 2 - 80)
-            : 80
-        return [...prev, { id: windowId, x: baseX + count * 30, y: 60 + count * 30 }]
-      })
+
+      if (windowsRef.current.some((w) => w.id === windowId)) {
+        focusWindow(windowId)
+        return
+      }
+
+      const position = getInitialWindowPosition(windowId, windowOpenSequence.current)
+      windowOpenSequence.current += 1
+      const nextWindow: OpenWindow = { id: windowId, ...position, status: 'open' }
+      windowsRef.current = [...windowsRef.current, nextWindow]
+      setWindows((prev) =>
+        prev.some((w) => w.id === windowId) ? prev : [...prev, nextWindow],
+      )
       focusWindow(windowId)
+      if (options.playSound !== false) {
+        soundEffects.appOpen()
+      }
     },
-    [focusWindow],
+    [focusWindow, soundEffects],
   )
 
   const closeWindow = useCallback((id: WindowId) => {
-    setWindows((prev) => prev.filter((w) => w.id !== id))
-    setOrder((prev) => prev.filter((w) => w !== id))
-  }, [])
+    const target = windowsRef.current.find((w) => w.id === id)
+    if (!target || target.status === 'closing') {
+      return
+    }
+
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.id === id ? { ...w, status: 'closing' } : w,
+    )
+    setWindows((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, status: 'closing' } : w)),
+    )
+    soundEffects.windowClose()
+    closeTimers.current[id] = setTimeout(() => {
+      windowsRef.current = windowsRef.current.filter((w) => w.id !== id)
+      setWindows((prev) => prev.filter((w) => w.id !== id))
+      setOrder((prev) => prev.filter((w) => w !== id))
+      delete closeTimers.current[id]
+    }, WINDOW_CLOSE_DURATION_MS)
+  }, [soundEffects])
 
   const moveWindow = useCallback((id: WindowId, x: number, y: number) => {
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, x, y } : w)))
+    const position = clampWindowPosition(id, x, y)
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.id === id ? { ...w, ...position } : w,
+    )
+    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, ...position } : w)))
   }, [])
+
+  const beginWallpaperTransition = useCallback((nextWallpaperId: WallpaperId) => {
+    if (nextWallpaperId === preferences.wallpaperId) {
+      return
+    }
+
+    setTransitionFromWallpaperId(preferences.wallpaperId)
+    if (wallpaperTransitionTimer.current) {
+      clearTimeout(wallpaperTransitionTimer.current)
+    }
+
+    wallpaperTransitionTimer.current = setTimeout(() => {
+      setTransitionFromWallpaperId(null)
+      wallpaperTransitionTimer.current = null
+    }, WALLPAPER_TRANSITION_DURATION_MS)
+  }, [preferences.wallpaperId])
+
+  const updateDesktopPreferences = useCallback(
+    (patch: Partial<typeof preferences>) => {
+      if (patch.wallpaperId) {
+        beginWallpaperTransition(patch.wallpaperId)
+      }
+      updatePreferences(patch)
+    },
+    [beginWallpaperTransition, updatePreferences],
+  )
+
+  const resetDesktopWallpaper = useCallback(() => {
+    beginWallpaperTransition(DEFAULT_WALLPAPER_ID)
+    resetWallpaper()
+  }, [beginWallpaperTransition, resetWallpaper])
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
@@ -111,10 +218,37 @@ export function Desktop() {
   // Auto-open the welcome window on desktop after boot.
   useEffect(() => {
     if (booted && !isMobile && windows.length === 0) {
-      openWindow('home')
+      openWindow('home', { playSound: false })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booted, isMobile])
+
+  useEffect(() => {
+    const onResize = () => {
+      const nextWindows = windowsRef.current.map((w) => {
+        const position = clampWindowPosition(w.id, w.x, w.y)
+        return position.x === w.x && position.y === w.y ? w : { ...w, ...position }
+      })
+      windowsRef.current = nextWindows
+      setWindows(nextWindows)
+    }
+
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      Object.values(closeTimers.current).forEach((timer) => {
+        if (timer) {
+          clearTimeout(timer)
+        }
+      })
+      if (wallpaperTransitionTimer.current) {
+        clearTimeout(wallpaperTransitionTimer.current)
+      }
+    }
+  }, [])
 
   // Escape closes the top-most window.
   useEffect(() => {
@@ -146,8 +280,11 @@ export function Desktop() {
         return (
           <WallpapersContent
             preferences={preferences}
-            onUpdatePreferences={updatePreferences}
-            onResetWallpaper={resetWallpaper}
+            soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+            onUpdatePreferences={updateDesktopPreferences}
+            onResetWallpaper={resetDesktopWallpaper}
+            onSetSoundEffectsEnabled={soundEffects.setSoundEffectsEnabled}
+            onFirstCustomWallpaperSet={soundEffects.firstWallpaperSet}
           />
         )
     }
@@ -168,6 +305,7 @@ export function Desktop() {
 
       <WallpaperManager
         wallpaperId={preferences.wallpaperId}
+        transitionFromWallpaperId={transitionFromWallpaperId}
         className="relative min-h-[100dvh] pt-8"
         aria-label="Jack OS desktop"
         onContextMenu={handleDesktopContextMenu}
@@ -250,9 +388,14 @@ export function Desktop() {
               x={w.x}
               y={w.y}
               z={z}
+              status={w.status}
               focused={topId === w.id}
               isMobile={isMobile}
-              onFocus={() => focusWindow(w.id)}
+              onFocus={() => {
+                if (w.status !== 'closing') {
+                  focusWindow(w.id)
+                }
+              }}
               onClose={() => closeWindow(w.id)}
               onMove={(x, y) => moveWindow(w.id, x, y)}
             >
@@ -278,7 +421,7 @@ export function Desktop() {
             y={contextMenu.y}
             onClose={closeContextMenu}
             onPersonalize={openPersonalize}
-            onResetWallpaper={resetWallpaper}
+            onResetWallpaper={resetDesktopWallpaper}
           />
         ) : null}
       </WallpaperManager>

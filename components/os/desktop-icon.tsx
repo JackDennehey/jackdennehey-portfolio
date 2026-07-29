@@ -28,7 +28,7 @@ export function DesktopIcon({
   )
 
   const className =
-    'group flex w-20 flex-col items-center gap-1.5 rounded-sm p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
+    'group flex w-20 flex-col items-center gap-1.5 rounded-sm p-1 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
 
   if (item.kind === 'link') {
     return (
@@ -36,6 +36,7 @@ export function DesktopIcon({
         href={item.href}
         target="_blank"
         rel="noreferrer"
+        data-desktop-icon="true"
         className={className}
         aria-label={`${label} (opens in a new tab)`}
       >
@@ -47,6 +48,7 @@ export function DesktopIcon({
   return (
     <button
       type="button"
+      data-desktop-icon="true"
       className={className}
       onClick={variant === 'mobile' ? () => onOpenWindow(item.id) : undefined}
       onDoubleClick={variant === 'desktop' ? () => onOpenWindow(item.id) : undefined}
