@@ -1,7 +1,6 @@
 'use client'
 
 import { type ReactNode, useCallback, useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
 import type { WindowApp } from './apps'
 
 type Props = {
@@ -109,9 +108,15 @@ export function OsWindow({
           onClick={onClose}
           onPointerDown={(e) => e.stopPropagation()}
           aria-label={`Close ${app.title}`}
-          className="grid size-4 place-items-center border-2 border-current bg-transparent transition-colors hover:bg-current focus-visible:bg-current focus-visible:outline-none [&:hover>svg]:opacity-100 [&:focus-visible>svg]:opacity-100"
+          className="group/close grid size-4 place-items-center border-2 border-current bg-transparent transition-colors hover:bg-current focus-visible:bg-current focus-visible:outline-none"
         >
-          <X className="size-2.5 opacity-0" style={{ color: 'var(--paper)' }} strokeWidth={3} />
+          <span
+            aria-hidden
+            className="font-pixel text-[7px] leading-none opacity-0 group-hover/close:opacity-100 group-focus-visible/close:opacity-100"
+            style={{ color: 'var(--paper)' }}
+          >
+            x
+          </span>
         </button>
 
         <div className="flex flex-1 items-center justify-center gap-2 overflow-hidden">
@@ -121,9 +126,12 @@ export function OsWindow({
               className="titlebar-lines hidden h-3 flex-1 opacity-60 sm:block"
             />
           ) : null}
-          <h2 className="truncate px-2 font-pixel text-[9px] leading-none sm:text-[10px]">
-            {app.title}
-          </h2>
+          <div className="flex min-w-0 max-w-full items-center gap-1.5 px-2">
+            <app.Icon aria-hidden className="size-3.5 shrink-0" />
+            <h2 className="truncate font-pixel text-[9px] leading-none sm:text-[10px]">
+              {app.title}
+            </h2>
+          </div>
           {focused ? (
             <span
               aria-hidden

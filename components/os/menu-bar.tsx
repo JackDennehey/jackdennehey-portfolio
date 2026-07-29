@@ -1,8 +1,8 @@
 'use client'
 
-import { Monitor, MonitorOff } from 'lucide-react'
 import { Clock } from './clock'
 import type { WindowId } from './apps'
+import { JackScanlinesIcon, JackScanlinesOffIcon } from './jack-icons'
 
 const MENU: { id: WindowId; label: string }[] = [
   { id: 'about', label: 'About' },
@@ -57,7 +57,11 @@ export function MenuBar({
           className="grid size-6 place-items-center border-2 border-transparent text-foreground transition-colors hover:border-border focus-visible:border-border focus-visible:outline-none"
           title={scanlines ? 'Disable scanline effect' : 'Enable scanline effect'}
         >
-          {scanlines ? <Monitor className="size-3.5" /> : <MonitorOff className="size-3.5" />}
+          {scanlines ? (
+            <JackScanlinesIcon className="size-4" />
+          ) : (
+            <JackScanlinesOffIcon className="size-4" />
+          )}
           <span className="sr-only">
             {scanlines ? 'Disable scanline effect' : 'Enable scanline effect'}
           </span>
