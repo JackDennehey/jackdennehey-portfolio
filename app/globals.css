@@ -126,6 +126,171 @@
   .pixelated {
     image-rendering: pixelated;
   }
+
+  .wallpaper-surface,
+  .wallpaper-preview {
+    background-repeat: repeat;
+  }
+
+  .wallpaper-jack-os-default {
+    background-image: radial-gradient(
+      oklch(0.17 0.004 60 / 0.05) 0.5px,
+      transparent 0.5px
+    );
+    background-size: 4px 4px;
+  }
+
+  .wallpaper-blueprint-grid {
+    background-color: oklch(0.915 0.008 82);
+    background-image:
+      linear-gradient(oklch(0.17 0.004 60 / 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.17 0.004 60 / 0.12) 1px, transparent 1px),
+      linear-gradient(oklch(0.17 0.004 60 / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.17 0.004 60 / 0.06) 1px, transparent 1px);
+    background-size:
+      32px 32px,
+      32px 32px,
+      8px 8px,
+      8px 8px;
+  }
+
+  .wallpaper-paper-texture {
+    background-color: oklch(0.952 0.008 83);
+    background-image:
+      radial-gradient(oklch(0.17 0.004 60 / 0.05) 0.5px, transparent 0.5px),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 7px,
+        oklch(0.17 0.004 60 / 0.025) 7px,
+        oklch(0.17 0.004 60 / 0.025) 8px
+      );
+    background-size:
+      5px 5px,
+      100% 8px;
+  }
+
+  .wallpaper-storm-clouds {
+    background-color: oklch(0.88 0.006 78);
+    background-image:
+      linear-gradient(
+        to bottom,
+        oklch(0.17 0.004 60 / 0.16),
+        transparent 30%,
+        oklch(0.17 0.004 60 / 0.08) 68%,
+        transparent
+      ),
+      repeating-linear-gradient(
+        165deg,
+        transparent 0,
+        transparent 18px,
+        oklch(0.17 0.004 60 / 0.08) 18px,
+        oklch(0.17 0.004 60 / 0.08) 20px
+      );
+    background-size:
+      100% 100%,
+      120px 80px;
+  }
+
+  .wallpaper-beach {
+    background-color: oklch(0.94 0.008 83);
+    background-image:
+      linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 45%,
+        oklch(0.17 0.004 60 / 0.16) 45%,
+        oklch(0.17 0.004 60 / 0.16) 47%,
+        transparent 47%
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 10px,
+        oklch(0.17 0.004 60 / 0.05) 10px,
+        oklch(0.17 0.004 60 / 0.05) 11px
+      );
+    background-size:
+      100% 100%,
+      100% 24px;
+  }
+
+  .wallpaper-ocean {
+    background-color: oklch(0.91 0.009 83);
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 10px,
+        oklch(0.17 0.004 60 / 0.11) 10px,
+        oklch(0.17 0.004 60 / 0.11) 12px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 22px,
+        oklch(0.17 0.004 60 / 0.055) 22px,
+        oklch(0.17 0.004 60 / 0.055) 24px
+      );
+    background-size:
+      100% 36px,
+      48px 100%;
+  }
+
+  .wallpaper-mountain-silhouette {
+    background-color: oklch(0.93 0.008 83);
+    background-image:
+      linear-gradient(135deg, transparent 0 58%, oklch(0.17 0.004 60 / 0.22) 58% 62%, transparent 62%),
+      linear-gradient(45deg, transparent 0 55%, oklch(0.17 0.004 60 / 0.28) 55% 60%, transparent 60%),
+      linear-gradient(to bottom, oklch(0.97 0.006 85), oklch(0.86 0.009 83));
+    background-position:
+      bottom left,
+      bottom right,
+      center;
+    background-size:
+      190px 130px,
+      240px 150px,
+      100% 100%;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+  }
+
+  .wallpaper-graphite {
+    background-color: oklch(0.855 0.006 65);
+    background-image:
+      repeating-linear-gradient(
+        135deg,
+        oklch(0.17 0.004 60 / 0.16) 0,
+        oklch(0.17 0.004 60 / 0.16) 1px,
+        transparent 1px,
+        transparent 6px
+      );
+    background-size: 8px 8px;
+  }
+
+  .wallpaper-soft-monochrome-gradient {
+    background-image: linear-gradient(
+      140deg,
+      oklch(0.985 0.006 85),
+      oklch(0.918 0.009 83) 46%,
+      oklch(0.835 0.007 72)
+    );
+    background-repeat: no-repeat;
+  }
+
+  .wallpaper-retro-pixel-pattern {
+    background-color: oklch(0.924 0.008 83);
+    background-image:
+      linear-gradient(45deg, oklch(0.17 0.004 60 / 0.1) 25%, transparent 25%),
+      linear-gradient(-45deg, oklch(0.17 0.004 60 / 0.1) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, oklch(0.17 0.004 60 / 0.1) 75%),
+      linear-gradient(-45deg, transparent 75%, oklch(0.17 0.004 60 / 0.1) 75%);
+    background-position:
+      0 0,
+      0 6px,
+      6px -6px,
+      -6px 0;
+    background-size: 12px 12px;
+  }
 }
 
 /* CRT scanline overlay */
