@@ -42,6 +42,11 @@ export function WallpapersContent({
     onUpdatePreferences({ wallpaperId: previewedWallpaper.id })
   }
 
+  const setWallpaperFromCard = (wallpaperId: WallpaperId) => {
+    setPreviewedWallpaperId(wallpaperId)
+    onUpdatePreferences({ wallpaperId })
+  }
+
   const resetWallpaper = () => {
     onResetWallpaper()
     setPreviewedWallpaperId(DEFAULT_WALLPAPER_ID)
@@ -84,18 +89,31 @@ export function WallpapersContent({
                   : 'cursor-default bg-secondary text-muted-foreground',
               )}
             >
-              {isActiveWallpaper ? 'Current Wallpaper' : 'Set as Wallpaper'}
+              {!canSetWallpaper
+                ? 'Preview Only'
+                : isActiveWallpaper
+                  ? 'Current Wallpaper'
+                  : 'Set as Wallpaper'}
             </button>
 
             {previewedWallpaper.downloadable && previewedWallpaper.imagePath ? (
               <a
                 href={previewedWallpaper.imagePath}
                 download
+                data-wallpaper-preview-download={previewedWallpaper.id}
                 className="os-border bg-card px-3 py-2 text-center font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
               >
                 Download
               </a>
-            ) : null}
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="os-border cursor-default bg-secondary px-3 py-2 text-center font-pixel text-[8px] leading-relaxed text-muted-foreground"
+              >
+                Not Downloadable
+              </button>
+            )}
 
             <button
               type="button"
@@ -114,6 +132,7 @@ export function WallpapersContent({
         activeWallpaperId={preferences.wallpaperId}
         previewedWallpaperId={previewedWallpaper.id}
         onPreview={setPreviewedWallpaperId}
+        onSetWallpaper={setWallpaperFromCard}
       />
 
       <section className="os-border space-y-3 bg-secondary p-3">
@@ -148,6 +167,7 @@ export function WallpapersContent({
         activeWallpaperId={preferences.wallpaperId}
         previewedWallpaperId={previewedWallpaper.id}
         onPreview={setPreviewedWallpaperId}
+        onSetWallpaper={setWallpaperFromCard}
       />
     </div>
   )
@@ -159,19 +179,21 @@ function WallpaperSection({
   activeWallpaperId,
   previewedWallpaperId,
   onPreview,
+  onSetWallpaper,
 }: {
   title: string
   wallpapers: readonly Wallpaper[]
   activeWallpaperId: WallpaperId
   previewedWallpaperId: WallpaperId
   onPreview: (wallpaperId: WallpaperId) => void
+  onSetWallpaper: (wallpaperId: WallpaperId) => void
 }) {
   return (
     <section className="space-y-2">
       <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
         {title}
       </h3>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {wallpapers.map((wallpaper) => (
           <WallpaperTile
             key={wallpaper.id}
@@ -179,6 +201,7 @@ function WallpaperSection({
             active={wallpaper.id === activeWallpaperId}
             previewing={wallpaper.id === previewedWallpaperId}
             onPreview={() => onPreview(wallpaper.id)}
+            onSetWallpaper={() => onSetWallpaper(wallpaper.id)}
           />
         ))}
       </div>
@@ -191,11 +214,13 @@ function WallpaperTile({
   active,
   previewing,
   onPreview,
+  onSetWallpaper,
 }: {
   wallpaper: Wallpaper
   active: boolean
   previewing: boolean
   onPreview: () => void
+  onSetWallpaper: () => void
 }) {
   const phaseLabel = 'phaseLabel' in wallpaper ? wallpaper.phaseLabel : undefined
 
@@ -206,8 +231,10 @@ function WallpaperTile({
       data-wallpaper-selectable={wallpaper.selectable}
       data-wallpaper-active={active}
       className={cn(
-        'os-border min-w-0 bg-card p-2 text-foreground',
-        active ? 'bg-foreground text-primary-foreground' : null,
+        'os-border flex h-full min-w-0 flex-col bg-card p-2 text-foreground',
+        active
+          ? 'bg-foreground text-primary-foreground outline outline-2 outline-offset-[-6px] outline-current'
+          : null,
         previewing && !active ? 'bg-secondary' : null,
       )}
     >
@@ -215,7 +242,7 @@ function WallpaperTile({
         type="button"
         data-wallpaper-preview-button={wallpaper.id}
         onClick={onPreview}
-        className="block w-full text-left focus-visible:outline-none"
+        className="flex flex-1 flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-pressed={previewing}
       >
         <WallpaperPreview
@@ -227,7 +254,7 @@ function WallpaperTile({
             {wallpaper.displayName}
           </span>
           {active ? (
-            <span className="shrink-0 font-pixel text-[7px] leading-relaxed">Set</span>
+            <span className="shrink-0 font-pixel text-[7px] leading-relaxed">Current</span>
           ) : previewing ? (
             <span className="shrink-0 font-pixel text-[7px] leading-relaxed">View</span>
           ) : null}
@@ -237,12 +264,27 @@ function WallpaperTile({
             {phaseLabel}
           </span>
         ) : null}
-        <span className="mt-1 block text-xs leading-relaxed opacity-75">
+        <span className="mt-1 block min-h-10 text-xs leading-relaxed opacity-75">
           {wallpaper.description}
         </span>
       </button>
 
-      {wallpaper.downloadable && wallpaper.imagePath ? (
+      {wallpaper.selectable ? (
+        <button
+          type="button"
+          disabled={active}
+          onClick={onSetWallpaper}
+          data-wallpaper-set={wallpaper.id}
+          className={cn(
+            'os-border mt-2 block w-full px-2 py-1 text-center font-pixel text-[7px] leading-relaxed transition-colors focus-visible:outline-none',
+            active
+              ? 'cursor-default border-primary-foreground bg-primary-foreground text-foreground'
+              : 'bg-card text-foreground hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground',
+          )}
+        >
+          {active ? 'Current' : 'Set Wallpaper'}
+        </button>
+      ) : wallpaper.downloadable && wallpaper.imagePath ? (
         <a
           href={wallpaper.imagePath}
           download

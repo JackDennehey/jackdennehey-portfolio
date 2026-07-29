@@ -76,7 +76,7 @@ export const WALLPAPER_ASSETS = [
   {
     id: 'wasteland',
     displayName: 'Wasteland',
-    description: 'Echoes from a forgotten machine.',
+    description: 'It was rigged from the start.',
     imagePath: '/wallpapers/wasteland.png',
     assetType: 'png',
     collection: 'current',
@@ -87,7 +87,7 @@ export const WALLPAPER_ASSETS = [
   {
     id: 'frutiger-aero',
     displayName: 'Frutiger Aero',
-    description: 'Tomorrow looked brighter once.',
+    description: 'Y2K',
     imagePath: '/wallpapers/frutiger-aero.png',
     assetType: 'png',
     collection: 'current',
@@ -98,7 +98,7 @@ export const WALLPAPER_ASSETS = [
   {
     id: 'bedlam',
     displayName: 'Bedlam',
-    description: 'Summer crowds and open skies.',
+    description: 'THE SWING OF HIS LIFE',
     imagePath: '/wallpapers/bedlam.png',
     assetType: 'png',
     collection: 'current',
@@ -120,7 +120,7 @@ export const WALLPAPER_ASSETS = [
   {
     id: 'stillwater',
     displayName: 'Stillwater',
-    description: 'A quiet morning by the water.',
+    description: 'Boch. Brews. Trees.',
     imagePath: '/wallpapers/pond.png',
     assetType: 'png',
     collection: 'current',
