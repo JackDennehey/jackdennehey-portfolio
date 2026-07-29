@@ -185,6 +185,50 @@
     --wallpaper-size: 4px 4px;
     --wallpaper-repeat: repeat;
   }
+
+  .wallpaper-preview[data-wallpaper-id='jack-os-default'] {
+    background-color: var(--desktop);
+    background-image:
+      linear-gradient(var(--ink), var(--ink)),
+      linear-gradient(var(--paper), var(--paper)),
+      linear-gradient(var(--ink), var(--ink)),
+      linear-gradient(var(--ink), var(--ink)),
+      linear-gradient(var(--paper), var(--paper)),
+      linear-gradient(var(--ink), var(--ink)),
+      linear-gradient(var(--paper), var(--paper)),
+      linear-gradient(var(--ink), var(--ink)),
+      radial-gradient(oklch(0.17 0.004 60 / 0.08) 0.5px, transparent 0.5px);
+    background-position:
+      left top,
+      13% 43%,
+      10% 40%,
+      13% 43%,
+      82% 22%,
+      81% 21%,
+      82% 51%,
+      81% 50%,
+      center;
+    background-repeat:
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      repeat;
+    background-size:
+      100% 10%,
+      42% 32%,
+      46% 36%,
+      42% 8%,
+      10% 12%,
+      12% 14%,
+      10% 12%,
+      12% 14%,
+      4px 4px;
+  }
 }
 
 /* CRT scanline overlay */

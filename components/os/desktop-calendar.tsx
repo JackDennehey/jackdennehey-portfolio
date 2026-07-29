@@ -37,6 +37,11 @@ function getMonthCells(date: Date) {
   return cells
 }
 
+function getMillisecondsUntilNextMinute(date: Date) {
+  const elapsedMilliseconds = date.getSeconds() * 1000 + date.getMilliseconds()
+  return elapsedMilliseconds === 0 ? 60_000 : 60_000 - elapsedMilliseconds
+}
+
 export function DesktopCalendar({
   className,
   onOpenCalendar,
@@ -47,11 +52,17 @@ export function DesktopCalendar({
   const [today, setToday] = useState<Date | null>(null)
 
   useEffect(() => {
-    const update = () => setToday(new Date())
+    let timeoutId: number
+
+    const update = () => {
+      const nextDate = new Date()
+      setToday(nextDate)
+      timeoutId = window.setTimeout(update, getMillisecondsUntilNextMinute(nextDate))
+    }
+
     update()
 
-    const interval = window.setInterval(update, 60_000)
-    return () => window.clearInterval(interval)
+    return () => window.clearTimeout(timeoutId)
   }, [])
 
   const cells = useMemo(() => (today ? getMonthCells(today) : []), [today])
