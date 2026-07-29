@@ -1,4 +1,7 @@
-import type { ComponentPropsWithoutRef, CSSProperties } from 'react'
+import {
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+} from 'react'
 import { cn } from '@/lib/utils'
 import {
   getWallpaper,
@@ -9,6 +12,7 @@ import {
 
 type WallpaperManagerProps = ComponentPropsWithoutRef<'main'> & {
   wallpaperId: WallpaperId
+  transitionFromWallpaperId?: WallpaperId | null
 }
 
 type WallpaperCssProperties = CSSProperties & {
@@ -29,6 +33,7 @@ function getWallpaperStyle(wallpaper: WallpaperAsset): WallpaperCssProperties | 
 
 export function WallpaperManager({
   wallpaperId,
+  transitionFromWallpaperId,
   className,
   children,
   style,
@@ -36,6 +41,9 @@ export function WallpaperManager({
 }: WallpaperManagerProps) {
   const wallpaper = getWallpaper(wallpaperId)
   const wallpaperStyle = getWallpaperStyle(wallpaper)
+  const transitionWallpaper = transitionFromWallpaperId
+    ? getWallpaperAsset(transitionFromWallpaperId)
+    : null
 
   return (
     <main
@@ -44,6 +52,18 @@ export function WallpaperManager({
       style={{ ...wallpaperStyle, ...style }}
       className={cn('wallpaper-surface bg-desktop', wallpaper.className, className)}
     >
+      {transitionWallpaper ? (
+        <span
+          aria-hidden
+          data-wallpaper-transition="out"
+          data-wallpaper-id={transitionWallpaper.id}
+          style={getWallpaperStyle(transitionWallpaper)}
+          className={cn(
+            'wallpaper-surface wallpaper-transition-out pointer-events-none absolute inset-0',
+            transitionWallpaper.className,
+          )}
+        />
+      ) : null}
       {children}
     </main>
   )
