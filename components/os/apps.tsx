@@ -38,7 +38,7 @@ export type DesktopItem =
 export const DESKTOP_ITEMS: DesktopItem[] = [
   { kind: 'window', id: 'about', label: 'About Me', Icon: User },
   { kind: 'window', id: 'projects', label: 'Projects', Icon: Folder },
-  { kind: 'window', id: 'certifications', label: 'Certifications', Icon: Award },
+  { kind: 'window', id: 'certifications', label: 'Credentials', Icon: Award },
   { kind: 'window', id: 'resume', label: 'Resume', Icon: FileText },
   { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
