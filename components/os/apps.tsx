@@ -6,9 +6,9 @@ import {
   JackDocumentIcon,
   JackIdIcon,
   JackMailIcon,
-  JackPersonalizeIcon,
   JackProjectsIcon,
   JackSystemIcon,
+  JackWallpapersIcon,
 } from './jack-icons'
 
 export type WindowId =
@@ -18,7 +18,7 @@ export type WindowId =
   | 'certifications'
   | 'resume'
   | 'contact'
-  | 'personalize'
+  | 'wallpapers'
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
 
@@ -44,11 +44,11 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   },
   resume: { id: 'resume', title: 'Resume', Icon: JackDocumentIcon, width: 560, height: 560 },
   contact: { id: 'contact', title: 'Contact', Icon: JackMailIcon, width: 420, height: 520 },
-  personalize: {
-    id: 'personalize',
-    title: 'Personalize',
-    Icon: JackPersonalizeIcon,
-    width: 640,
+  wallpapers: {
+    id: 'wallpapers',
+    title: 'Wallpapers',
+    Icon: JackWallpapersIcon,
+    width: 720,
     height: 640,
   },
 }
@@ -65,4 +65,5 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
   { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
   { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
+  { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
 ]

@@ -148,7 +148,12 @@
     background-size:
       100% 100%,
       var(--wallpaper-size);
-    image-rendering: pixelated;
+  }
+
+  .wallpaper-image {
+    --wallpaper-repeat: no-repeat;
+    --wallpaper-size: cover;
+    --wallpaper-position: center;
   }
 
   .wallpaper-contrast-soft {
@@ -179,51 +184,6 @@
     );
     --wallpaper-size: 4px 4px;
     --wallpaper-repeat: repeat;
-  }
-
-  .wallpaper-retro-beach {
-    --wallpaper-base: #cfd8d6;
-    --wallpaper-art: url('/wallpapers/retro-beach.svg');
-  }
-
-  .wallpaper-storm-coast {
-    --wallpaper-base: #7f9298;
-    --wallpaper-art: url('/wallpapers/storm-coast.svg');
-  }
-
-  .wallpaper-night-ocean {
-    --wallpaper-base: #111827;
-    --wallpaper-art: url('/wallpapers/night-ocean.svg');
-  }
-
-  .wallpaper-mountain-terminal {
-    --wallpaper-base: #b9c8b8;
-    --wallpaper-art: url('/wallpapers/mountain-terminal.svg');
-  }
-
-  .wallpaper-blueprint-grid {
-    --wallpaper-base: #315f7b;
-    --wallpaper-art: url('/wallpapers/blueprint-grid.svg');
-  }
-
-  .wallpaper-graphite {
-    --wallpaper-base: #26282a;
-    --wallpaper-art: url('/wallpapers/graphite.svg');
-  }
-
-  .wallpaper-paper-desktop {
-    --wallpaper-base: #eee8d7;
-    --wallpaper-art: url('/wallpapers/paper-desktop.svg');
-  }
-
-  .wallpaper-retro-geometry {
-    --wallpaper-base: #d9d5c8;
-    --wallpaper-art: url('/wallpapers/retro-geometry.svg');
-  }
-
-  .wallpaper-jack-os-sunset {
-    --wallpaper-base: #d7b58d;
-    --wallpaper-art: url('/wallpapers/jack-os-sunset.svg');
   }
 }
 
