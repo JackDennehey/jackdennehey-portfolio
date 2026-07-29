@@ -1,6 +1,6 @@
 import {
   DEFAULT_WALLPAPER_ID,
-  isWallpaperId,
+  isSelectableWallpaperId,
   type WallpaperId,
 } from './wallpapers'
 
@@ -24,7 +24,7 @@ export function parseDesktopPreferences(value: string | null): DesktopPreference
   try {
     const parsed = JSON.parse(value) as Partial<DesktopPreferences>
     return {
-      wallpaperId: isWallpaperId(parsed.wallpaperId)
+      wallpaperId: isSelectableWallpaperId(parsed.wallpaperId)
         ? parsed.wallpaperId
         : DEFAULT_DESKTOP_PREFERENCES.wallpaperId,
       showClock:

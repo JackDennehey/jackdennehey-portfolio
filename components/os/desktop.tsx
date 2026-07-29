@@ -17,7 +17,7 @@ import { ProjectsContent } from './content/projects-content'
 import { CertificationsContent } from './content/certifications-content'
 import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
-import { PersonalizeContent } from './content/personalize-content'
+import { WallpapersContent } from './content/wallpapers-content'
 
 type OpenWindow = { id: WindowId; x: number; y: number }
 type ContextMenuPosition = { x: number; y: number } | null
@@ -79,7 +79,7 @@ export function Desktop() {
   }, [])
 
   const openPersonalize = useCallback(() => {
-    openWindow('personalize')
+    openWindow('wallpapers')
   }, [openWindow])
 
   const handleDesktopContextMenu = useCallback(
@@ -142,9 +142,9 @@ export function Desktop() {
         return <ResumeContent />
       case 'contact':
         return <ContactContent />
-      case 'personalize':
+      case 'wallpapers':
         return (
-          <PersonalizeContent
+          <WallpapersContent
             preferences={preferences}
             onUpdatePreferences={updatePreferences}
             onResetWallpaper={resetWallpaper}
