@@ -3,53 +3,53 @@ export const DEFAULT_WALLPAPER_ID = 'jack-os-default'
 export const WALLPAPERS = [
   {
     id: DEFAULT_WALLPAPER_ID,
-    name: 'Jack OS Default',
-    className: 'wallpaper-jack-os-default',
+    name: 'Jack OS Classic',
+    className: 'wallpaper-jack-os-classic',
+  },
+  {
+    id: 'retro-beach',
+    name: 'Retro Beach',
+    className: 'wallpaper-retro-beach wallpaper-contrast-soft',
+  },
+  {
+    id: 'storm-coast',
+    name: 'Storm Coast',
+    className: 'wallpaper-storm-coast wallpaper-contrast-medium',
+  },
+  {
+    id: 'night-ocean',
+    name: 'Night Ocean',
+    className: 'wallpaper-night-ocean wallpaper-contrast-strong',
+  },
+  {
+    id: 'mountain-terminal',
+    name: 'Mountain Terminal',
+    className: 'wallpaper-mountain-terminal wallpaper-contrast-soft',
   },
   {
     id: 'blueprint-grid',
     name: 'Blueprint Grid',
-    className: 'wallpaper-blueprint-grid',
-  },
-  {
-    id: 'paper-texture',
-    name: 'Paper Texture',
-    className: 'wallpaper-paper-texture',
-  },
-  {
-    id: 'storm-clouds',
-    name: 'Storm Clouds',
-    className: 'wallpaper-storm-clouds',
-  },
-  {
-    id: 'beach',
-    name: 'Beach',
-    className: 'wallpaper-beach',
-  },
-  {
-    id: 'ocean',
-    name: 'Ocean',
-    className: 'wallpaper-ocean',
-  },
-  {
-    id: 'mountain-silhouette',
-    name: 'Mountain',
-    className: 'wallpaper-mountain-silhouette',
+    className: 'wallpaper-blueprint-grid wallpaper-contrast-medium',
   },
   {
     id: 'graphite',
     name: 'Graphite',
-    className: 'wallpaper-graphite',
+    className: 'wallpaper-graphite wallpaper-contrast-strong',
   },
   {
-    id: 'soft-monochrome-gradient',
-    name: 'Soft Gradient',
-    className: 'wallpaper-soft-monochrome-gradient',
+    id: 'paper-desktop',
+    name: 'Paper Desktop',
+    className: 'wallpaper-paper-desktop',
   },
   {
-    id: 'retro-pixel-pattern',
-    name: 'Pixel Pattern',
-    className: 'wallpaper-retro-pixel-pattern',
+    id: 'retro-geometry',
+    name: 'Retro Geometry',
+    className: 'wallpaper-retro-geometry wallpaper-contrast-soft',
+  },
+  {
+    id: 'jack-os-sunset',
+    name: 'Jack OS Sunset',
+    className: 'wallpaper-jack-os-sunset wallpaper-contrast-soft',
   },
 ] as const
 

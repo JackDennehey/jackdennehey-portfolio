@@ -48,8 +48,8 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'personalize',
     title: 'Personalize',
     Icon: JackPersonalizeIcon,
-    width: 560,
-    height: 560,
+    width: 640,
+    height: 640,
   },
 }
 
