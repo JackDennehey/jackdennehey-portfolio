@@ -5,7 +5,13 @@ import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
 import { OsWindow } from './os-window'
-import { DESKTOP_ITEMS, WINDOW_APPS, type WindowId } from './apps'
+import {
+  DESKTOP_ITEMS,
+  WINDOW_APPS,
+  getWindowHash,
+  getWindowIdFromHash,
+  type WindowId,
+} from './apps'
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
@@ -31,7 +37,7 @@ type OpenWindow = WindowGeometry & {
   status: WindowStatus
   restoreStatus?: RestorableWindowStatus
 }
-type OpenWindowOptions = { playSound?: boolean }
+type OpenWindowOptions = { playSound?: boolean; updateHash?: boolean }
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
@@ -104,6 +110,18 @@ function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
   })
 }
 
+function syncWindowHash(id: WindowId) {
+  if (typeof window === 'undefined') return
+
+  const slug = getWindowHash(id)
+  const nextUrl = `${window.location.pathname}${window.location.search}#${slug}`
+  if (`${window.location.pathname}${window.location.search}${window.location.hash}` === nextUrl) {
+    return
+  }
+
+  window.history.replaceState(null, '', nextUrl)
+}
+
 export function Desktop() {
   const [booted, setBooted] = useState(false)
   const [scanlines, setScanlines] = useState(true)
@@ -115,6 +133,7 @@ export function Desktop() {
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
   const windowsRef = useRef<OpenWindow[]>([])
+  const handledInitialHash = useRef(false)
   const windowOpenSequence = useRef(0)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
@@ -139,6 +158,10 @@ export function Desktop() {
     (id: string, options: OpenWindowOptions = {}) => {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
+
+      if (options.updateHash !== false) {
+        syncWindowHash(windowId)
+      }
 
       const existing = windowsRef.current.find((w) => w.id === windowId)
       if (existing) {
@@ -327,13 +350,34 @@ export function Desktop() {
     [closeContextMenu, isMobile],
   )
 
-  // Auto-open the welcome window on desktop after boot.
   useEffect(() => {
-    if (booted && !isMobile && windows.length === 0) {
-      openWindow('home', { playSound: false })
+    if (!booted || handledInitialHash.current) return
+
+    handledInitialHash.current = true
+    const hashWindow = getWindowIdFromHash(window.location.hash)
+    if (hashWindow) {
+      openWindow(hashWindow, { playSound: false, updateHash: false })
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [booted, isMobile])
+
+    if (!isMobile && windowsRef.current.length === 0) {
+      openWindow('home', { playSound: false, updateHash: false })
+    }
+  }, [booted, isMobile, openWindow])
+
+  useEffect(() => {
+    const onHashChange = () => {
+      if (!booted) return
+
+      const hashWindow = getWindowIdFromHash(window.location.hash)
+      if (hashWindow) {
+        openWindow(hashWindow, { playSound: false, updateHash: false })
+      }
+    }
+
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [booted, openWindow])
 
   useEffect(() => {
     const onResize = () => {
@@ -414,9 +458,16 @@ export function Desktop() {
   const renderContent = (id: WindowId) => {
     switch (id) {
       case 'home':
-        return <HomeContent onOpen={openWindow} />
+        return (
+          <HomeContent
+            onOpen={openWindow}
+            theme={theme}
+            soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+            scanlines={scanlines}
+          />
+        )
       case 'about':
-        return <AboutContent />
+        return <AboutContent onOpen={openWindow} />
       case 'projects':
         return <ProjectsContent />
       case 'certifications':
@@ -469,6 +520,8 @@ export function Desktop() {
       />
 
       <WallpaperManager
+        id="jack-os-desktop"
+        tabIndex={-1}
         wallpaperId={preferences.wallpaperId}
         className="relative min-h-[100dvh] pt-8"
         aria-label="Jack OS desktop"

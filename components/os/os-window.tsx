@@ -1,7 +1,7 @@
 'use client'
 
-import { type ReactNode, useCallback, useEffect, useRef } from 'react'
-import type { WindowApp } from './apps'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { getWindowHash, type WindowApp } from './apps'
 
 type Props = {
   app: WindowApp
@@ -43,13 +43,23 @@ export function OsWindow({
   onMaximize,
   onMove,
 }: Props) {
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
   const frame = useRef<number | null>(null)
   const onMoveRef = useRef(onMove)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     onMoveRef.current = onMove
   }, [onMove])
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current)
+      }
+    }
+  }, [])
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
@@ -129,6 +139,40 @@ export function OsWindow({
   const titlebarControlClass =
     'grid size-4 place-items-center border-2 border-current bg-transparent font-pixel text-[8px] leading-none transition-colors hover:border-border hover:bg-transparent focus-visible:border-border focus-visible:outline-none disabled:cursor-default disabled:opacity-60'
 
+  const copyWindowLink = async () => {
+    if (typeof window === 'undefined') return
+
+    const url = `${window.location.origin}${window.location.pathname}#${getWindowHash(app.id)}`
+    let copied = false
+
+    try {
+      await navigator.clipboard.writeText(url)
+      copied = true
+    } catch {
+      let input: HTMLInputElement | null = null
+      try {
+        input = document.createElement('input')
+        input.value = url
+        input.setAttribute('readonly', 'true')
+        input.style.position = 'fixed'
+        input.style.opacity = '0'
+        document.body.appendChild(input)
+        input.select()
+        copied = document.execCommand('copy')
+      } catch {
+        copied = false
+      } finally {
+        input?.remove()
+      }
+    }
+
+    setCopyStatus(copied ? 'copied' : 'failed')
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current)
+    }
+    copiedTimer.current = setTimeout(() => setCopyStatus('idle'), 1500)
+  }
+
   return (
     <section
       role="dialog"
@@ -200,6 +244,24 @@ export function OsWindow({
 
         {!isMobile ? (
           <div className="flex shrink-0 items-center gap-1">
+            {copyStatus !== 'idle' ? (
+              <span role="status" className="font-pixel text-[7px] leading-none">
+                {copyStatus === 'copied' ? 'Copied' : 'Copy failed'}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              disabled={status === 'closing'}
+              onClick={copyWindowLink}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label={`Copy link to ${app.title}`}
+              className={titlebarControlClass}
+              title={`Copy link to ${app.title}`}
+            >
+              <span aria-hidden className="opacity-80">
+                L
+              </span>
+            </button>
             <button
               type="button"
               disabled={status === 'closing'}
@@ -234,7 +296,26 @@ export function OsWindow({
             </button>
           </div>
         ) : (
-          <span aria-hidden className="size-4 shrink-0" />
+          <div className="flex shrink-0 items-center gap-1">
+            {copyStatus !== 'idle' ? (
+              <span role="status" className="font-pixel text-[7px] leading-none">
+                {copyStatus === 'copied' ? 'Copied' : 'Copy failed'}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              disabled={status === 'closing'}
+              onClick={copyWindowLink}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label={`Copy link to ${app.title}`}
+              className={titlebarControlClass}
+              title={`Copy link to ${app.title}`}
+            >
+              <span aria-hidden className="opacity-80">
+                L
+              </span>
+            </button>
+          </div>
         )}
       </header>
 

@@ -3,7 +3,7 @@ import { CONTACT } from '@/lib/portfolio-data'
 import { GithubIcon, LinkedinIcon } from '@/components/os/brand-icons'
 
 const LINKS = [
-  { label: 'GitHub', value: 'github.com/jackdennehey', href: CONTACT.github, Icon: GithubIcon, external: true },
+  { label: 'GitHub', value: 'github.com/JackDennehey', href: CONTACT.github, Icon: GithubIcon, external: true },
   {
     label: 'LinkedIn',
     value: 'in/jackdennehey',
@@ -26,7 +26,7 @@ export function ContactContent() {
           <li key={label}>
             <a
               href={href}
-              {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               className="os-border group flex items-center gap-3 bg-card p-3 transition-colors hover:bg-foreground hover:text-primary-foreground"
             >
               <span

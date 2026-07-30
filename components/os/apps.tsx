@@ -33,7 +33,7 @@ export type WindowApp = {
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   home: { id: 'home', title: 'Welcome to Jack OS', Icon: JackSystemIcon, width: 460, height: 480 },
-  about: { id: 'about', title: 'About Me', Icon: JackIdIcon, width: 460, height: 460 },
+  about: { id: 'about', title: 'About Me', Icon: JackIdIcon, width: 560, height: 540 },
   projects: { id: 'projects', title: 'Projects', Icon: JackProjectsIcon, width: 620, height: 520 },
   certifications: {
     id: 'certifications',
@@ -51,6 +51,33 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 720,
     height: 640,
   },
+}
+
+export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
+  home: 'home',
+  about: 'about',
+  projects: 'projects',
+  certifications: 'credentials',
+  resume: 'resume',
+  contact: 'contact',
+  wallpapers: 'wallpapers',
+}
+
+const WINDOW_IDS_BY_HASH = Object.entries(WINDOW_HASH_SLUGS).reduce(
+  (acc, [id, slug]) => {
+    acc[slug] = id as WindowId
+    return acc
+  },
+  {} as Record<string, WindowId>,
+)
+
+export function getWindowHash(id: WindowId) {
+  return WINDOW_HASH_SLUGS[id]
+}
+
+export function getWindowIdFromHash(hash: string): WindowId | null {
+  const slug = hash.replace(/^#/, '').trim().toLowerCase()
+  return WINDOW_IDS_BY_HASH[slug] ?? null
 }
 
 export type DesktopItem =

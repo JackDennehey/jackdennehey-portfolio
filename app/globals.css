@@ -124,6 +124,27 @@
     font-family: var(--font-pixel);
   }
 
+  .skip-link {
+    position: fixed;
+    left: 0.75rem;
+    top: 0.75rem;
+    z-index: 10000;
+    transform: translateY(-150%);
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-pixel);
+    font-size: 9px;
+    line-height: 1.4;
+    transition: transform 120ms ease;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+    outline: none;
+  }
+
   /* subtle paper grain for the desktop surface */
   .paper-texture {
     background-image: radial-gradient(
