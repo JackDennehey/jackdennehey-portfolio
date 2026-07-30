@@ -1,4 +1,16 @@
-export function HomeContent({ onOpen }: { onOpen: (id: string) => void }) {
+import type { InterfaceTheme } from '@/lib/interface-theme'
+
+export function HomeContent({
+  onOpen,
+  theme,
+  soundEffectsEnabled,
+  scanlines,
+}: {
+  onOpen: (id: string) => void
+  theme: InterfaceTheme
+  soundEffectsEnabled: boolean
+  scanlines: boolean
+}) {
   return (
     <div className="space-y-5">
       <div className="os-border bg-secondary p-4">
@@ -25,6 +37,24 @@ export function HomeContent({ onOpen }: { onOpen: (id: string) => void }) {
         This website documents my professional journey, projects, credentials, and continuous
         learning.
       </p>
+
+      <section className="os-border bg-secondary p-3">
+        <h3 className="font-pixel text-[9px] leading-relaxed text-foreground">
+          System Information
+        </h3>
+        <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs leading-relaxed text-muted-foreground">
+          <dt>Edition</dt>
+          <dd className="text-foreground">Portfolio</dd>
+          <dt>Version</dt>
+          <dd className="text-foreground">3.3</dd>
+          <dt>Theme</dt>
+          <dd className="capitalize text-foreground">{theme}</dd>
+          <dt>Sound</dt>
+          <dd className="text-foreground">{soundEffectsEnabled ? 'On' : 'Off'}</dd>
+          <dt>CRT Lines</dt>
+          <dd className="text-foreground">{scanlines ? 'On' : 'Off'}</dd>
+        </dl>
+      </section>
 
       <div className="flex flex-wrap gap-2 pt-1">
         {[

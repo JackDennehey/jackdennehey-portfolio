@@ -35,7 +35,7 @@ export function DesktopIcon({
       <a
         href={item.href}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         data-desktop-icon="true"
         className={className}
         aria-label={`${label} (opens in a new tab)`}

@@ -38,7 +38,7 @@ export function ProjectsContent() {
               <a
                 href={project.github}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="os-border inline-flex items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
               >
                 <GithubIcon className="size-3.5" /> Code
@@ -48,7 +48,7 @@ export function ProjectsContent() {
               <a
                 href={project.demo}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="os-border inline-flex items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
               >
                 <ExternalLink className="size-3.5" /> Live Demo

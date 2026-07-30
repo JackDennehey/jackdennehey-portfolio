@@ -3,6 +3,17 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Press_Start_2P } from 'next/font/google'
 import './globals.css'
 
+const siteUrl = 'https://jackdennehey.com'
+const siteTitle = 'Jack Dennehey | Cybersecurity, Business & Technology Portfolio'
+const siteDescription =
+  'Explore Jack Dennehey’s interactive retro OS portfolio, featuring cybersecurity credentials, networking knowledge, cloud and AI studies, business education, and technical projects.'
+const socialImage = {
+  url: '/opengraph-image',
+  width: 1200,
+  height: 630,
+  alt: 'Jack OS — Jack Dennehey’s cybersecurity, business, and technology portfolio',
+}
+
 const geistSans = Geist({
   subsets: ['latin'],
   variable: '--font-geist-sans',
@@ -16,42 +27,68 @@ const pressStart = Press_Start_2P({
   display: 'swap',
 })
 
-const siteUrl = 'https://jackdennehey.com'
-
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Jack Dennehey — Jack OS',
-    template: '%s · Jack OS',
+    default: siteTitle,
+    template: '%s | Jack Dennehey',
   },
-  description:
-    'The personal computer of Jack Dennehey — a business student at Penn State exploring technology, cybersecurity, networking, cloud computing, and artificial intelligence. Browse his projects, credentials, and resume.',
+  description: siteDescription,
   keywords: [
     'Jack Dennehey',
-    'Penn State',
-    'business student',
-    'cybersecurity',
+    'cybersecurity portfolio',
+    'Penn State business student',
     'networking',
+    'Cisco Networking Academy',
     'cloud computing',
+    'Microsoft Azure AI',
     'artificial intelligence',
-    'portfolio',
+    'technology portfolio',
+    'Jack OS',
+    'Delaware County Community College',
+    'cybersecurity certificate',
   ],
   authors: [{ name: 'Jack Dennehey' }],
   creator: 'Jack Dennehey',
+  publisher: 'Jack Dennehey',
+  alternates: {
+    canonical: 'https://jackdennehey.com/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   openGraph: {
     type: 'website',
-    url: siteUrl,
-    title: 'Jack Dennehey — Jack OS',
-    description:
-      'Explore the professional work of Jack Dennehey through an operating-system-inspired portfolio.',
+    url: 'https://jackdennehey.com/',
+    title: siteTitle,
+    description: siteDescription,
     siteName: 'Jack OS',
+    locale: 'en_US',
+    images: [socialImage],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jack Dennehey — Jack OS',
-    description:
-      'Explore the professional work of Jack Dennehey through an operating-system-inspired portfolio.',
+    title: siteTitle,
+    description: siteDescription,
+    images: [socialImage],
   },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: [{ url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' }],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  manifest: '/manifest.webmanifest',
   generator: 'v0.app',
 }
 
@@ -95,6 +132,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="bg-background antialiased">
+        <a href="#jack-os-desktop" className="skip-link">
+          Skip to Jack OS desktop
+        </a>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

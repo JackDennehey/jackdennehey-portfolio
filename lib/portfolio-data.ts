@@ -1,6 +1,6 @@
 export const CONTACT = {
   email: 'jack@jackdennehey.com',
-  github: 'https://github.com/jackdennehey',
+  github: 'https://github.com/JackDennehey',
   linkedin: 'https://www.linkedin.com/in/jackdennehey',
   domain: 'jackdennehey.com',
 }
@@ -254,5 +254,6 @@ export const INTERESTS = [
   'Networking',
   'Cloud Computing',
   'Artificial Intelligence',
+  'Business',
   'Continuous Learning',
 ]

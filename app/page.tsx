@@ -7,11 +7,53 @@ import {
   PROJECTS,
 } from '@/lib/portfolio-data'
 
+const SITE_URL = 'https://jackdennehey.com/'
+const PAGE_TITLE = 'Jack Dennehey | Cybersecurity, Business & Technology Portfolio'
+const PAGE_DESCRIPTION =
+  'Jack Dennehey’s interactive portfolio covering cybersecurity, networking, cloud computing, artificial intelligence, business, and technical projects.'
+
+const profileJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  '@id': `${SITE_URL}#profile`,
+  url: SITE_URL,
+  name: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  mainEntity: {
+    '@type': 'Person',
+    '@id': `${SITE_URL}#jack-dennehey`,
+    name: 'Jack Dennehey',
+    url: SITE_URL,
+    jobTitle: 'Student',
+    description:
+      'Penn State business student with interests in cybersecurity, networking, cloud computing, artificial intelligence, and technology.',
+    sameAs: [CONTACT.linkedin, CONTACT.github],
+    alumniOf: {
+      '@type': 'CollegeOrUniversity',
+      name: 'Delaware County Community College',
+      sameAs: 'https://www.dccc.edu/',
+    },
+    affiliation: {
+      '@type': 'CollegeOrUniversity',
+      name: 'The Pennsylvania State University',
+      sameAs: 'https://www.psu.edu/',
+    },
+    knowsAbout: [
+      'Cybersecurity',
+      'Computer networking',
+      'Cloud computing',
+      'Artificial intelligence',
+      'Business',
+      'Technology',
+    ],
+  },
+}
+
 // Server-rendered, screen-reader/crawler-friendly summary of the portfolio.
 // Visually hidden, but ensures content is available without JavaScript.
 function SeoContent() {
   return (
-    <div className="sr-only">
+    <div id="portfolio-content" className="sr-only">
       <h1>Jack Dennehey — Business Student at Penn State</h1>
       <p>
         Jack Dennehey is a business student at The Pennsylvania State University passionate about
@@ -69,6 +111,12 @@ export default function Page() {
   return (
     <>
       <SeoContent />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(profileJsonLd).replace(/</g, '\\u003c'),
+        }}
+      />
       <Desktop />
     </>
   )
