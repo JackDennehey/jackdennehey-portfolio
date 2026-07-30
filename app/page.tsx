@@ -6,24 +6,24 @@ import {
   INTERESTS,
   PROJECTS,
 } from '@/lib/portfolio-data'
+import { SITE_TITLE, SITE_URL } from '@/lib/site-metadata'
 
-const SITE_URL = 'https://jackdennehey.com/'
-const PAGE_TITLE = 'Jack Dennehey | Cybersecurity, Business & Technology Portfolio'
+const SITE_PAGE_URL = `${SITE_URL}/`
 const PAGE_DESCRIPTION =
   'Jack Dennehey’s interactive portfolio covering cybersecurity, networking, cloud computing, artificial intelligence, business, and technical projects.'
 
 const profileJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'ProfilePage',
-  '@id': `${SITE_URL}#profile`,
-  url: SITE_URL,
-  name: PAGE_TITLE,
+  '@id': `${SITE_PAGE_URL}#profile`,
+  url: SITE_PAGE_URL,
+  name: SITE_TITLE,
   description: PAGE_DESCRIPTION,
   mainEntity: {
     '@type': 'Person',
-    '@id': `${SITE_URL}#jack-dennehey`,
+    '@id': `${SITE_PAGE_URL}#jack-dennehey`,
     name: 'Jack Dennehey',
-    url: SITE_URL,
+    url: SITE_PAGE_URL,
     jobTitle: 'Student',
     description:
       'Penn State business student with interests in cybersecurity, networking, cloud computing, artificial intelligence, and technology.',

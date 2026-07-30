@@ -167,14 +167,9 @@ export function AboutContent({ onOpen }: { onOpen: (id: WindowId) => void }) {
   return (
     <div className="space-y-5">
       <section>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-pixel text-[10px] leading-relaxed text-muted-foreground">
-            {'// currently'}
-          </h3>
-          <span className="os-border bg-secondary px-2 py-1 font-pixel text-[8px] leading-none text-muted-foreground">
-            06 areas
-          </span>
-        </div>
+        <h3 className="font-pixel text-[10px] leading-relaxed text-muted-foreground">
+          {'// currently'}
+        </h3>
         <p className="mt-2 text-sm leading-relaxed text-foreground text-pretty">
           I&apos;m currently studying <strong className="font-semibold">Business at Penn State</strong>,
           building on a cybersecurity education and a growing foundation in networking, cloud

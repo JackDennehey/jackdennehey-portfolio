@@ -12,6 +12,7 @@ import {
 
 type WallpaperManagerProps = ComponentPropsWithoutRef<'main'> & {
   wallpaperId: WallpaperId
+  unlockedSecretIds?: readonly string[]
 }
 
 type WallpaperCssProperties = CSSProperties & {
@@ -32,12 +33,13 @@ function getWallpaperStyle(wallpaper: WallpaperAsset): WallpaperCssProperties | 
 
 export function WallpaperManager({
   wallpaperId,
+  unlockedSecretIds = [],
   className,
   children,
   style,
   ...props
 }: WallpaperManagerProps) {
-  const wallpaper = getWallpaper(wallpaperId)
+  const wallpaper = getWallpaper(wallpaperId, unlockedSecretIds)
   const wallpaperStyle = getWallpaperStyle(wallpaper)
 
   return (

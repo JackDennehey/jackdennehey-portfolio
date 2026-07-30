@@ -18,6 +18,8 @@ const MENU: { id: WindowId; label: string }[] = [
   { id: 'certifications', label: 'Credentials' },
   { id: 'resume', label: 'Resume' },
   { id: 'contact', label: 'Contact' },
+  { id: 'wallpapers', label: 'Wallpapers' },
+  { id: 'secrets', label: 'Secrets' },
 ]
 
 export function MenuBar({
@@ -28,6 +30,7 @@ export function MenuBar({
   onToggleTheme,
   soundEffectsEnabled,
   onToggleSoundEffects,
+  onOpenCommandPalette,
 }: {
   onOpen: (id: WindowId) => void
   scanlines: boolean
@@ -36,6 +39,7 @@ export function MenuBar({
   onToggleTheme: () => void
   soundEffectsEnabled: boolean
   onToggleSoundEffects: () => void
+  onOpenCommandPalette: () => void
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-8 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3">
@@ -58,11 +62,20 @@ export function MenuBar({
             key={item.id}
             type="button"
             onClick={() => onOpen(item.id)}
-            className="hidden px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none sm:block"
+            className="hidden px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none lg:block"
           >
             {item.label}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={onOpenCommandPalette}
+          title="Search Jack OS"
+          className="px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Search
+          <span className="hidden sm:inline"> Jack OS</span>
+        </button>
       </nav>
 
       <div className="flex items-center gap-2 sm:gap-3">

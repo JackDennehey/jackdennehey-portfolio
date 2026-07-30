@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
+import { SITE_OG_ALT, SITE_OG_SUBTITLE } from '@/lib/site-metadata'
 
-export const alt =
-  'Jack OS — Jack Dennehey’s cybersecurity, business, and technology portfolio'
+export const alt = SITE_OG_ALT
 export const size = {
   width: 1200,
   height: 630,
@@ -102,7 +102,7 @@ export default function Image() {
                   color: '#36342f',
                 }}
               >
-                Cybersecurity • Business • Technology
+                {SITE_OG_SUBTITLE}
               </div>
             </div>
 

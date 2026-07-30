@@ -6,12 +6,17 @@ import {
   CONCEPT_WALLPAPERS,
   CURRENT_WALLPAPERS,
   DEFAULT_WALLPAPER_ID,
+  HIDDEN_WALLPAPERS,
   getWallpaperAsset,
+  isHiddenWallpaper,
+  isWallpaperUnlocked,
   type Wallpaper,
   type WallpaperId,
 } from '@/lib/wallpapers'
 import { cn } from '@/lib/utils'
 import { WallpaperPreview } from '../wallpaper-manager'
+import type { SecretId } from '@/lib/secrets'
+import { JackSecretsIcon } from '../jack-icons'
 
 type WallpapersContentProps = {
   preferences: DesktopPreferences
@@ -20,6 +25,8 @@ type WallpapersContentProps = {
   onResetWallpaper: () => void
   onSetSoundEffectsEnabled: (enabled: boolean) => void
   onFirstCustomWallpaperSet: () => void
+  unlockedSecretIds: readonly SecretId[]
+  onOpenSecrets: () => void
 }
 
 export function WallpapersContent({
@@ -29,22 +36,37 @@ export function WallpapersContent({
   onResetWallpaper,
   onSetSoundEffectsEnabled,
   onFirstCustomWallpaperSet,
+  unlockedSecretIds,
+  onOpenSecrets,
 }: WallpapersContentProps) {
   const [previewedWallpaperId, setPreviewedWallpaperId] = useState<WallpaperId>(
     preferences.wallpaperId,
   )
 
-  const previewedWallpaper = useMemo(
+  const previewedWallpaperAsset = useMemo(
     () => getWallpaperAsset(previewedWallpaperId),
     [previewedWallpaperId],
   )
+  const previewedWallpaper =
+    isHiddenWallpaper(previewedWallpaperAsset) &&
+    !isWallpaperUnlocked(previewedWallpaperAsset, unlockedSecretIds)
+      ? getWallpaperAsset(DEFAULT_WALLPAPER_ID)
+      : previewedWallpaperAsset
   const previewedPhaseLabel =
     'phaseLabel' in previewedWallpaper ? previewedWallpaper.phaseLabel : undefined
-  const canSetWallpaper = previewedWallpaper.selectable
+  const previewedExclusiveLabel =
+    'exclusiveLabel' in previewedWallpaper ? previewedWallpaper.exclusiveLabel : undefined
+  const canSetWallpaper =
+    previewedWallpaper.selectable && isWallpaperUnlocked(previewedWallpaper, unlockedSecretIds)
   const isActiveWallpaper = previewedWallpaper.id === preferences.wallpaperId
+  const topDownloadLabel = previewedWallpaper.downloadable
+    ? 'Download'
+    : isHiddenWallpaper(previewedWallpaper)
+      ? 'Download Unavailable'
+      : 'Not Downloadable'
 
   const applyWallpaper = (wallpaper: Wallpaper) => {
-    if (!wallpaper.selectable) return
+    if (!wallpaper.selectable || !isWallpaperUnlocked(wallpaper, unlockedSecretIds)) return
     onUpdatePreferences({ wallpaperId: wallpaper.id })
     if (wallpaper.id !== DEFAULT_WALLPAPER_ID) {
       onFirstCustomWallpaperSet()
@@ -87,6 +109,11 @@ export function WallpapersContent({
                 {previewedPhaseLabel}
               </p>
             ) : null}
+            {previewedExclusiveLabel ? (
+              <p className="font-pixel text-[7px] leading-relaxed text-muted-foreground">
+                {previewedExclusiveLabel}
+              </p>
+            ) : null}
             <p className="text-sm leading-relaxed text-muted-foreground">
               {previewedWallpaper.description}
             </p>
@@ -124,9 +151,10 @@ export function WallpapersContent({
               <button
                 type="button"
                 disabled
+                title={previewedExclusiveLabel}
                 className="os-border cursor-default bg-secondary px-3 py-2 text-center font-pixel text-[8px] leading-relaxed text-muted-foreground"
               >
-                Not Downloadable
+                {topDownloadLabel}
               </button>
             )}
 
@@ -148,6 +176,17 @@ export function WallpapersContent({
         previewedWallpaperId={previewedWallpaper.id}
         onPreview={setPreviewedWallpaperId}
         onSetWallpaper={setWallpaperFromCard}
+        unlockedSecretIds={unlockedSecretIds}
+      />
+
+      <HiddenWallpaperSection
+        wallpapers={HIDDEN_WALLPAPERS}
+        unlockedSecretIds={unlockedSecretIds}
+        activeWallpaperId={preferences.wallpaperId}
+        previewedWallpaperId={previewedWallpaper.id}
+        onPreview={setPreviewedWallpaperId}
+        onSetWallpaper={setWallpaperFromCard}
+        onOpenSecrets={onOpenSecrets}
       />
 
       <section className="os-border space-y-3 bg-secondary p-3">
@@ -193,6 +232,7 @@ export function WallpapersContent({
         previewedWallpaperId={previewedWallpaper.id}
         onPreview={setPreviewedWallpaperId}
         onSetWallpaper={setWallpaperFromCard}
+        unlockedSecretIds={unlockedSecretIds}
       />
     </div>
   )
@@ -205,6 +245,7 @@ function WallpaperSection({
   previewedWallpaperId,
   onPreview,
   onSetWallpaper,
+  unlockedSecretIds,
 }: {
   title: string
   wallpapers: readonly Wallpaper[]
@@ -212,6 +253,7 @@ function WallpaperSection({
   previewedWallpaperId: WallpaperId
   onPreview: (wallpaperId: WallpaperId) => void
   onSetWallpaper: (wallpaperId: WallpaperId) => void
+  unlockedSecretIds: readonly SecretId[]
 }) {
   return (
     <section className="space-y-2">
@@ -227,10 +269,90 @@ function WallpaperSection({
             previewing={wallpaper.id === previewedWallpaperId}
             onPreview={() => onPreview(wallpaper.id)}
             onSetWallpaper={() => onSetWallpaper(wallpaper.id)}
+            unlocked={isWallpaperUnlocked(wallpaper, unlockedSecretIds)}
           />
         ))}
       </div>
     </section>
+  )
+}
+
+function HiddenWallpaperSection({
+  wallpapers,
+  unlockedSecretIds,
+  activeWallpaperId,
+  previewedWallpaperId,
+  onPreview,
+  onSetWallpaper,
+  onOpenSecrets,
+}: {
+  wallpapers: readonly Wallpaper[]
+  unlockedSecretIds: readonly SecretId[]
+  activeWallpaperId: WallpaperId
+  previewedWallpaperId: WallpaperId
+  onPreview: (wallpaperId: WallpaperId) => void
+  onSetWallpaper: (wallpaperId: WallpaperId) => void
+  onOpenSecrets: () => void
+}) {
+  return (
+    <section className="space-y-2">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
+          Hidden Files
+        </h3>
+        <p className="font-pixel text-[7px] leading-relaxed text-muted-foreground">
+          Unlock through Secrets
+        </p>
+      </div>
+      <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {wallpapers.map((wallpaper) =>
+          isWallpaperUnlocked(wallpaper, unlockedSecretIds) ? (
+            <WallpaperTile
+              key={wallpaper.id}
+              wallpaper={wallpaper}
+              active={wallpaper.id === activeWallpaperId}
+              previewing={wallpaper.id === previewedWallpaperId}
+              onPreview={() => onPreview(wallpaper.id)}
+              onSetWallpaper={() => onSetWallpaper(wallpaper.id)}
+              unlocked
+            />
+          ) : (
+            <LockedWallpaperTile key={wallpaper.id} onOpenSecrets={onOpenSecrets} />
+          ),
+        )}
+      </div>
+    </section>
+  )
+}
+
+function LockedWallpaperTile({ onOpenSecrets }: { onOpenSecrets: () => void }) {
+  return (
+    <article className="os-border flex h-full min-h-44 min-w-0 flex-col bg-card p-2 text-foreground">
+      <button
+        type="button"
+        onClick={onOpenSecrets}
+        className="flex h-full flex-1 flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Locked wallpaper. Unlock through Secrets."
+      >
+        <span className="grid aspect-video w-full place-items-center border border-current bg-secondary">
+          <span
+            aria-hidden
+            className="os-border grid size-10 place-items-center bg-paper text-foreground"
+          >
+            <JackSecretsIcon className="size-6" />
+          </span>
+        </span>
+        <span className="mt-2 font-pixel text-[7px] leading-relaxed">
+          Locked Wallpaper
+        </span>
+        <span className="mt-1 block min-h-10 text-xs leading-relaxed opacity-75">
+          Unlock through Secrets.
+        </span>
+        <span className="os-border mt-auto block w-full bg-secondary px-2 py-1 text-center font-pixel text-[7px] leading-relaxed">
+          Open Secrets
+        </span>
+      </button>
+    </article>
   )
 }
 
@@ -240,23 +362,26 @@ function WallpaperTile({
   previewing,
   onPreview,
   onSetWallpaper,
+  unlocked,
 }: {
   wallpaper: Wallpaper
   active: boolean
   previewing: boolean
   onPreview: () => void
   onSetWallpaper: () => void
+  unlocked: boolean
 }) {
   const phaseLabel = 'phaseLabel' in wallpaper ? wallpaper.phaseLabel : undefined
+  const exclusiveLabel = 'exclusiveLabel' in wallpaper ? wallpaper.exclusiveLabel : undefined
 
   return (
     <article
       data-wallpaper-tile-id={wallpaper.id}
       data-wallpaper-collection={wallpaper.collection}
-      data-wallpaper-selectable={wallpaper.selectable}
+      data-wallpaper-selectable={wallpaper.selectable && unlocked}
       data-wallpaper-active={active}
       className={cn(
-        'os-border flex h-full min-w-0 flex-col bg-card p-2 text-foreground',
+        'os-border flex h-full min-h-44 min-w-0 flex-col bg-card p-2 text-foreground',
         active
           ? 'bg-foreground text-primary-foreground outline outline-2 outline-offset-[-6px] outline-current'
           : null,
@@ -289,12 +414,17 @@ function WallpaperTile({
             {phaseLabel}
           </span>
         ) : null}
+        {exclusiveLabel ? (
+          <span className="mt-1 block font-pixel text-[6px] leading-relaxed opacity-75">
+            {exclusiveLabel}
+          </span>
+        ) : null}
         <span className="mt-1 block min-h-10 text-xs leading-relaxed opacity-75">
           {wallpaper.description}
         </span>
       </button>
 
-      {wallpaper.selectable ? (
+      {wallpaper.selectable && unlocked ? (
         <button
           type="button"
           disabled={active}
@@ -308,6 +438,15 @@ function WallpaperTile({
           )}
         >
           {active ? 'Current' : 'Set Wallpaper'}
+        </button>
+      ) : exclusiveLabel ? (
+        <button
+          type="button"
+          disabled
+          title={exclusiveLabel}
+          className="os-border mt-2 block w-full cursor-default bg-secondary px-2 py-1 text-center font-pixel text-[7px] leading-relaxed text-muted-foreground"
+        >
+          Download Unavailable
         </button>
       ) : wallpaper.downloadable && wallpaper.imagePath ? (
         <a
