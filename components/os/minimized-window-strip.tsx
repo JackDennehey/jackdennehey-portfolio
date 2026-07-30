@@ -15,19 +15,19 @@ export function MinimizedWindowStrip({
     <div
       data-desktop-interactive="true"
       aria-label="Minimized windows"
-      className="absolute bottom-4 left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 gap-1 overflow-x-auto os-border bg-paper/95 p-1 os-shadow"
+      className="absolute bottom-4 left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 gap-1.5 overflow-x-auto os-border bg-paper/95 p-1.5 os-shadow"
     >
       {windows.map((app) => (
         <button
           key={app.id}
           type="button"
           onClick={() => onRestore(app.id)}
-          className="flex min-w-14 max-w-32 items-center gap-1.5 border-2 border-transparent px-2 py-1 text-left text-foreground transition-colors hover:border-border hover:bg-secondary focus-visible:border-border focus-visible:bg-secondary focus-visible:outline-none"
+          className="flex min-w-16 max-w-36 items-center gap-2 border-2 border-transparent px-2.5 py-1.5 text-left text-foreground transition-colors hover:border-border hover:bg-secondary focus-visible:border-border focus-visible:bg-secondary focus-visible:outline-none"
           aria-label={`Restore ${app.title}`}
           title={`Restore ${app.title}`}
         >
           <app.Icon aria-hidden className="size-4 shrink-0" />
-          <span className="truncate font-pixel text-[7px] leading-relaxed">
+          <span className="truncate font-pixel text-[8px] leading-relaxed">
             {app.title}
           </span>
         </button>
@@ -35,4 +35,3 @@ export function MinimizedWindowStrip({
     </div>
   )
 }
-

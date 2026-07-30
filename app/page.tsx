@@ -10,7 +10,7 @@ import { SITE_TITLE, SITE_URL } from '@/lib/site-metadata'
 
 const SITE_PAGE_URL = `${SITE_URL}/`
 const PAGE_DESCRIPTION =
-  'Jack Dennehey’s interactive portfolio covering cybersecurity, networking, cloud computing, artificial intelligence, business, and technical projects.'
+  'Explore Jack Dennehey’s projects, credentials, technical background, and professional journey through Jack OS.'
 
 const profileJsonLd = {
   '@context': 'https://schema.org',
@@ -24,9 +24,10 @@ const profileJsonLd = {
     '@id': `${SITE_PAGE_URL}#jack-dennehey`,
     name: 'Jack Dennehey',
     url: SITE_PAGE_URL,
+    email: CONTACT.email,
     jobTitle: 'Student',
     description:
-      'Penn State business student with interests in cybersecurity, networking, cloud computing, artificial intelligence, and technology.',
+      'Penn State business student with a technical background in cybersecurity, networking, cloud computing, artificial intelligence, and technology.',
     sameAs: [CONTACT.linkedin, CONTACT.github],
     alumniOf: {
       '@type': 'CollegeOrUniversity',
@@ -56,8 +57,8 @@ function SeoContent() {
     <div id="portfolio-content" className="sr-only">
       <h1>Jack Dennehey — Business Student at Penn State</h1>
       <p>
-        Jack Dennehey is a business student at The Pennsylvania State University passionate about
-        technology, cybersecurity, networking, cloud computing, and artificial intelligence.
+        Jack Dennehey is a business student at The Pennsylvania State University with a technical
+        background in cybersecurity, networking, cloud computing, and artificial intelligence.
       </p>
 
       <h2>Interests</h2>

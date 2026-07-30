@@ -17,7 +17,7 @@ export function Clock() {
   }, [])
 
   return (
-    <time className="font-pixel text-[9px] leading-none tabular-nums sm:text-[10px]" suppressHydrationWarning>
+    <time className="font-pixel text-[10px] font-semibold leading-none tabular-nums sm:text-[11px]" suppressHydrationWarning>
       {time ?? '--:--'}
     </time>
   )

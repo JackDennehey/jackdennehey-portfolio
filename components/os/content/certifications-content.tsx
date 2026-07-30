@@ -6,6 +6,13 @@ import { cn } from '@/lib/utils'
 
 export function CertificationsContent() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
+  const completedCount = CREDENTIALS.filter((credential) =>
+    credential.status.startsWith('Earned'),
+  ).length
+  const inProgressCount = CREDENTIALS.filter(
+    (credential) => credential.status === 'In Progress',
+  ).length
+  const plannedCount = CREDENTIALS.filter((credential) => credential.status === 'Planned').length
 
   const toggleCredential = (id: string) => {
     setExpandedIds((current) => {
@@ -20,7 +27,32 @@ export function CertificationsContent() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <section className="os-border bg-secondary p-4">
+        <p className="font-pixel text-[10px] leading-relaxed text-muted-foreground">
+          {'> credentials'}
+        </p>
+        <h2 className="mt-3 font-pixel text-base leading-relaxed text-foreground">
+          Credentials
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
+          Completed credentials are separated from current study paths and planned milestones.
+        </p>
+        <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs leading-relaxed">
+          <div className="os-border bg-card p-2">
+            <dt className="font-pixel text-[7px] text-muted-foreground">Completed</dt>
+            <dd className="mt-1 font-semibold text-foreground">{completedCount}</dd>
+          </div>
+          <div className="os-border bg-card p-2">
+            <dt className="font-pixel text-[7px] text-muted-foreground">In Progress</dt>
+            <dd className="mt-1 font-semibold text-foreground">{inProgressCount}</dd>
+          </div>
+          <div className="os-border bg-card p-2">
+            <dt className="font-pixel text-[7px] text-muted-foreground">Planned</dt>
+            <dd className="mt-1 font-semibold text-foreground">{plannedCount}</dd>
+          </div>
+        </dl>
+      </section>
       {CREDENTIALS.map((credential) => (
         <CredentialCard
           key={credential.id}
@@ -44,6 +76,12 @@ function CredentialCard({
 }) {
   const panelId = `credential-panel-${credential.id}`
   const isFeatured = Boolean(credential.featured)
+  const statusClass =
+    credential.status === 'Planned'
+      ? 'bg-secondary text-muted-foreground'
+      : credential.status === 'In Progress'
+        ? 'bg-card text-foreground'
+        : 'bg-foreground text-primary-foreground'
 
   return (
     <article
@@ -76,7 +114,7 @@ function CredentialCard({
                 <span className="font-pixel text-[10px] leading-relaxed text-foreground sm:text-[11px]">
                   {credential.title}
                 </span>
-                <span className="os-border bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <span className={cn('os-border px-1.5 py-0.5 text-[10px] font-medium', statusClass)}>
                   {credential.status}
                 </span>
               </span>

@@ -73,31 +73,31 @@ export function DesktopCalendar({
       type="button"
       onClick={onOpenCalendar}
       className={cn(
-        'os-border block w-[178px] bg-paper/85 p-2 text-left text-foreground outline-none transition-colors hover:bg-paper focus-visible:ring-2 focus-visible:ring-ring',
+        'os-border block w-[190px] bg-paper/90 p-2.5 text-left text-foreground outline-none transition-colors hover:bg-paper focus-visible:ring-2 focus-visible:ring-ring',
         className,
       )}
       aria-label="Open Calendar"
       data-desktop-widget="calendar"
       title="Open Calendar"
     >
-      <span className="block border-b-2 border-border pb-1 text-center font-pixel text-[9px] leading-none">
+      <span className="block border-b-2 border-border pb-1.5 text-center font-pixel text-[10px] font-semibold leading-none">
         {monthLabel}
       </span>
 
-      <span className="mt-2 grid grid-cols-7 gap-1 text-center font-pixel text-[7px] leading-none text-muted-foreground">
+      <span className="mt-2 grid grid-cols-7 gap-1 text-center font-pixel text-[8px] leading-none text-muted-foreground">
         {WEEKDAYS.map((weekday, index) => (
           <span key={`${weekday}-${index}`}>{weekday}</span>
         ))}
       </span>
 
-      <span className="mt-1 grid grid-cols-7 gap-1 text-center font-pixel text-[7px] leading-none">
+      <span className="mt-1.5 grid grid-cols-7 gap-1 text-center font-pixel text-[8px] leading-none">
         {cells.map((day, index) => {
           const isToday = Boolean(today && day === today.getDate())
           return (
             <span
               key={`${day ?? 'empty'}-${index}`}
               className={cn(
-                'grid h-4 place-items-center',
+                'grid h-5 place-items-center',
                 isToday ? 'bg-foreground text-primary-foreground' : 'text-foreground',
                 day === null ? 'text-transparent' : '',
               )}
