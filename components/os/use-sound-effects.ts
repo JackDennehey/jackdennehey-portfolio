@@ -191,7 +191,6 @@ export function useSoundEffects() {
   const firstWallpaperFallbackPlayed = useRef(false)
   const ambienceWanted = useRef(false)
   const ambienceFadeFrame = useRef<number | null>(null)
-  const startupAttempted = useRef(false)
   const startupPlaying = useRef(false)
 
   useEffect(() => {
@@ -668,11 +667,6 @@ export function useSoundEffects() {
   }, [playSound])
 
   const playStartup = useCallback(() => {
-    if (startupAttempted.current) {
-      return
-    }
-
-    startupAttempted.current = true
     if (!soundEffectsEnabled || startupPlaying.current) {
       return
     }

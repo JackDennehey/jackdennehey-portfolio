@@ -176,6 +176,13 @@ export function AboutContent({ onOpen }: { onOpen: (id: WindowId) => void }) {
           computing, and artificial intelligence. I&apos;m most interested in the point where
           technology stops being theoretical and starts solving real problems.
         </p>
+        <button
+          type="button"
+          onClick={() => onOpen('recruiter')}
+          className="os-border mt-3 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Enter Recruiter View
+        </button>
       </section>
 
       <section>

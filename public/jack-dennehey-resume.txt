@@ -1,41 +1,13 @@
 JACK DENNEHEY
-Business Student — The Pennsylvania State University
-jack@jackdennehey.com  |  github.com/jackdennehey  |  linkedin.com/in/jackdennehey
-jackdennehey.com
+Public resume placeholder
 
-------------------------------------------------------------
-SUMMARY
-------------------------------------------------------------
-Business student passionate about technology, cybersecurity, networking,
-cloud computing, and artificial intelligence. Focused on building
-meaningful projects and earning industry certifications.
+Jack's public resume is being prepared for release.
 
-------------------------------------------------------------
-EDUCATION
-------------------------------------------------------------
-The Pennsylvania State University — B.S. in Business (Current)
-Studying business with a strong focus on technology, cloud computing,
-and cybersecurity.
+For current experience, education, projects, and credentials, explore Jack OS
+or contact Jack directly:
 
-------------------------------------------------------------
-SKILLS
-------------------------------------------------------------
-Cloud:      Microsoft Azure, AWS (learning), Cloud Fundamentals
-Networking: TCP/IP, Subnetting, Cisco Packet Tracer
-Security:   Cybersecurity Fundamentals, Network Security
-Technical:  Python, TypeScript, Git, AI / ML Concepts
-Business:   Analysis, Communication, Project Management
+jackdennehey@gmail.com
+github.com/JackDennehey
+linkedin.com/in/jackdennehey
 
-------------------------------------------------------------
-CERTIFICATIONS
-------------------------------------------------------------
-- Cisco Networking Basics (Completed)
-- Microsoft Azure AI Fundamentals (In Progress)
-- AWS Cloud Practitioner (Planned)
-
-------------------------------------------------------------
-EXPERIENCE
-------------------------------------------------------------
-Independent Technology Projects — Self-directed (Ongoing)
-Building hands-on projects across cloud, networking, and AI while
-pursuing industry certifications.
+This file intentionally contains no home address or phone number.

@@ -1,52 +1,189 @@
 export const CONTACT = {
-  email: 'jack@jackdennehey.com',
+  email: 'jackdennehey@gmail.com',
   github: 'https://github.com/JackDennehey',
   linkedin: 'https://www.linkedin.com/in/jackdennehey',
   domain: 'jackdennehey.com',
 }
 
 export type Project = {
+  slug: string
   title: string
   status?: string
   description: string
   technologies: string[]
   github?: string
   demo?: string
+  featured?: boolean
+  detail?: {
+    summary: string
+    sections: {
+      heading: string
+      body?: string
+      items?: string[]
+    }[]
+  }
 }
 
 export const PROJECTS: Project[] = [
   {
-    title: 'Portfolio Website',
+    slug: 'jack-os',
+    title: 'Jack OS',
     status: 'Live',
     description:
-      'This operating-system-inspired portfolio, designed and built from scratch as a modern interpretation of classic monochrome computing.',
-    technologies: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS'],
-    github: CONTACT.github,
+      'An operating-system-inspired portfolio built to make Jack’s projects, credentials, and professional direction memorable without hiding the content.',
+    technologies: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Vercel', 'CSS Motion'],
+    github: 'https://github.com/JackDennehey/jackdennehey-portfolio',
     demo: `https://${CONTACT.domain}`,
+    featured: true,
+    detail: {
+      summary:
+        'Jack OS is the portfolio itself: a focused desktop interface that presents Jack Dennehey’s technical interests, credentials, projects, and contact paths through a restrained retro-computing experience.',
+      sections: [
+        {
+          heading: 'Overview',
+          body:
+            'Jack OS uses a windowed desktop metaphor to turn a portfolio into something visitors can explore. The goal is not to imitate an old computer, but to use familiar desktop ideas to make Jack’s work feel intentional, memorable, and easy to navigate.',
+        },
+        {
+          heading: 'Role',
+          items: [
+            'Product concept',
+            'Interface design',
+            'Front-end development',
+            'Iterative testing',
+            'Deployment preparation',
+          ],
+        },
+        {
+          heading: 'Key Systems',
+          items: [
+            'Window manager with focus, drag, minimize, maximize, and restoration behavior',
+            'Desktop personalization with wallpapers, themes, CRT lines, and sound preferences',
+            'Command palette for fast navigation',
+            'Persistent local settings without a backend',
+            'Accessible notifications, onboarding, and keyboard paths',
+            'Secret unlock system for optional hidden wallpapers',
+            'SEO and structured content for non-JavaScript readers',
+            'Responsive mobile launcher and app windows',
+          ],
+        },
+        {
+          heading: 'Design Decisions',
+          items: [
+            'Keep the portfolio content more important than the operating-system novelty',
+            'Use restrained retro styling instead of copying any specific historic interface',
+            'Avoid fake utility apps that do not support Jack’s professional story',
+            'Move from movable desktop icons to a curated fixed layout for launch clarity',
+            'Keep mobile usable instead of forcing a desktop metaphor onto small screens',
+          ],
+        },
+        {
+          heading: 'Challenges',
+          items: [
+            'Balancing personality with recruiter-friendly clarity',
+            'Persisting preferences and windows without hydration errors',
+            'Keeping audio and motion optional and respectful',
+            'Preventing duplicate windows while preserving deep links',
+            'Maintaining accessibility in draggable windows and custom menus',
+          ],
+        },
+        {
+          heading: 'Outcome',
+          body:
+            'The result is a launch-ready portfolio environment where visitors can browse normally, search quickly, personalize the desktop, or use Recruiter View for a guided professional overview.',
+        },
+        {
+          heading: 'Lessons',
+          items: [
+            'Product decisions are strongest when they reduce friction rather than add spectacle',
+            'Component boundaries matter as a playful interface gains real state',
+            'Accessibility and mobile support need to be designed into the metaphor, not patched on later',
+          ],
+        },
+      ],
+    },
   },
   {
+    slug: 'azure-ai-projects',
     title: 'Azure AI Projects',
     status: 'In progress',
     description:
       'A collection of experiments using Microsoft Azure AI services — exploring document intelligence, language understanding, and applied machine learning.',
     technologies: ['Azure', 'Python', 'Cognitive Services'],
     github: CONTACT.github,
+    detail: {
+      summary:
+        'A planned and in-progress space for experiments with Microsoft Azure AI concepts and services.',
+      sections: [
+        {
+          heading: 'Focus',
+          items: [
+            'Document intelligence',
+            'Language understanding',
+            'Applied machine learning concepts',
+            'Responsible use of AI services',
+          ],
+        },
+        {
+          heading: 'Status',
+          body:
+            'This project area is still developing as Jack continues studying Azure AI fundamentals.',
+        },
+      ],
+    },
   },
   {
+    slug: 'networking-labs',
     title: 'Networking Labs',
     status: 'Ongoing',
     description:
       'Hands-on labs configuring routers, switches, subnets, and secure topologies while studying for Cisco networking fundamentals.',
     technologies: ['Cisco', 'Packet Tracer', 'TCP/IP', 'Subnetting'],
+    detail: {
+      summary:
+        'A practical learning area for turning networking theory into configured topologies and troubleshooting practice.',
+      sections: [
+        {
+          heading: 'Focus',
+          items: [
+            'IP addressing and subnetting',
+            'Router and switch configuration',
+            'Network devices and endpoints',
+            'Connectivity troubleshooting',
+          ],
+        },
+        {
+          heading: 'Why It Matters',
+          body:
+            'Networking gives Jack a clearer technical foundation for cybersecurity, cloud infrastructure, and systems thinking.',
+        },
+      ],
+    },
   },
   {
+    slug: 'future-penn-state-projects',
     title: 'Future Penn State Projects',
     status: 'Planned',
     description:
       'Coursework and independent builds coming out of the Penn State business program — a space reserved for what comes next.',
     technologies: ['TBD'],
+    detail: {
+      summary:
+        'A reserved project area for future coursework and independent builds connected to Jack’s business studies.',
+      sections: [
+        {
+          heading: 'Status',
+          body:
+            'This area is intentionally marked planned so it does not imply completed work before those projects exist.',
+        },
+      ],
+    },
   },
 ]
+
+export function getProjectBySlug(slug: string | null | undefined) {
+  return PROJECTS.find((project) => project.slug === slug) ?? null
+}
 
 export type CredentialStatus = 'Earned' | 'Earned with Honors' | 'In Progress' | 'Planned'
 

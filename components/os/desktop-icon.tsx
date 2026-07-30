@@ -1,5 +1,6 @@
 'use client'
 
+import type { KeyboardEvent } from 'react'
 import type { DesktopItem } from './apps'
 
 export function DesktopIcon({
@@ -21,14 +22,14 @@ export function DesktopIcon({
       >
         <Icon className="size-6 sm:size-7" />
       </span>
-      <span className="w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
+      <span className="desktop-icon-label w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
         {label}
       </span>
     </>
   )
 
   const className =
-    'group flex w-20 flex-col items-center gap-1.5 rounded-sm p-1 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
+    'group pointer-events-auto flex w-20 flex-col items-center gap-1.5 rounded-sm p-1 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
 
   if (item.kind === 'link') {
     return (
@@ -37,6 +38,7 @@ export function DesktopIcon({
         target="_blank"
         rel="noopener noreferrer"
         data-desktop-icon="true"
+        data-desktop-interactive="true"
         className={className}
         aria-label={`${label} (opens in a new tab)`}
       >
@@ -45,13 +47,24 @@ export function DesktopIcon({
     )
   }
 
+  const open = () => onOpenWindow(item.id)
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (variant !== 'desktop') return
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      open()
+    }
+  }
+
   return (
     <button
       type="button"
       data-desktop-icon="true"
+      data-desktop-interactive="true"
       className={className}
-      onClick={variant === 'mobile' ? () => onOpenWindow(item.id) : undefined}
-      onDoubleClick={variant === 'desktop' ? () => onOpenWindow(item.id) : undefined}
+      onClick={variant === 'mobile' ? open : undefined}
+      onDoubleClick={variant === 'desktop' ? open : undefined}
+      onKeyDown={onKeyDown}
     >
       {inner}
     </button>
