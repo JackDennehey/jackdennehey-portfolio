@@ -22,7 +22,7 @@ export function HomeContent({ onOpen }: { onOpen: (id: string) => void }) {
         }
       </p>
       <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-        This website documents my professional journey, projects, certifications, and continuous
+        This website documents my professional journey, projects, credentials, and continuous
         learning.
       </p>
 

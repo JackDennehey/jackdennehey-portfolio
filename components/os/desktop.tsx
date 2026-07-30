@@ -19,23 +19,30 @@ import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { useSoundEffects } from './use-sound-effects'
-import {
-  DEFAULT_WALLPAPER_ID,
-  type WallpaperId,
-} from '@/lib/wallpapers'
+import { useInterfaceTheme } from './use-interface-theme'
+import { MinimizedWindowStrip } from './minimized-window-strip'
 
-type WindowStatus = 'open' | 'closing'
-type OpenWindow = { id: WindowId; x: number; y: number; status: WindowStatus }
+type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
+type RestorableWindowStatus = 'open' | 'maximized'
+type WindowGeometry = { x: number; y: number; width: number; height: number }
+type OpenWindow = WindowGeometry & {
+  id: WindowId
+  normal: WindowGeometry
+  status: WindowStatus
+  restoreStatus?: RestorableWindowStatus
+}
 type OpenWindowOptions = { playSound?: boolean }
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
 const CONTEXT_MENU_HEIGHT = 92
+const WINDOW_OPEN_DURATION_MS = 180
 const WINDOW_CLOSE_DURATION_MS = 160
-const WALLPAPER_TRANSITION_DURATION_MS = 210
 const DESKTOP_EDGE_PADDING = 8
 const MENU_BAR_HEIGHT = 32
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
+const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
+const MAXIMIZED_MARGIN = 8
 
 function clampWindowPosition(id: WindowId, x: number, y: number) {
   if (typeof window === 'undefined') {
@@ -46,7 +53,7 @@ function clampWindowPosition(id: WindowId, x: number, y: number) {
   const minX = DESKTOP_EDGE_PADDING
   const minY = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
   const maxX = Math.max(minX, window.innerWidth - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, app.width))
-  const maxY = Math.max(minY, window.innerHeight - 48)
+  const maxY = Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
 
   return {
     x: Math.min(Math.max(x, minX), maxX),
@@ -54,14 +61,47 @@ function clampWindowPosition(id: WindowId, x: number, y: number) {
   }
 }
 
-function getInitialWindowPosition(id: WindowId, count: number) {
+function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): WindowGeometry {
   if (typeof window === 'undefined') {
-    return { x: 80, y: 60 }
+    return geometry
+  }
+
+  const maxWidth = Math.max(280, window.innerWidth - DESKTOP_EDGE_PADDING * 2)
+  const maxHeight = Math.max(220, window.innerHeight - MENU_BAR_HEIGHT - 24)
+  const width = Math.min(geometry.width, maxWidth)
+  const height = Math.min(geometry.height, maxHeight)
+  const position = clampWindowPosition(id, geometry.x, geometry.y)
+
+  return { ...position, width, height }
+}
+
+function getMaximizedGeometry(): WindowGeometry {
+  if (typeof window === 'undefined') {
+    return { x: 8, y: 40, width: 720, height: 560 }
+  }
+
+  return {
+    x: MAXIMIZED_MARGIN,
+    y: MENU_BAR_HEIGHT + MAXIMIZED_MARGIN,
+    width: Math.max(320, window.innerWidth - MAXIMIZED_MARGIN * 2),
+    height: Math.max(260, window.innerHeight - MENU_BAR_HEIGHT - MAXIMIZED_MARGIN * 2),
+  }
+}
+
+function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
+  if (typeof window === 'undefined') {
+    const app = WINDOW_APPS[id]
+    return { x: 80, y: 60, width: app.width, height: app.height }
   }
 
   const app = WINDOW_APPS[id]
   const baseX = Math.max(24, (window.innerWidth - app.width) / 2 - 80)
-  return clampWindowPosition(id, baseX + count * 30, 60 + count * 30)
+  return clampWindowGeometry(id, {
+    x: baseX + count * 30,
+    y: 60 + count * 30,
+    width: app.width,
+    height: app.height,
+  })
 }
 
 export function Desktop() {
@@ -71,14 +111,13 @@ export function Desktop() {
   const [windows, setWindows] = useState<OpenWindow[]>([])
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
-  const [transitionFromWallpaperId, setTransitionFromWallpaperId] =
-    useState<WallpaperId | null>(null)
   const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences()
   const soundEffects = useSoundEffects()
+  const { theme, toggleTheme } = useInterfaceTheme()
   const windowsRef = useRef<OpenWindow[]>([])
   const windowOpenSequence = useRef(0)
+  const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
-  const wallpaperTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     windowsRef.current = windows
@@ -101,19 +140,50 @@ export function Desktop() {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
 
-      if (windowsRef.current.some((w) => w.id === windowId)) {
+      const existing = windowsRef.current.find((w) => w.id === windowId)
+      if (existing) {
+        if (existing.status === 'minimized') {
+          const restoredStatus = existing.restoreStatus ?? 'open'
+          const restoredGeometry =
+            restoredStatus === 'maximized'
+              ? getMaximizedGeometry()
+              : clampWindowGeometry(windowId, existing.normal)
+
+          windowsRef.current = windowsRef.current.map((w) =>
+            w.id === windowId
+              ? { ...w, ...restoredGeometry, status: restoredStatus, restoreStatus: undefined }
+              : w,
+          )
+          setWindows(windowsRef.current)
+        }
         focusWindow(windowId)
         return
       }
 
-      const position = getInitialWindowPosition(windowId, windowOpenSequence.current)
+      const geometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
       windowOpenSequence.current += 1
-      const nextWindow: OpenWindow = { id: windowId, ...position, status: 'open' }
+      const nextWindow: OpenWindow = {
+        id: windowId,
+        ...geometry,
+        normal: geometry,
+        status: 'opening',
+      }
       windowsRef.current = [...windowsRef.current, nextWindow]
       setWindows((prev) =>
         prev.some((w) => w.id === windowId) ? prev : [...prev, nextWindow],
       )
       focusWindow(windowId)
+      openTimers.current[windowId] = setTimeout(() => {
+        windowsRef.current = windowsRef.current.map((w) =>
+          w.id === windowId && w.status === 'opening' ? { ...w, status: 'open' } : w,
+        )
+        setWindows((prev) =>
+          prev.map((w) =>
+            w.id === windowId && w.status === 'opening' ? { ...w, status: 'open' } : w,
+          ),
+        )
+        delete openTimers.current[windowId]
+      }, WINDOW_OPEN_DURATION_MS)
       if (options.playSound !== false) {
         soundEffects.appOpen()
       }
@@ -125,6 +195,11 @@ export function Desktop() {
     const target = windowsRef.current.find((w) => w.id === id)
     if (!target || target.status === 'closing') {
       return
+    }
+
+    if (openTimers.current[id]) {
+      clearTimeout(openTimers.current[id])
+      delete openTimers.current[id]
     }
 
     windowsRef.current = windowsRef.current.map((w) =>
@@ -143,43 +218,80 @@ export function Desktop() {
   }, [soundEffects])
 
   const moveWindow = useCallback((id: WindowId, x: number, y: number) => {
-    const position = clampWindowPosition(id, x, y)
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.id === id ? { ...w, ...position } : w,
-    )
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, ...position } : w)))
-  }, [])
-
-  const beginWallpaperTransition = useCallback((nextWallpaperId: WallpaperId) => {
-    if (nextWallpaperId === preferences.wallpaperId) {
+    const target = windowsRef.current.find((w) => w.id === id)
+    if (!target || target.status === 'maximized' || target.status === 'minimized') {
       return
     }
 
-    setTransitionFromWallpaperId(preferences.wallpaperId)
-    if (wallpaperTransitionTimer.current) {
-      clearTimeout(wallpaperTransitionTimer.current)
+    const position = clampWindowPosition(id, x, y)
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.id === id ? { ...w, ...position, normal: { ...w.normal, ...position } } : w,
+    )
+    setWindows((prev) =>
+      prev.map((w) =>
+        w.id === id ? { ...w, ...position, normal: { ...w.normal, ...position } } : w,
+      ),
+    )
+  }, [])
+
+  const minimizeWindow = useCallback((id: WindowId) => {
+    const target = windowsRef.current.find((w) => w.id === id)
+    if (!target || target.status === 'minimized' || target.status === 'closing') return
+
+    const restoreStatus: RestorableWindowStatus =
+      target.status === 'maximized' ? 'maximized' : 'open'
+    const normal = target.status === 'maximized'
+      ? target.normal
+      : { x: target.x, y: target.y, width: target.width, height: target.height }
+
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.id === id ? { ...w, normal, status: 'minimized', restoreStatus } : w,
+    )
+    setWindows(windowsRef.current)
+    setOrder((prev) => prev.filter((w) => w !== id))
+  }, [])
+
+  const restoreWindow = useCallback((id: WindowId) => {
+    const target = windowsRef.current.find((w) => w.id === id)
+    if (!target || target.status !== 'minimized') return
+
+    const restoredStatus = target.restoreStatus ?? 'open'
+    const restoredGeometry =
+      restoredStatus === 'maximized'
+        ? getMaximizedGeometry()
+        : clampWindowGeometry(id, target.normal)
+
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.id === id
+        ? { ...w, ...restoredGeometry, status: restoredStatus, restoreStatus: undefined }
+        : w,
+    )
+    setWindows(windowsRef.current)
+    focusWindow(id)
+  }, [focusWindow])
+
+  const maximizeWindow = useCallback((id: WindowId) => {
+    const target = windowsRef.current.find((w) => w.id === id)
+    if (!target || target.status === 'minimized' || target.status === 'closing') return
+
+    if (target.status === 'maximized') {
+      const restoredGeometry = clampWindowGeometry(id, target.normal)
+      windowsRef.current = windowsRef.current.map((w) =>
+        w.id === id ? { ...w, ...restoredGeometry, status: 'open' } : w,
+      )
+      setWindows(windowsRef.current)
+      focusWindow(id)
+      return
     }
 
-    wallpaperTransitionTimer.current = setTimeout(() => {
-      setTransitionFromWallpaperId(null)
-      wallpaperTransitionTimer.current = null
-    }, WALLPAPER_TRANSITION_DURATION_MS)
-  }, [preferences.wallpaperId])
-
-  const updateDesktopPreferences = useCallback(
-    (patch: Partial<typeof preferences>) => {
-      if (patch.wallpaperId) {
-        beginWallpaperTransition(patch.wallpaperId)
-      }
-      updatePreferences(patch)
-    },
-    [beginWallpaperTransition, updatePreferences],
-  )
-
-  const resetDesktopWallpaper = useCallback(() => {
-    beginWallpaperTransition(DEFAULT_WALLPAPER_ID)
-    resetWallpaper()
-  }, [beginWallpaperTransition, resetWallpaper])
+    const normal = { x: target.x, y: target.y, width: target.width, height: target.height }
+    const maximized = getMaximizedGeometry()
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.id === id ? { ...w, ...maximized, normal, status: 'maximized' } : w,
+    )
+    setWindows(windowsRef.current)
+    focusWindow(id)
+  }, [focusWindow])
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
@@ -226,8 +338,21 @@ export function Desktop() {
   useEffect(() => {
     const onResize = () => {
       const nextWindows = windowsRef.current.map((w) => {
-        const position = clampWindowPosition(w.id, w.x, w.y)
-        return position.x === w.x && position.y === w.y ? w : { ...w, ...position }
+        if (w.status === 'maximized') {
+          return { ...w, ...getMaximizedGeometry() }
+        }
+
+        if (w.status === 'minimized') {
+          return w
+        }
+
+        const geometry = clampWindowGeometry(w.id, w)
+        return geometry.x === w.x &&
+          geometry.y === w.y &&
+          geometry.width === w.width &&
+          geometry.height === w.height
+          ? w
+          : { ...w, ...geometry, normal: { ...w.normal, ...geometry } }
       })
       windowsRef.current = nextWindows
       setWindows(nextWindows)
@@ -238,15 +363,35 @@ export function Desktop() {
   }, [])
 
   useEffect(() => {
+    if (!isMobile) return
+
+    const minimizedWindows = windowsRef.current.filter((w) => w.status === 'minimized')
+    if (minimizedWindows.length === 0) return
+
+    windowsRef.current = windowsRef.current.map((w) =>
+      w.status === 'minimized'
+        ? { ...w, ...clampWindowGeometry(w.id, w.normal), status: 'open', restoreStatus: undefined }
+        : w,
+    )
+    setWindows(windowsRef.current)
+    setOrder((prev) => [
+      ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
+      ...minimizedWindows.map((w) => w.id),
+    ])
+  }, [isMobile])
+
+  useEffect(() => {
     return () => {
+      Object.values(openTimers.current).forEach((timer) => {
+        if (timer) {
+          clearTimeout(timer)
+        }
+      })
       Object.values(closeTimers.current).forEach((timer) => {
         if (timer) {
           clearTimeout(timer)
         }
       })
-      if (wallpaperTransitionTimer.current) {
-        clearTimeout(wallpaperTransitionTimer.current)
-      }
     }
   }, [])
 
@@ -254,8 +399,12 @@ export function Desktop() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (contextMenu) return
-      if (e.key === 'Escape' && order.length > 0) {
-        closeWindow(order[order.length - 1])
+      const visibleOrder = order.filter((id) => {
+        const windowRecord = windowsRef.current.find((w) => w.id === id)
+        return windowRecord && windowRecord.status !== 'minimized'
+      })
+      if (e.key === 'Escape' && visibleOrder.length > 0) {
+        closeWindow(visibleOrder[visibleOrder.length - 1])
       }
     }
     window.addEventListener('keydown', onKey)
@@ -281,8 +430,8 @@ export function Desktop() {
           <WallpapersContent
             preferences={preferences}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
-            onUpdatePreferences={updateDesktopPreferences}
-            onResetWallpaper={resetDesktopWallpaper}
+            onUpdatePreferences={updatePreferences}
+            onResetWallpaper={resetWallpaper}
             onSetSoundEffectsEnabled={soundEffects.setSoundEffectsEnabled}
             onFirstCustomWallpaperSet={soundEffects.firstWallpaperSet}
           />
@@ -292,20 +441,35 @@ export function Desktop() {
 
   const topId = order[order.length - 1]
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
+  const minimizedWindows = windows.filter((w) => w.status === 'minimized')
+  const visibleWindows = windows.filter((w) => w.status !== 'minimized')
 
   return (
     <div className={scanlines ? 'scanlines' : undefined}>
-      {!booted ? <BootScreen onDone={() => setBooted(true)} /> : null}
+      {!booted ? (
+        <BootScreen
+          onPowerOn={soundEffects.playStartup}
+          onDone={() => {
+            setBooted(true)
+            soundEffects.startAmbience()
+          }}
+        />
+      ) : null}
 
       <MenuBar
         onOpen={openWindow}
         scanlines={scanlines}
         onToggleScanlines={() => setScanlines((s) => !s)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+        onToggleSoundEffects={() =>
+          soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
+        }
       />
 
       <WallpaperManager
         wallpaperId={preferences.wallpaperId}
-        transitionFromWallpaperId={transitionFromWallpaperId}
         className="relative min-h-[100dvh] pt-8"
         aria-label="Jack OS desktop"
         onContextMenu={handleDesktopContextMenu}
@@ -349,7 +513,7 @@ export function Desktop() {
         ) : null}
 
         {/* Mobile: OS-style app grid (only when nothing is open) */}
-        {isMobile && windows.length === 0 ? (
+        {isMobile && visibleWindows.length === 0 ? (
           <div className="animate-fade-in px-5 pb-24 pt-6">
             <div className="os-border bg-paper/70 p-4">
               <p className="font-pixel text-[10px] leading-relaxed text-foreground">
@@ -387,16 +551,20 @@ export function Desktop() {
               app={app}
               x={w.x}
               y={w.y}
+              width={w.width}
+              height={w.height}
               z={z}
               status={w.status}
               focused={topId === w.id}
               isMobile={isMobile}
               onFocus={() => {
-                if (w.status !== 'closing') {
+                if (w.status !== 'closing' && w.status !== 'minimized') {
                   focusWindow(w.id)
                 }
               }}
               onClose={() => closeWindow(w.id)}
+              onMinimize={() => minimizeWindow(w.id)}
+              onMaximize={() => maximizeWindow(w.id)}
               onMove={(x, y) => moveWindow(w.id, x, y)}
             >
               {renderContent(w.id)}
@@ -404,8 +572,15 @@ export function Desktop() {
           )
         })}
 
+        {!isMobile ? (
+          <MinimizedWindowStrip
+            windows={minimizedWindows.map((w) => WINDOW_APPS[w.id])}
+            onRestore={(id) => restoreWindow(id)}
+          />
+        ) : null}
+
         {/* Mobile: home indicator to close current app */}
-        {isMobile && windows.length > 0 ? (
+        {isMobile && visibleWindows.length > 0 ? (
           <button
             type="button"
             onClick={() => topId && closeWindow(topId)}
@@ -421,7 +596,7 @@ export function Desktop() {
             y={contextMenu.y}
             onClose={closeContextMenu}
             onPersonalize={openPersonalize}
-            onResetWallpaper={resetDesktopWallpaper}
+            onResetWallpaper={resetWallpaper}
           />
         ) : null}
       </WallpaperManager>

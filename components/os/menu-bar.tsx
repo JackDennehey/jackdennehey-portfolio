@@ -2,12 +2,20 @@
 
 import { Clock } from './clock'
 import type { WindowId } from './apps'
-import { JackScanlinesIcon, JackScanlinesOffIcon } from './jack-icons'
+import type { InterfaceTheme } from '@/lib/interface-theme'
+import {
+  JackScanlinesIcon,
+  JackScanlinesOffIcon,
+  JackSoundOffIcon,
+  JackSoundOnIcon,
+  JackThemeDarkIcon,
+  JackThemeLightIcon,
+} from './jack-icons'
 
 const MENU: { id: WindowId; label: string }[] = [
   { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' },
-  { id: 'certifications', label: 'Certifications' },
+  { id: 'certifications', label: 'Credentials' },
   { id: 'resume', label: 'Resume' },
   { id: 'contact', label: 'Contact' },
 ]
@@ -16,10 +24,18 @@ export function MenuBar({
   onOpen,
   scanlines,
   onToggleScanlines,
+  theme,
+  onToggleTheme,
+  soundEffectsEnabled,
+  onToggleSoundEffects,
 }: {
   onOpen: (id: WindowId) => void
   scanlines: boolean
   onToggleScanlines: () => void
+  theme: InterfaceTheme
+  onToggleTheme: () => void
+  soundEffectsEnabled: boolean
+  onToggleSoundEffects: () => void
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-8 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3">
@@ -50,22 +66,59 @@ export function MenuBar({
       </nav>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <button
-          type="button"
-          onClick={onToggleScanlines}
-          aria-pressed={scanlines}
-          className="grid size-6 place-items-center border-2 border-transparent text-foreground transition-colors hover:border-border focus-visible:border-border focus-visible:outline-none"
-          title={scanlines ? 'Disable scanline effect' : 'Enable scanline effect'}
+        <div
+          aria-label="System controls"
+          className="flex items-center gap-0.5 os-border bg-secondary p-0.5"
         >
-          {scanlines ? (
-            <JackScanlinesIcon className="size-4" />
-          ) : (
-            <JackScanlinesOffIcon className="size-4" />
-          )}
-          <span className="sr-only">
-            {scanlines ? 'Disable scanline effect' : 'Enable scanline effect'}
-          </span>
-        </button>
+          <button
+            type="button"
+            onClick={onToggleScanlines}
+            aria-pressed={scanlines}
+            className="grid size-6 place-items-center border-2 border-transparent text-foreground transition-colors hover:border-border hover:bg-card focus-visible:border-border focus-visible:bg-card focus-visible:outline-none"
+            title={scanlines ? 'Disable CRT lines' : 'Enable CRT lines'}
+          >
+            {scanlines ? (
+              <JackScanlinesIcon className="size-4" />
+            ) : (
+              <JackScanlinesOffIcon className="size-4" />
+            )}
+            <span className="sr-only">
+              {scanlines ? 'Disable CRT lines' : 'Enable CRT lines'}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-pressed={theme === 'dark'}
+            className="grid size-6 place-items-center border-2 border-transparent text-foreground transition-colors hover:border-border hover:bg-card focus-visible:border-border focus-visible:bg-card focus-visible:outline-none"
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? (
+              <JackThemeDarkIcon className="size-4" />
+            ) : (
+              <JackThemeLightIcon className="size-4" />
+            )}
+            <span className="sr-only">
+              {theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={onToggleSoundEffects}
+            aria-pressed={soundEffectsEnabled}
+            className="grid size-6 place-items-center border-2 border-transparent text-foreground transition-colors hover:border-border hover:bg-card focus-visible:border-border focus-visible:bg-card focus-visible:outline-none"
+            title={soundEffectsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'}
+          >
+            {soundEffectsEnabled ? (
+              <JackSoundOnIcon className="size-4" />
+            ) : (
+              <JackSoundOffIcon className="size-4" />
+            )}
+            <span className="sr-only">
+              {soundEffectsEnabled ? 'Turn sound effects off' : 'Turn sound effects on'}
+            </span>
+          </button>
+        </div>
         <Clock />
       </div>
     </header>

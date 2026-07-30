@@ -1,6 +1,6 @@
 import { Desktop } from '@/components/os/desktop'
 import {
-  CERTIFICATIONS,
+  CREDENTIALS,
   CONTACT,
   EDUCATION,
   INTERESTS,
@@ -36,9 +36,9 @@ function SeoContent() {
         ))}
       </ul>
 
-      <h2>Certifications</h2>
+      <h2>Credentials</h2>
       <ul>
-        {CERTIFICATIONS.map((cert) => (
+        {CREDENTIALS.map((cert) => (
           <li key={cert.title}>
             {cert.title} — {cert.issuer} ({cert.status})
           </li>
