@@ -31,7 +31,6 @@ import { RecruiterViewContent } from './content/recruiter-view-content'
 import { KeyboardShortcutsContent } from './content/keyboard-shortcuts-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
-import { useActiveWallpaperPreload } from './use-active-wallpaper-preload'
 import { MinimizedWindowStrip } from './minimized-window-strip'
 import { useSecretUnlocks } from './use-secret-unlocks'
 import { useJackNotifications } from './use-jack-notifications'
@@ -98,19 +97,8 @@ const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 64
 const MAXIMIZED_MARGIN = 8
 const DESKTOP_SESSION_WINDOW_LIMIT = 7
-const DESKTOP_ICON_RAIL_WIDTH = 260
+const DESKTOP_ICON_RAIL_WIDTH = 220
 const OBSOLETE_DESKTOP_ICON_LAYOUT_STORAGE_KEY = 'jack-os:desktop-icon-layout.v1'
-const PRIMARY_DESKTOP_ITEM_IDS: readonly string[] = [
-  'home',
-  'about',
-  'projects',
-  'certifications',
-  'contact',
-  'resume',
-  'recruiter',
-] as const
-const SYSTEM_DESKTOP_ITEM_IDS: readonly string[] = ['wallpapers', 'system-info', 'secrets'] as const
-const EXTERNAL_DESKTOP_ITEM_IDS: readonly string[] = ['github', 'linkedin'] as const
 
 function clampWindowPosition(id: WindowId, x: number, y: number) {
   if (typeof window === 'undefined') {
@@ -311,19 +299,12 @@ export function Desktop() {
   const [confirmRestoreDefault, setConfirmRestoreDefault] = useState(false)
   const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(null)
   const secretUnlocks = useSecretUnlocks()
-  const {
-    preferences,
-    loaded: preferencesLoaded,
-    updatePreferences,
-    resetWallpaper,
-  } = useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
+  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
+    secretUnlocks.unlockedIds,
+    secretUnlocks.loaded,
+  )
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
-  const activeWallpaperPreload = useActiveWallpaperPreload(
-    preferences.wallpaperId,
-    secretUnlocks.unlockedIds,
-    preferencesLoaded,
-  )
   const notifications = useJackNotifications()
   const windowsRef = useRef<OpenWindow[]>([])
   const orderRef = useRef<WindowId[]>([])
@@ -337,18 +318,6 @@ export function Desktop() {
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const windowAppIds = useMemo(() => Object.keys(WINDOW_APPS) as WindowId[], [])
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
-  const primaryDesktopItems = useMemo(
-    () => desktopItems.filter((item) => PRIMARY_DESKTOP_ITEM_IDS.includes(item.id)),
-    [desktopItems],
-  )
-  const systemDesktopItems = useMemo(
-    () => desktopItems.filter((item) => SYSTEM_DESKTOP_ITEM_IDS.includes(item.id)),
-    [desktopItems],
-  )
-  const externalDesktopItems = useMemo(
-    () => desktopItems.filter((item) => EXTERNAL_DESKTOP_ITEM_IDS.includes(item.id)),
-    [desktopItems],
-  )
 
   useEffect(() => {
     windowsRef.current = windows
@@ -1479,7 +1448,6 @@ export function Desktop() {
       {!booted ? (
         <BootScreen
           onPowerOn={soundEffects.playStartup}
-          readyToReveal={preferencesLoaded && activeWallpaperPreload.ready}
           onDone={() => {
             setBooted(true)
             soundEffects.startAmbience()
@@ -1546,40 +1514,12 @@ export function Desktop() {
             className="pointer-events-none absolute inset-0 z-[3]"
           >
             <div className="desktop-icon-rail">
-              <div className="desktop-icon-stack">
-                <div className="desktop-icon-group" role="group" aria-label="Portfolio apps">
-                  {primaryDesktopItems.map((item) => (
-                    <DesktopIcon
-                      key={item.id}
-                      item={item}
-                      variant="desktop"
-                      onOpenWindow={openWindow}
-                    />
-                  ))}
-                </div>
-
-                <div
-                  className="desktop-icon-group desktop-icon-group-secondary"
-                  role="group"
-                  aria-label="Jack OS utilities"
-                >
-                  {systemDesktopItems.map((item) => (
-                    <DesktopIcon
-                      key={item.id}
-                      item={item}
-                      variant="desktop"
-                      onOpenWindow={openWindow}
-                    />
-                  ))}
-                </div>
-              </div>
-
               <div
-                className="desktop-icon-group desktop-icon-group-external"
+                className="desktop-icon-grid"
                 role="group"
-                aria-label="External links"
+                aria-label="Desktop icons"
               >
-                {externalDesktopItems.map((item) => (
+                {desktopItems.map((item) => (
                   <DesktopIcon
                     key={item.id}
                     item={item}

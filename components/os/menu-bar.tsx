@@ -38,9 +38,9 @@ type MenuDefinition = {
 
 const MENU_ORDER: MenuName[] = ['jack', 'system', 'about']
 const menuButtonClass =
-  'flex h-full items-center px-2.5 font-pixel text-[11px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none'
+  'flex h-full items-center px-2.5 font-pixel text-[12px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none'
 const menuItemClass =
-  'flex w-full min-w-56 items-center justify-between gap-5 px-3.5 py-2.5 text-left font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:text-muted-foreground disabled:hover:bg-transparent disabled:hover:text-muted-foreground'
+  'flex w-full min-w-56 items-center justify-between gap-5 px-3.5 py-2.5 text-left font-pixel text-[10px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:text-muted-foreground disabled:hover:bg-transparent disabled:hover:text-muted-foreground'
 
 export function MenuBar({
   onOpen,
@@ -346,7 +346,7 @@ export function MenuBar({
                         className={menuItemClass}
                       >
                         <span>{entry.label}</span>
-                        {entry.detail ? <span className="text-[8px] text-muted-foreground">{entry.detail}</span> : null}
+                        {entry.detail ? <span className="text-[9px] text-muted-foreground">{entry.detail}</span> : null}
                       </a>
                     )
                   }
@@ -361,7 +361,7 @@ export function MenuBar({
                       className={menuItemClass}
                     >
                       <span>{entry.label}</span>
-                      {entry.detail ? <span className="text-[8px] text-muted-foreground">{entry.detail}</span> : null}
+                      {entry.detail ? <span className="text-[9px] text-muted-foreground">{entry.detail}</span> : null}
                     </button>
                   )
                 })}
