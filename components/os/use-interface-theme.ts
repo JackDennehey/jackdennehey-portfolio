@@ -4,21 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   DEFAULT_INTERFACE_THEME,
   INTERFACE_THEME_STORAGE_KEY,
-  isInterfaceTheme,
   parseInterfaceTheme,
   type InterfaceTheme,
 } from '@/lib/interface-theme'
-
-function getSystemTheme(): InterfaceTheme {
-  if (
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-  ) {
-    return 'dark'
-  }
-
-  return DEFAULT_INTERFACE_THEME
-}
 
 function readStoredTheme(): InterfaceTheme | null {
   if (typeof window === 'undefined') return null
@@ -39,35 +27,15 @@ function applyTheme(theme: InterfaceTheme) {
 }
 
 export function useInterfaceTheme() {
-  const [theme, setThemeState] = useState<InterfaceTheme>(() => {
-    if (typeof document !== 'undefined') {
-      const current = document.documentElement.dataset.theme
-      if (isInterfaceTheme(current)) return current
-    }
-
-    return readStoredTheme() ?? getSystemTheme()
-  })
-  const [hasManualTheme, setHasManualTheme] = useState(() => readStoredTheme() !== null)
+  const [theme, setThemeState] = useState<InterfaceTheme>(DEFAULT_INTERFACE_THEME)
+  const [hasManualTheme, setHasManualTheme] = useState(false)
 
   useEffect(() => {
     const stored = readStoredTheme()
-    const resolvedTheme = stored ?? getSystemTheme()
+    const resolvedTheme = stored ?? DEFAULT_INTERFACE_THEME
     setThemeState(resolvedTheme)
     setHasManualTheme(stored !== null)
     applyTheme(resolvedTheme)
-  }, [])
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const updateFromSystem = () => {
-      if (readStoredTheme() !== null) return
-      const nextTheme = media.matches ? 'dark' : 'light'
-      setThemeState(nextTheme)
-      applyTheme(nextTheme)
-    }
-
-    media.addEventListener('change', updateFromSystem)
-    return () => media.removeEventListener('change', updateFromSystem)
   }, [])
 
   const setTheme = useCallback((nextTheme: InterfaceTheme) => {
@@ -88,4 +56,3 @@ export function useInterfaceTheme() {
 
   return { theme, hasManualTheme, setTheme, toggleTheme }
 }
-

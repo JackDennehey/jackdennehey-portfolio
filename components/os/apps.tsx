@@ -37,7 +37,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   projects: { id: 'projects', title: 'Projects', Icon: JackProjectsIcon, width: 620, height: 520 },
   certifications: {
     id: 'certifications',
-    title: 'Certifications',
+    title: 'Credentials',
     Icon: JackBadgeIcon,
     width: 520,
     height: 480,

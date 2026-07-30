@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: '%s · Jack OS',
   },
   description:
-    'The personal computer of Jack Dennehey — a business student at Penn State exploring technology, cybersecurity, networking, cloud computing, and artificial intelligence. Browse his projects, certifications, and resume.',
+    'The personal computer of Jack Dennehey — a business student at Penn State exploring technology, cybersecurity, networking, cloud computing, and artificial intelligence. Browse his projects, credentials, and resume.',
   keywords: [
     'Jack Dennehey',
     'Penn State',
@@ -68,9 +68,7 @@ const themeInitScript = `
     const key = 'jack-os:interface-theme';
     const stored = window.localStorage.getItem(key);
     const valid = stored === 'light' || stored === 'dark';
-    const theme = valid
-      ? stored
-      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const theme = valid ? stored : 'light';
     document.documentElement.dataset.theme = theme;
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.documentElement.classList.toggle('light', theme === 'light');

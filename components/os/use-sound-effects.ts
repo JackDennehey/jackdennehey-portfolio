@@ -25,10 +25,100 @@ const SOUND_VOLUMES: Record<JackOsAudioName, number> = {
   appOpen: 0.28,
   windowClose: 0.28,
   firstWallpaperSet: 0.28,
-  startup: 0.38,
+  startup: 0.32,
   ambience: 0.08,
 }
 const AMBIENCE_FADE_MS = 900
+const AMBIENCE_LOOP_START_SECONDS = 0.048
+const AMBIENCE_LOOP_END_TRIM_SECONDS = 0.32
+const AMBIENCE_MAX_DETECTED_EDGE_SECONDS = 0.6
+const AMBIENCE_MIN_LOOP_SECONDS = 4
+const AMBIENCE_EDGE_WINDOW_SECONDS = 0.025
+const AMBIENCE_SILENCE_RMS_THRESHOLD = 0.002
+
+type AmbienceLoopPoints = {
+  start: number
+  end: number
+}
+
+type WindowWithWebkitAudioContext = Window & {
+  webkitAudioContext?: typeof AudioContext
+}
+
+function getAudioContextConstructor() {
+  if (typeof window === 'undefined') return null
+  return window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext ?? null
+}
+
+function getWindowRms(buffer: AudioBuffer, startSample: number, endSample: number) {
+  let total = 0
+  let samples = 0
+  const start = Math.max(0, startSample)
+  const end = Math.min(buffer.length, endSample)
+
+  for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+    const data = buffer.getChannelData(channel)
+    for (let index = start; index < end; index += 1) {
+      total += data[index] * data[index]
+      samples += 1
+    }
+  }
+
+  return samples > 0 ? Math.sqrt(total / samples) : 0
+}
+
+function detectEdgeSilence(buffer: AudioBuffer, edge: 'start' | 'end') {
+  const windowSamples = Math.max(1, Math.floor(buffer.sampleRate * AMBIENCE_EDGE_WINDOW_SECONDS))
+  const maxScanSamples = Math.min(
+    buffer.length,
+    Math.floor(buffer.sampleRate * AMBIENCE_MAX_DETECTED_EDGE_SECONDS),
+  )
+
+  if (edge === 'start') {
+    for (let start = 0; start < maxScanSamples; start += windowSamples) {
+      const rms = getWindowRms(buffer, start, start + windowSamples)
+      if (rms > AMBIENCE_SILENCE_RMS_THRESHOLD) {
+        return start / buffer.sampleRate
+      }
+    }
+    return maxScanSamples / buffer.sampleRate
+  }
+
+  for (let end = buffer.length; end > buffer.length - maxScanSamples; end -= windowSamples) {
+    const rms = getWindowRms(buffer, end - windowSamples, end)
+    if (rms > AMBIENCE_SILENCE_RMS_THRESHOLD) {
+      return (buffer.length - end) / buffer.sampleRate
+    }
+  }
+
+  return maxScanSamples / buffer.sampleRate
+}
+
+function getAmbienceLoopPoints(buffer: AudioBuffer): AmbienceLoopPoints {
+  const detectedStart = detectEdgeSilence(buffer, 'start')
+  const detectedEndTrim = detectEdgeSilence(buffer, 'end')
+  const start = Math.min(
+    Math.max(detectedStart, AMBIENCE_LOOP_START_SECONDS),
+    AMBIENCE_MAX_DETECTED_EDGE_SECONDS,
+  )
+  const endTrim = Math.min(
+    Math.max(detectedEndTrim, AMBIENCE_LOOP_END_TRIM_SECONDS),
+    AMBIENCE_MAX_DETECTED_EDGE_SECONDS,
+  )
+  const end = Math.max(start + AMBIENCE_MIN_LOOP_SECONDS, buffer.duration - endTrim)
+
+  return {
+    start,
+    end: Math.min(end, buffer.duration),
+  }
+}
+
+function normalizeAmbienceOffset(offset: number, loopPoints: AmbienceLoopPoints) {
+  const loopDuration = loopPoints.end - loopPoints.start
+  if (loopDuration <= 0) return loopPoints.start
+  const relative = (offset - loopPoints.start) % loopDuration
+  return loopPoints.start + (relative < 0 ? relative + loopDuration : relative)
+}
 
 function canUseBrowserStorage() {
   return typeof window !== 'undefined' && 'localStorage' in window
@@ -64,9 +154,24 @@ export function useSoundEffects() {
   const [soundEffectsEnabled, setSoundEffectsEnabledState] = useState(
     readSoundEffectsEnabled,
   )
+  const soundEffectsEnabledRef = useRef(soundEffectsEnabled)
   const audioElements = useRef<
     Partial<Record<JackOsAudioName, HTMLAudioElement>>
   >({})
+  const ambienceAudioContext = useRef<AudioContext | null>(null)
+  const ambienceBuffer = useRef<AudioBuffer | null>(null)
+  const ambienceBufferPromise = useRef<Promise<AudioBuffer | null> | null>(null)
+  const ambienceGain = useRef<GainNode | null>(null)
+  const ambienceSource = useRef<AudioBufferSourceNode | null>(null)
+  const ambienceWebFadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const ambienceWebPlaying = useRef(false)
+  const ambienceLoopPoints = useRef<AmbienceLoopPoints>({
+    start: AMBIENCE_LOOP_START_SECONDS,
+    end: STARTUP_AUDIO_DURATION_MS / 1000,
+  })
+  const ambienceOffset = useRef(AMBIENCE_LOOP_START_SECONDS)
+  const ambienceOffsetAtStart = useRef(AMBIENCE_LOOP_START_SECONDS)
+  const ambienceStartedAt = useRef(0)
   const firstWallpaperFallbackPlayed = useRef(false)
   const ambienceWanted = useRef(false)
   const ambienceFadeFrame = useRef<number | null>(null)
@@ -76,6 +181,10 @@ export function useSoundEffects() {
   useEffect(() => {
     setSoundEffectsEnabledState(readSoundEffectsEnabled())
   }, [])
+
+  useEffect(() => {
+    soundEffectsEnabledRef.current = soundEffectsEnabled
+  }, [soundEffectsEnabled])
 
   const getAudio = useCallback((name: JackOsAudioName) => {
     if (typeof Audio === 'undefined') {
@@ -105,6 +214,7 @@ export function useSoundEffects() {
     }
 
     (Object.keys(SOUND_EFFECT_SOURCES) as JackOsAudioName[]).forEach((name) => {
+      if (name === 'ambience') return
       getAudio(name)?.load()
     })
   }, [getAudio, soundEffectsEnabled])
@@ -140,40 +250,285 @@ export function useSoundEffects() {
     ambienceFadeFrame.current = requestAnimationFrame(tick)
   }, [])
 
+  const getAmbienceContext = useCallback(() => {
+    const ExistingAudioContext = getAudioContextConstructor()
+    if (!ExistingAudioContext) {
+      return null
+    }
+
+    if (ambienceAudioContext.current) {
+      return ambienceAudioContext.current
+    }
+
+    try {
+      const context = new ExistingAudioContext()
+      const gain = context.createGain()
+      gain.gain.value = 0
+      gain.connect(context.destination)
+      ambienceAudioContext.current = context
+      ambienceGain.current = gain
+      return context
+    } catch {
+      return null
+    }
+  }, [])
+
+  const loadAmbienceBuffer = useCallback(async (context: AudioContext) => {
+    if (ambienceBuffer.current) {
+      return ambienceBuffer.current
+    }
+
+    if (ambienceBufferPromise.current) {
+      return ambienceBufferPromise.current
+    }
+
+    ambienceBufferPromise.current = fetch(SOUND_EFFECT_SOURCES.ambience, {
+      cache: 'force-cache',
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Ambience audio unavailable')
+        }
+        return response.arrayBuffer()
+      })
+      .then((arrayBuffer) => context.decodeAudioData(arrayBuffer))
+      .then((buffer) => {
+        ambienceBuffer.current = buffer
+        ambienceLoopPoints.current = getAmbienceLoopPoints(buffer)
+        ambienceOffset.current = normalizeAmbienceOffset(
+          ambienceOffset.current,
+          ambienceLoopPoints.current,
+        )
+        return buffer
+      })
+      .catch(() => null)
+
+    return ambienceBufferPromise.current
+  }, [])
+
+  const prepareWebAmbience = useCallback(() => {
+    const context = getAmbienceContext()
+    if (!context) {
+      return
+    }
+
+    void context.resume().catch(() => {
+      // Web Audio may remain suspended until a later eligible user gesture.
+    })
+    void loadAmbienceBuffer(context)
+  }, [getAmbienceContext, loadAmbienceBuffer])
+
+  const clearWebAmbienceFadeTimer = useCallback(() => {
+    if (ambienceWebFadeTimer.current) {
+      clearTimeout(ambienceWebFadeTimer.current)
+      ambienceWebFadeTimer.current = null
+    }
+  }, [])
+
+  const fadeWebAmbienceTo = useCallback(
+    (targetVolume: number, onDone?: () => void) => {
+      const context = ambienceAudioContext.current
+      const gain = ambienceGain.current
+      if (!context || !gain) {
+        onDone?.()
+        return
+      }
+
+      clearWebAmbienceFadeTimer()
+      const now = context.currentTime
+      const currentVolume = gain.gain.value
+      gain.gain.cancelScheduledValues(now)
+      gain.gain.setValueAtTime(currentVolume, now)
+      gain.gain.linearRampToValueAtTime(targetVolume, now + AMBIENCE_FADE_MS / 1000)
+
+      if (onDone) {
+        ambienceWebFadeTimer.current = setTimeout(() => {
+          ambienceWebFadeTimer.current = null
+          onDone()
+        }, AMBIENCE_FADE_MS + 20)
+      }
+    },
+    [clearWebAmbienceFadeTimer],
+  )
+
+  const updateWebAmbienceOffset = useCallback(() => {
+    const context = ambienceAudioContext.current
+    if (!context || !ambienceWebPlaying.current) {
+      return
+    }
+
+    const elapsed = context.currentTime - ambienceStartedAt.current
+    ambienceOffset.current = normalizeAmbienceOffset(
+      ambienceOffsetAtStart.current + elapsed,
+      ambienceLoopPoints.current,
+    )
+  }, [])
+
+  const stopWebAmbience = useCallback(
+    (fade = true) => {
+      const source = ambienceSource.current
+      if (!source) {
+        return false
+      }
+
+      updateWebAmbienceOffset()
+
+      const stop = () => {
+        const activeSource = ambienceSource.current
+        if (!activeSource) {
+          return
+        }
+
+        activeSource.onended = null
+        try {
+          activeSource.stop()
+        } catch {
+          // Already stopped.
+        }
+        try {
+          activeSource.disconnect()
+        } catch {
+          // Already disconnected.
+        }
+        ambienceSource.current = null
+        ambienceWebPlaying.current = false
+        const gain = ambienceGain.current
+        if (gain) {
+          gain.gain.value = 0
+        }
+      }
+
+      if (fade) {
+        fadeWebAmbienceTo(0, stop)
+        return true
+      }
+
+      clearWebAmbienceFadeTimer()
+      stop()
+      return true
+    },
+    [clearWebAmbienceFadeTimer, fadeWebAmbienceTo, updateWebAmbienceOffset],
+  )
+
+  const playHtmlAmbience = useCallback(() => {
+    const ambience = getAudio('ambience')
+    if (!ambience) {
+      return
+    }
+
+    ambience.loop = true
+    ambience.volume = ambience.paused ? 0 : ambience.volume
+
+    try {
+      const playback = ambience.play()
+      if (playback) {
+        void playback
+          .then(() => fadeAmbienceTo(SOUND_VOLUMES.ambience))
+          .catch(() => {
+            // Ambient audio is optional and must not block the interface.
+          })
+      } else {
+        fadeAmbienceTo(SOUND_VOLUMES.ambience)
+      }
+    } catch {
+      // Audio is optional confirmation, never a dependency for the action.
+    }
+  }, [fadeAmbienceTo, getAudio])
+
+  const playWebAmbience = useCallback(async () => {
+    if (ambienceSource.current && ambienceWebPlaying.current) {
+      fadeWebAmbienceTo(SOUND_VOLUMES.ambience)
+      return true
+    }
+
+    const context = getAmbienceContext()
+    if (!context) {
+      return false
+    }
+
+    try {
+      await context.resume()
+    } catch {
+      return false
+    }
+
+    const buffer = await loadAmbienceBuffer(context)
+    if (!buffer) {
+      return false
+    }
+
+    if (!ambienceWanted.current || !soundEffectsEnabledRef.current) {
+      return true
+    }
+
+    if (typeof document !== 'undefined' && document.hidden) {
+      return true
+    }
+
+    try {
+      const source = context.createBufferSource()
+      const gain = ambienceGain.current
+      if (!gain) {
+        return false
+      }
+
+      const loopPoints = getAmbienceLoopPoints(buffer)
+      ambienceLoopPoints.current = loopPoints
+      const offset = normalizeAmbienceOffset(ambienceOffset.current, loopPoints)
+      source.buffer = buffer
+      source.loop = true
+      source.loopStart = loopPoints.start
+      source.loopEnd = loopPoints.end
+      source.connect(gain)
+      source.onended = () => {
+        if (ambienceSource.current === source) {
+          ambienceSource.current = null
+          ambienceWebPlaying.current = false
+        }
+      }
+
+      ambienceSource.current = source
+      ambienceWebPlaying.current = true
+      ambienceOffset.current = offset
+      ambienceOffsetAtStart.current = offset
+      ambienceStartedAt.current = context.currentTime
+      source.start(0, offset)
+      const htmlAmbience = audioElements.current.ambience
+      if (htmlAmbience && !htmlAmbience.paused) {
+        htmlAmbience.pause()
+      }
+      fadeWebAmbienceTo(SOUND_VOLUMES.ambience)
+      return true
+    } catch {
+      ambienceSource.current = null
+      ambienceWebPlaying.current = false
+      return false
+    }
+  }, [fadeWebAmbienceTo, getAmbienceContext, loadAmbienceBuffer])
+
   const playAmbience = useCallback(
     (allowPlayback: boolean) => {
       if (!allowPlayback || (typeof document !== 'undefined' && document.hidden)) {
         return
       }
 
-      const ambience = getAudio('ambience')
-      if (!ambience) {
-        return
-      }
-
-      ambience.loop = true
-      ambience.volume = ambience.paused ? 0 : ambience.volume
-
-      try {
-        const playback = ambience.play()
-        if (playback) {
-          void playback
-            .then(() => fadeAmbienceTo(SOUND_VOLUMES.ambience))
-            .catch(() => {
-              // Ambient audio is optional and must not block the interface.
-            })
-        } else {
-          fadeAmbienceTo(SOUND_VOLUMES.ambience)
+      void playWebAmbience().then((webAudioStarted) => {
+        if (
+          !webAudioStarted &&
+          ambienceWanted.current &&
+          soundEffectsEnabledRef.current &&
+          !(typeof document !== 'undefined' && document.hidden)
+        ) {
+          playHtmlAmbience()
         }
-      } catch {
-        // Audio is optional confirmation, never a dependency for the action.
-      }
+      })
     },
-    [fadeAmbienceTo, getAudio],
+    [playHtmlAmbience, playWebAmbience],
   )
 
   const stopAmbience = useCallback((fade = true, keepWanted = false) => {
     ambienceWanted.current = keepWanted
+    stopWebAmbience(fade)
     const ambience = audioElements.current.ambience
     if (!ambience) return
 
@@ -192,40 +547,44 @@ export function useSoundEffects() {
       ambienceFadeFrame.current = null
     }
     pause()
-  }, [fadeAmbienceTo])
+  }, [fadeAmbienceTo, stopWebAmbience])
 
   const pauseAmbience = useCallback(() => {
+    stopWebAmbience(false)
     const ambience = audioElements.current.ambience
     if (!ambience || ambience.paused) return
     ambience.pause()
-  }, [])
+  }, [stopWebAmbience])
 
   const startAmbience = useCallback(() => {
     ambienceWanted.current = true
-    playAmbience(soundEffectsEnabled)
-  }, [playAmbience, soundEffectsEnabled])
+    playAmbience(soundEffectsEnabledRef.current)
+  }, [playAmbience])
 
   const resumeAmbience = useCallback(() => {
     if (!ambienceWanted.current) return
-    playAmbience(soundEffectsEnabled)
-  }, [playAmbience, soundEffectsEnabled])
+    playAmbience(soundEffectsEnabledRef.current)
+  }, [playAmbience])
 
   const setSoundEffectsEnabled = useCallback(
     (enabled: boolean) => {
+      soundEffectsEnabledRef.current = enabled
       setSoundEffectsEnabledState(enabled)
       writeSoundEffectsEnabled(enabled)
-
-      if (!enabled) {
-        stopAmbience(true, true)
-        return
-      }
-
-      if (ambienceWanted.current) {
-        playAmbience(true)
-      }
     },
-    [playAmbience, stopAmbience],
+    [],
   )
+
+  useEffect(() => {
+    if (!soundEffectsEnabled) {
+      stopAmbience(true, true)
+      return
+    }
+
+    if (ambienceWanted.current) {
+      playAmbience(true)
+    }
+  }, [playAmbience, soundEffectsEnabled, stopAmbience])
 
   const playSound = useCallback(
     (name: SoundEffectName) => {
@@ -295,6 +654,7 @@ export function useSoundEffects() {
       return
     }
 
+    prepareWebAmbience()
     const startup = getAudio('startup')
     if (!startup) {
       return
@@ -322,7 +682,7 @@ export function useSoundEffects() {
     } catch {
       startupPlaying.current = false
     }
-  }, [getAudio, soundEffectsEnabled])
+  }, [getAudio, prepareWebAmbience, soundEffectsEnabled])
 
   useEffect(() => {
     const onVisibilityChange = () => {
@@ -345,11 +705,29 @@ export function useSoundEffects() {
       if (ambienceFadeFrame.current) {
         cancelAnimationFrame(ambienceFadeFrame.current)
       }
+      clearWebAmbienceFadeTimer()
+      const source = ambienceSource.current
+      if (source) {
+        source.onended = null
+        try {
+          source.stop()
+        } catch {
+          // Already stopped.
+        }
+        try {
+          source.disconnect()
+        } catch {
+          // Already disconnected.
+        }
+      }
       Object.values(audioElements.current).forEach((audio) => {
         audio.pause()
       })
+      void ambienceAudioContext.current?.close().catch(() => {
+        // Cleanup is best-effort.
+      })
     }
-  }, [])
+  }, [clearWebAmbienceFadeTimer])
 
   return useMemo(
     () => ({

@@ -15,7 +15,7 @@ import {
 const MENU: { id: WindowId; label: string }[] = [
   { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' },
-  { id: 'certifications', label: 'Certifications' },
+  { id: 'certifications', label: 'Credentials' },
   { id: 'resume', label: 'Resume' },
   { id: 'contact', label: 'Contact' },
 ]

@@ -445,7 +445,7 @@ export function Desktop() {
   const visibleWindows = windows.filter((w) => w.status !== 'minimized')
 
   return (
-    <div data-theme={theme} className={scanlines ? 'scanlines' : undefined}>
+    <div className={scanlines ? 'scanlines' : undefined}>
       {!booted ? (
         <BootScreen
           onPowerOn={soundEffects.playStartup}

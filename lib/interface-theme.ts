@@ -11,4 +11,3 @@ export function isInterfaceTheme(value: unknown): value is InterfaceTheme {
 export function parseInterfaceTheme(value: string | null): InterfaceTheme | null {
   return isInterfaceTheme(value) ? value : null
 }
-
