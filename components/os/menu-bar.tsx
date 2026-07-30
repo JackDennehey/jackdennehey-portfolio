@@ -13,6 +13,7 @@ import {
 } from './jack-icons'
 
 const MENU: { id: WindowId; label: string }[] = [
+  { id: 'system-info', label: 'System' },
   { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' },
   { id: 'certifications', label: 'Credentials' },

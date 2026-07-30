@@ -1,5 +1,5 @@
 export const CONTACT = {
-  email: 'jack@jackdennehey.com',
+  email: 'jackdennehey@gmail.com',
   github: 'https://github.com/JackDennehey',
   linkedin: 'https://www.linkedin.com/in/jackdennehey',
   domain: 'jackdennehey.com',

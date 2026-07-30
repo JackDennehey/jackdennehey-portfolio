@@ -14,7 +14,7 @@ const LINKS = [
   { label: 'Email', value: CONTACT.email, href: `mailto:${CONTACT.email}`, Icon: Mail, external: false },
 ]
 
-export function ContactContent() {
+export function ContactContent({ onCopyEmail }: { onCopyEmail: () => void }) {
   return (
     <div className="space-y-5">
       <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
@@ -45,6 +45,14 @@ export function ContactContent() {
           </li>
         ))}
       </ul>
+
+      <button
+        type="button"
+        onClick={onCopyEmail}
+        className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+      >
+        Copy Email
+      </button>
 
       <div className="os-border bg-secondary p-4 text-center">
         <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
