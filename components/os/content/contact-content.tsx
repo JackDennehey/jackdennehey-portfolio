@@ -14,12 +14,27 @@ const LINKS = [
   { label: 'Email', value: CONTACT.email, href: `mailto:${CONTACT.email}`, Icon: Mail, external: false },
 ]
 
-export function ContactContent({ onCopyEmail }: { onCopyEmail: () => void }) {
+export function ContactContent({
+  onCopyEmail,
+  onCopyPortfolioLink,
+}: {
+  onCopyEmail: () => void
+  onCopyPortfolioLink: () => void
+}) {
   return (
     <div className="space-y-5">
-      <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-        Let&apos;s connect. Reach out through any of the channels below.
-      </p>
+      <section className="os-border bg-secondary p-4">
+        <p className="font-pixel text-[10px] leading-relaxed text-muted-foreground">
+          {'> contact'}
+        </p>
+        <h2 className="mt-3 font-pixel text-base leading-relaxed text-foreground">
+          Contact Jack
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-foreground text-pretty">
+          Open to internships, entry-level opportunities, collaboration, and professional
+          connections.
+        </p>
+      </section>
 
       <ul className="space-y-3">
         {LINKS.map(({ label, value, href, Icon, external }) => (
@@ -46,17 +61,26 @@ export function ContactContent({ onCopyEmail }: { onCopyEmail: () => void }) {
         ))}
       </ul>
 
-      <button
-        type="button"
-        onClick={onCopyEmail}
-        className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-      >
-        Copy Email
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onCopyEmail}
+          className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Copy Email
+        </button>
+        <button
+          type="button"
+          onClick={onCopyPortfolioLink}
+          className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Copy Portfolio Link
+        </button>
+      </div>
 
       <div className="os-border bg-secondary p-4 text-center">
         <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
-          future website domain
+          portfolio url
         </p>
         <p className="mt-2 text-lg font-semibold tracking-tight text-foreground">
           {CONTACT.domain}

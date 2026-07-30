@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { InterfaceTheme } from '@/lib/interface-theme'
+import { PROJECTS } from '@/lib/portfolio-data'
 import {
   JACK_OS_RELEASE_NAME,
   JACK_OS_VERSION,
@@ -26,12 +27,16 @@ function getLocalGreeting(date: Date) {
 
 export function HomeContent({
   onOpen,
+  onOpenProject,
+  onEnterRecruiterView,
   theme,
   soundEffectsEnabled,
   scanlines,
   onShowTour,
 }: {
   onOpen: (id: string) => void
+  onOpenProject: (slug: string) => void
+  onEnterRecruiterView: () => void
   theme: InterfaceTheme
   soundEffectsEnabled: boolean
   scanlines: boolean
@@ -39,6 +44,7 @@ export function HomeContent({
 }) {
   const [greeting, setGreeting] = useState('Welcome.')
   const [returningVisitor, setReturningVisitor] = useState(false)
+  const featuredProject = PROJECTS.find((project) => project.featured) ?? PROJECTS[0]
 
   useEffect(() => {
     setGreeting(getLocalGreeting(new Date()))
@@ -72,13 +78,44 @@ export function HomeContent({
 
       <p className="text-sm leading-relaxed text-foreground text-pretty">
         {
-          "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, and building meaningful projects."
+          "I'm a business student with a technical background in cybersecurity, networking, cloud computing, and artificial intelligence."
         }
       </p>
       <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-        This website documents my professional journey, projects, credentials, and continuous
-        learning.
+        Jack OS documents my professional journey, projects, credentials, and continuous learning
+        through the portfolio interface you are using now.
       </p>
+
+      <section className="os-border bg-card p-4">
+        <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
+          Featured Project
+        </p>
+        <h3 className="mt-2 font-pixel text-[11px] leading-relaxed text-foreground">
+          {featuredProject.title}
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
+          {featuredProject.description}
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-foreground">
+          {featuredProject.technologies.join(' / ')}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenProject(featuredProject.slug)}
+            className="os-border bg-background px-3 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            Open Case Study
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpen('projects')}
+            className="os-border bg-background px-3 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            Explore Projects
+          </button>
+        </div>
+      </section>
 
       <section className="os-border bg-secondary p-3">
         <h3 className="font-pixel text-[9px] leading-relaxed text-foreground">
@@ -104,7 +141,8 @@ export function HomeContent({
         {[
           ['about', 'About Me'],
           ['projects', 'Projects'],
-          ['resume', 'Resume'],
+          ['certifications', 'Credentials'],
+          ['contact', 'Contact'],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -115,6 +153,13 @@ export function HomeContent({
             {`Open ${label}`}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={onEnterRecruiterView}
+          className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Enter Recruiter View
+        </button>
         <button
           type="button"
           onClick={onShowTour}

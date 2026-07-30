@@ -7,21 +7,26 @@ type OnboardingDialogProps = {
   onFinish: () => void
   onSkip: () => void
   onClose: () => void
+  onOpenShortcuts: () => void
 }
 
 const DESKTOP_STEPS = [
   {
-    title: 'Explore the desktop',
+    title: "Explore Jack's portfolio apps",
     body:
-      "Open apps from the desktop to learn about Jack's projects, credentials, experience, and skills.",
+      "Open the desktop apps to learn about Jack's projects, credentials, education, and contact paths.",
   },
   {
-    title: 'Move through Jack OS',
+    title: 'Manage windows',
     body: 'Drag windows, minimize them, maximize them, and bring open apps back into focus.',
   },
   {
     title: 'Search instantly',
     body: 'Press Command + K on macOS or Control + K on Windows to open Search Jack OS.',
+  },
+  {
+    title: 'Enter Recruiter View',
+    body: 'Use Recruiter View for a guided professional overview of Jack OS, credentials, projects, skills, and contact information.',
   },
   {
     title: 'Personalize',
@@ -32,9 +37,9 @@ const DESKTOP_STEPS = [
 
 const MOBILE_STEPS = [
   {
-    title: 'Explore Jack OS',
+    title: "Explore Jack's portfolio apps",
     body:
-      "Tap apps from the home grid to learn about Jack's projects, credentials, experience, and skills.",
+      "Tap apps from the home grid to learn about Jack's projects, credentials, education, and contact paths.",
   },
   {
     title: 'Move through Jack OS',
@@ -43,6 +48,10 @@ const MOBILE_STEPS = [
   {
     title: 'Search instantly',
     body: 'Use Search Jack OS from the system controls to jump directly to apps and actions.',
+  },
+  {
+    title: 'Enter Recruiter View',
+    body: 'Open Recruiter View for a guided professional overview that works well on touch screens.',
   },
   {
     title: 'Personalize',
@@ -56,6 +65,7 @@ export function OnboardingDialog({
   onFinish,
   onSkip,
   onClose,
+  onOpenShortcuts,
 }: OnboardingDialogProps) {
   const steps = isMobile ? MOBILE_STEPS : DESKTOP_STEPS
   const [stepIndex, setStepIndex] = useState(0)
@@ -161,7 +171,7 @@ export function OnboardingDialog({
 
           <div
             aria-hidden
-            className="grid grid-cols-4 gap-1"
+            className="grid grid-cols-5 gap-1"
           >
             {steps.map((item, index) => (
               <span
@@ -183,7 +193,14 @@ export function OnboardingDialog({
               Skip
             </button>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={onOpenShortcuts}
+                className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+              >
+                {isMobile ? 'Interaction Help' : 'Keyboard Shortcuts'}
+              </button>
               <button
                 type="button"
                 disabled={isFirst}

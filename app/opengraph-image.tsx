@@ -89,7 +89,7 @@ export default function Image() {
                   fontSize: 70,
                   fontWeight: 800,
                   lineHeight: 1.02,
-                  letterSpacing: -1,
+                  letterSpacing: 0,
                 }}
               >
                 Jack Dennehey

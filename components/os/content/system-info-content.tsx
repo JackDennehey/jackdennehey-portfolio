@@ -25,7 +25,6 @@ type SystemInfoContentProps = {
   viewportCategory: string
   sessionStartedAt: number
   onShowTour: () => void
-  onResetDesktopLayout: () => void
   onRestoreDefaultDesktop: () => void
 }
 
@@ -90,7 +89,6 @@ export function SystemInfoContent({
   viewportCategory,
   sessionStartedAt,
   onShowTour,
-  onResetDesktopLayout,
   onRestoreDefaultDesktop,
 }: SystemInfoContentProps) {
   const uptime = useDesktopUptime(sessionStartedAt)
@@ -157,7 +155,7 @@ export function SystemInfoContent({
             Built With
           </h3>
           <ul className="mt-2 grid gap-1 text-xs leading-relaxed text-muted-foreground">
-            {['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'Framer Motion', 'CSS Motion', 'Vercel'].map(
+            {['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'CSS Motion', 'Vercel'].map(
               (item) => (
                 <li key={item}>{item}</li>
               ),
@@ -177,13 +175,6 @@ export function SystemInfoContent({
             className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
             Show Welcome Tour
-          </button>
-          <button
-            type="button"
-            onClick={onResetDesktopLayout}
-            className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-          >
-            Reset Desktop Layout
           </button>
           <button
             type="button"

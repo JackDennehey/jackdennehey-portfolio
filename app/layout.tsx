@@ -1,6 +1,5 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Press_Start_2P } from 'next/font/google'
 import {
   SITE_DESCRIPTION,
   SITE_OG_ALT,
@@ -15,19 +14,6 @@ const socialImage = {
   height: 630,
   alt: SITE_OG_ALT,
 }
-
-const geistSans = Geist({
-  subsets: ['latin'],
-  variable: '--font-geist-sans',
-  display: 'swap',
-})
-
-const pressStart = Press_Start_2P({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-press-start',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -128,7 +114,7 @@ export default function RootLayout({
       lang="en"
       data-theme="light"
       suppressHydrationWarning
-      className={`light ${geistSans.variable} ${pressStart.variable}`}
+      className="light"
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

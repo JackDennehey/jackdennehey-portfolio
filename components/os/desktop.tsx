@@ -27,6 +27,8 @@ import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
 import { SystemInfoContent } from './content/system-info-content'
+import { RecruiterViewContent } from './content/recruiter-view-content'
+import { KeyboardShortcutsContent } from './content/keyboard-shortcuts-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
 import { MinimizedWindowStrip } from './minimized-window-strip'
@@ -39,19 +41,12 @@ import {
   getSecretDefinition,
   type SecretId,
 } from '@/lib/secrets'
-import { CONTACT } from '@/lib/portfolio-data'
+import { CONTACT, getProjectBySlug } from '@/lib/portfolio-data'
 import {
   DEFAULT_WALLPAPER_ID,
   getWallpaperAsset,
   isHiddenWallpaper,
 } from '@/lib/wallpapers'
-import {
-  clearDesktopIconLayout,
-  readDesktopIconLayout,
-  writeDesktopIconLayout,
-  type DesktopIconGridPosition,
-  type DesktopIconLayout,
-} from '@/lib/desktop-icon-layout'
 import {
   clearDesktopSession,
   readDesktopSession,
@@ -83,11 +78,17 @@ type OpenWindow = WindowGeometry & {
   status: WindowStatus
   restoreStatus?: RestorableWindowStatus
 }
-type OpenWindowOptions = { playSound?: boolean; updateHash?: boolean }
+type HistoryMode = 'push' | 'replace'
+type OpenWindowOptions = {
+  playSound?: boolean
+  updateHash?: boolean
+  history?: HistoryMode
+  projectSlug?: string | null
+}
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
-const CONTEXT_MENU_HEIGHT = 132
+const CONTEXT_MENU_HEIGHT = 92
 const WINDOW_OPEN_DURATION_MS = 180
 const WINDOW_CLOSE_DURATION_MS = 160
 const DESKTOP_EDGE_PADDING = 8
@@ -95,14 +96,19 @@ const MENU_BAR_HEIGHT = 32
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
 const MAXIMIZED_MARGIN = 8
-const DESKTOP_ICON_GRID_WIDTH = 108
-const DESKTOP_ICON_GRID_HEIGHT = 88
-const DESKTOP_ICON_WIDTH = 96
-const DESKTOP_ICON_HEIGHT = 78
-const DESKTOP_ICON_TOP = 44
-const DESKTOP_ICON_LEFT = 10
-const DESKTOP_ICON_BOTTOM_SAFE = 96
 const DESKTOP_SESSION_WINDOW_LIMIT = 7
+const OBSOLETE_DESKTOP_ICON_LAYOUT_STORAGE_KEY = 'jack-os:desktop-icon-layout.v1'
+const PRIMARY_DESKTOP_ITEM_IDS: readonly string[] = [
+  'home',
+  'about',
+  'projects',
+  'certifications',
+  'contact',
+  'resume',
+  'recruiter',
+] as const
+const SYSTEM_DESKTOP_ITEM_IDS: readonly string[] = ['wallpapers', 'system-info', 'secrets'] as const
+const EXTERNAL_DESKTOP_ITEM_IDS: readonly string[] = ['github', 'linkedin'] as const
 
 function clampWindowPosition(id: WindowId, x: number, y: number) {
   if (typeof window === 'undefined') {
@@ -164,16 +170,40 @@ function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
   })
 }
 
-function syncWindowHash(id: WindowId) {
+function writeCleanUrl(nextUrl: string, mode: HistoryMode) {
   if (typeof window === 'undefined') return
 
-  const slug = getWindowHash(id)
-  const nextUrl = `${window.location.pathname}${window.location.search}#${slug}`
   if (`${window.location.pathname}${window.location.search}${window.location.hash}` === nextUrl) {
     return
   }
 
-  window.history.replaceState(null, '', nextUrl)
+  if (mode === 'replace') {
+    window.history.replaceState(null, '', nextUrl)
+    return
+  }
+
+  window.history.pushState(null, '', nextUrl)
+}
+
+function syncWindowHash(id: WindowId, mode: HistoryMode = 'push') {
+  if (typeof window === 'undefined') return
+
+  const slug = getWindowHash(id)
+  const nextUrl = `${window.location.pathname}${window.location.search}#${slug}`
+  writeCleanUrl(nextUrl, mode)
+}
+
+function syncProjectHash(slug: string, mode: HistoryMode = 'push') {
+  if (typeof window === 'undefined') return
+  const nextUrl = `${window.location.pathname}${window.location.search}#projects/${slug}`
+  writeCleanUrl(nextUrl, mode)
+}
+
+function getProjectSlugFromHash(hash: string): string | null | undefined {
+  const slug = hash.replace(/^#/, '').trim().toLowerCase()
+  if (slug === 'projects') return null
+  if (!slug.startsWith('projects/')) return undefined
+  return slug.slice('projects/'.length).split('/')[0] || null
 }
 
 function readStoredCrtLines() {
@@ -202,105 +232,6 @@ function getViewportCategory() {
   if (window.innerWidth < 1024) return 'tablet'
   if (window.innerWidth < 1440) return 'laptop'
   return 'desktop'
-}
-
-function getIconGridBounds() {
-  if (typeof window === 'undefined') {
-    return { maxColumn: 6, maxRow: 6 }
-  }
-
-  return {
-    maxColumn: Math.max(
-      0,
-      Math.floor((window.innerWidth - DESKTOP_ICON_LEFT * 2 - DESKTOP_ICON_WIDTH) / DESKTOP_ICON_GRID_WIDTH),
-    ),
-    maxRow: Math.max(
-      0,
-      Math.floor(
-        (window.innerHeight - DESKTOP_ICON_TOP - DESKTOP_ICON_BOTTOM_SAFE - DESKTOP_ICON_HEIGHT) /
-          DESKTOP_ICON_GRID_HEIGHT,
-      ),
-    ),
-  }
-}
-
-function clampIconGridPosition(position: DesktopIconGridPosition): DesktopIconGridPosition {
-  const bounds = getIconGridBounds()
-  return {
-    column: Math.min(Math.max(position.column, 0), bounds.maxColumn),
-    row: Math.min(Math.max(position.row, 0), bounds.maxRow),
-  }
-}
-
-function getIconPixelPosition(position: DesktopIconGridPosition) {
-  const clamped = clampIconGridPosition(position)
-  return {
-    x: DESKTOP_ICON_LEFT + clamped.column * DESKTOP_ICON_GRID_WIDTH,
-    y: DESKTOP_ICON_TOP + clamped.row * DESKTOP_ICON_GRID_HEIGHT,
-  }
-}
-
-function getGridPositionFromPixels(x: number, y: number): DesktopIconGridPosition {
-  return clampIconGridPosition({
-    column: Math.round((x - DESKTOP_ICON_LEFT) / DESKTOP_ICON_GRID_WIDTH),
-    row: Math.round((y - DESKTOP_ICON_TOP) / DESKTOP_ICON_GRID_HEIGHT),
-  })
-}
-
-function getDefaultIconLayout(itemIds: readonly string[]): DesktopIconLayout {
-  const { maxColumn, maxRow } = getIconGridBounds()
-  const rowsPerColumn = Math.max(1, maxRow + 1)
-  const layout: DesktopIconLayout = {}
-
-  itemIds.forEach((id, index) => {
-    const columnOffset = Math.floor(index / rowsPerColumn)
-    layout[id] = {
-      column: Math.max(0, maxColumn - columnOffset),
-      row: index % rowsPerColumn,
-    }
-  })
-
-  return layout
-}
-
-function resolveIconCollision(
-  id: string,
-  desired: DesktopIconGridPosition,
-  currentLayout: DesktopIconLayout,
-  itemIds: readonly string[],
-) {
-  const { maxColumn, maxRow } = getIconGridBounds()
-  const occupied = new Set(
-    Object.entries(currentLayout)
-      .filter(([itemId]) => itemId !== id && itemIds.includes(itemId))
-      .map(([, position]) => {
-        const clamped = clampIconGridPosition(position)
-        return `${clamped.column}:${clamped.row}`
-      }),
-  )
-
-  const desiredKey = `${desired.column}:${desired.row}`
-  if (!occupied.has(desiredKey)) return desired
-
-  const available: DesktopIconGridPosition[] = []
-  for (let column = 0; column <= maxColumn; column += 1) {
-    for (let row = 0; row <= maxRow; row += 1) {
-      const key = `${column}:${row}`
-      if (!occupied.has(key)) {
-        available.push({ column, row })
-      }
-    }
-  }
-
-  return (
-    available.sort((a, b) => {
-      const aDistance = Math.abs(a.column - desired.column) + Math.abs(a.row - desired.row)
-      const bDistance = Math.abs(b.column - desired.column) + Math.abs(b.row - desired.row)
-      if (aDistance !== bDistance) return aDistance - bDistance
-      if (a.row !== b.row) return a.row - b.row
-      return b.column - a.column
-    })[0] ?? desired
-  )
 }
 
 function toPersistedWindowStatus(status: WindowStatus): PersistedWindowStatus | null {
@@ -374,7 +305,7 @@ export function Desktop() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [confirmRestoreDefault, setConfirmRestoreDefault] = useState(false)
-  const [iconLayout, setIconLayout] = useState<DesktopIconLayout>({})
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(null)
   const secretUnlocks = useSecretUnlocks()
   const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
     secretUnlocks.unlockedIds,
@@ -389,15 +320,22 @@ export function Desktop() {
   const handledInitialHash = useRef(false)
   const restoredInitialSession = useRef(false)
   const showedInitialOnboarding = useRef(false)
-  const iconLayoutLoaded = useRef(false)
   const sessionStartedAt = useRef(Date.now())
   const windowOpenSequence = useRef(0)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const windowAppIds = useMemo(() => Object.keys(WINDOW_APPS) as WindowId[], [])
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
-  const desktopItemIds = useMemo(
-    () => desktopItems.map((item) => item.id),
+  const primaryDesktopItems = useMemo(
+    () => desktopItems.filter((item) => PRIMARY_DESKTOP_ITEM_IDS.includes(item.id)),
+    [desktopItems],
+  )
+  const systemDesktopItems = useMemo(
+    () => desktopItems.filter((item) => SYSTEM_DESKTOP_ITEM_IDS.includes(item.id)),
+    [desktopItems],
+  )
+  const externalDesktopItems = useMemo(
+    () => desktopItems.filter((item) => EXTERNAL_DESKTOP_ITEM_IDS.includes(item.id)),
     [desktopItems],
   )
 
@@ -433,26 +371,12 @@ export function Desktop() {
   }, [])
 
   useEffect(() => {
-    if (iconLayoutLoaded.current || isMobile) return
-
-    const storedLayout = readDesktopIconLayout(desktopItemIds)
-    const defaultLayout = getDefaultIconLayout(desktopItemIds)
-    iconLayoutLoaded.current = true
-    setIconLayout({ ...defaultLayout, ...storedLayout })
-  }, [desktopItemIds, isMobile])
-
-  useEffect(() => {
-    if (isMobile || !iconLayoutLoaded.current) return
-    setIconLayout((current) => {
-      const defaultLayout = getDefaultIconLayout(desktopItemIds)
-      const next: DesktopIconLayout = {}
-      desktopItemIds.forEach((id) => {
-        const desired = clampIconGridPosition(current[id] ?? defaultLayout[id])
-        next[id] = resolveIconCollision(id, desired, next, desktopItemIds)
-      })
-      return next
-    })
-  }, [desktopItemIds, isMobile, viewportCategory])
+    try {
+      window.localStorage.removeItem(OBSOLETE_DESKTOP_ICON_LAYOUT_STORAGE_KEY)
+    } catch {
+      // Old Phase 4B icon coordinates are ignored in Phase 4C.
+    }
+  }, [])
 
   const focusWindow = useCallback((id: WindowId) => {
     setOrder((prev) => {
@@ -473,8 +397,20 @@ export function Desktop() {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
 
+      if (windowId === 'projects') {
+        if (options.projectSlug !== undefined) {
+          setSelectedProjectSlug(getProjectBySlug(options.projectSlug)?.slug ?? null)
+        } else if (options.updateHash !== false) {
+          setSelectedProjectSlug(null)
+        }
+      }
+
       if (options.updateHash !== false) {
-        syncWindowHash(windowId)
+        if (windowId === 'projects' && options.projectSlug) {
+          syncProjectHash(options.projectSlug, options.history ?? 'push')
+        } else {
+          syncWindowHash(windowId, options.history ?? 'push')
+        }
       }
 
       const existing = windowsRef.current.find((w) => w.id === windowId)
@@ -767,34 +703,107 @@ export function Desktop() {
     })
   }, [notify, resetWallpaper])
 
-  const copyEmailToClipboard = useCallback(() => {
-    const email = CONTACT.email
-    if (!navigator.clipboard) {
-      notify({
-        title: 'Copy unavailable',
-        message: email,
-        type: 'warning',
-      })
-      return
-    }
+  const topId = order[order.length - 1]
+  const minimizedWindows = windows.filter((w) => w.status === 'minimized')
+  const visibleWindows = windows.filter((w) => w.status !== 'minimized')
 
-    void navigator.clipboard
-      .writeText(email)
-      .then(() => {
+  const copyTextToClipboard = useCallback(
+    (text: string, successTitle: string, fallbackTitle: string) => {
+      if (!navigator.clipboard) {
         notify({
-          title: 'Email copied',
-          message: email,
-          type: 'success',
-        })
-      })
-      .catch(() => {
-        notify({
-          title: 'Copy unavailable',
-          message: email,
+          title: fallbackTitle,
+          message: text,
           type: 'warning',
         })
-      })
-  }, [notify])
+        return
+      }
+
+      void navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          notify({
+            title: successTitle,
+            message: text,
+            type: 'success',
+          })
+        })
+        .catch(() => {
+          notify({
+            title: fallbackTitle,
+            message: text,
+            type: 'warning',
+          })
+        })
+    },
+    [notify],
+  )
+
+  const getCleanShareUrl = useCallback(
+    (hash?: string) => {
+      if (typeof window === 'undefined') return `https://${CONTACT.domain}`
+
+      const url = new URL(window.location.href)
+      if (hash !== undefined) {
+        url.hash = hash
+      } else if (topId) {
+        url.hash =
+          topId === 'projects' && selectedProjectSlug
+            ? `projects/${selectedProjectSlug}`
+            : getWindowHash(topId)
+      }
+      return url.toString()
+    },
+    [selectedProjectSlug, topId],
+  )
+
+  const copyEmailToClipboard = useCallback(() => {
+    copyTextToClipboard(CONTACT.email, 'Email copied', 'Copy unavailable')
+  }, [copyTextToClipboard])
+
+  const copyPortfolioLink = useCallback(() => {
+    copyTextToClipboard(getCleanShareUrl(), 'Portfolio link copied', 'Copy unavailable')
+  }, [copyTextToClipboard, getCleanShareUrl])
+
+  const copyProjectLink = useCallback(
+    (slug: string) => {
+      copyTextToClipboard(
+        getCleanShareUrl(`projects/${slug}`),
+        'Project link copied',
+        'Copy unavailable',
+      )
+    },
+    [copyTextToClipboard, getCleanShareUrl],
+  )
+
+  const openProjectDetail = useCallback(
+    (slug: string) => {
+      const project = getProjectBySlug(slug)
+      const nextSlug = project?.slug ?? null
+      setSelectedProjectSlug(nextSlug)
+      if (nextSlug) {
+        syncProjectHash(nextSlug)
+      } else {
+        syncWindowHash('projects')
+      }
+      openWindow('projects', { updateHash: false, projectSlug: nextSlug })
+    },
+    [openWindow],
+  )
+
+  const showProjectsIndex = useCallback(() => {
+    setSelectedProjectSlug(null)
+    syncWindowHash('projects')
+    openWindow('projects', { updateHash: false, projectSlug: null })
+  }, [openWindow])
+
+  const restartJackOs = useCallback(() => {
+    setContextMenu(null)
+    setCommandPaletteOpen(false)
+    setOnboardingOpen(false)
+    setConfirmRestoreDefault(false)
+    soundEffects.stopAmbience(true, false)
+    setBooted(false)
+  }, [soundEffects])
 
   const showResumeUnavailableNotice = useCallback(() => {
     notify({
@@ -804,34 +813,9 @@ export function Desktop() {
     })
   }, [notify])
 
-  const resetDesktopLayout = useCallback(() => {
-    const defaultLayout = getDefaultIconLayout(desktopItemIds)
-    clearDesktopIconLayout()
-    setIconLayout(defaultLayout)
-    notify({
-      title: 'Desktop layout reset',
-      message: 'Desktop icons returned to their default positions.',
-      type: 'success',
-    })
-  }, [desktopItemIds, notify])
-
-  const commitIconPosition = useCallback(
-    (id: string, x: number, y: number) => {
-      setIconLayout((current) => {
-        const desired = getGridPositionFromPixels(x, y)
-        const resolved = resolveIconCollision(id, desired, current, desktopItemIds)
-        const next = { ...current, [id]: resolved }
-        writeDesktopIconLayout(next)
-        return next
-      })
-    },
-    [desktopItemIds],
-  )
-
   const restoreDefaultDesktop = useCallback(() => {
     setConfirmRestoreDefault(false)
     clearDesktopSession()
-    clearDesktopIconLayout()
     Object.values(openTimers.current).forEach((timer) => {
       if (timer) clearTimeout(timer)
     })
@@ -840,12 +824,11 @@ export function Desktop() {
     })
     openTimers.current = {}
     closeTimers.current = {}
-    const defaultLayout = getDefaultIconLayout(desktopItemIds)
-    setIconLayout(defaultLayout)
     windowsRef.current = []
     orderRef.current = []
     setWindows([])
     setOrder([])
+    setSelectedProjectSlug(null)
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
     }
@@ -855,15 +838,20 @@ export function Desktop() {
     }
     notify({
       title: 'Settings restored',
-      message: 'Window state and desktop icon layout were reset.',
+      message: 'Open windows and saved window positions were reset.',
       type: 'success',
     })
-  }, [desktopItemIds, isMobile, notify, openWindow])
+  }, [isMobile, notify, openWindow])
 
   const showWelcomeTour = useCallback(() => {
     setCommandPaletteOpen(false)
     setOnboardingOpen(true)
   }, [])
+
+  const openKeyboardShortcutsFromTour = useCallback(() => {
+    setOnboardingOpen(false)
+    openWindow('shortcuts')
+  }, [openWindow])
 
   const finishWelcomeTour = useCallback(() => {
     writeOnboardingComplete(true)
@@ -963,6 +951,37 @@ export function Desktop() {
     [closeContextMenu, isMobile],
   )
 
+  const openHashTarget = useCallback(
+    (hash: string) => {
+      const projectSlug = getProjectSlugFromHash(hash)
+      if (projectSlug !== undefined) {
+        openWindow('projects', {
+          playSound: false,
+          updateHash: false,
+          projectSlug,
+        })
+        return true
+      }
+
+      const hashWindow = getWindowIdFromHash(hash)
+      if (hashWindow) {
+        openWindow(hashWindow, { playSound: false, updateHash: false })
+        return true
+      }
+
+      if (!hash) {
+        setSelectedProjectSlug(null)
+        if (!isMobile) {
+          openWindow('home', { playSound: false, updateHash: false })
+        }
+        return true
+      }
+
+      return false
+    },
+    [isMobile, openWindow],
+  )
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!booted) return
@@ -980,9 +999,7 @@ export function Desktop() {
     if (!booted || handledInitialHash.current) return
 
     handledInitialHash.current = true
-    const hashWindow = getWindowIdFromHash(window.location.hash)
-    if (hashWindow) {
-      openWindow(hashWindow, { playSound: false, updateHash: false })
+    if (window.location.hash && openHashTarget(window.location.hash)) {
       restoredInitialSession.current = true
       return
     }
@@ -1004,21 +1021,22 @@ export function Desktop() {
       openWindow('home', { playSound: false, updateHash: false })
     }
     restoredInitialSession.current = true
-  }, [booted, isMobile, openWindow, windowAppIds])
+  }, [booted, isMobile, openHashTarget, openWindow, windowAppIds])
 
   useEffect(() => {
-    const onHashChange = () => {
+    const onHistoryChange = () => {
       if (!booted) return
 
-      const hashWindow = getWindowIdFromHash(window.location.hash)
-      if (hashWindow) {
-        openWindow(hashWindow, { playSound: false, updateHash: false })
-      }
+      openHashTarget(window.location.hash)
     }
 
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [booted, openWindow])
+    window.addEventListener('hashchange', onHistoryChange)
+    window.addEventListener('popstate', onHistoryChange)
+    return () => {
+      window.removeEventListener('hashchange', onHistoryChange)
+      window.removeEventListener('popstate', onHistoryChange)
+    }
+  }, [booted, openHashTarget])
 
   useEffect(() => {
     if (!booted || showedInitialOnboarding.current) return
@@ -1099,6 +1117,7 @@ export function Desktop() {
   // Established Jack OS behavior: Escape closes the top-most app window after temporary UI.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || document.querySelector('[data-jack-os-menu-open="true"]')) return
       if (contextMenu || commandPaletteOpen || onboardingOpen || confirmRestoreDefault) return
       const visibleOrder = order.filter((id) => {
         const windowRecord = windowsRef.current.find((w) => w.id === id)
@@ -1111,14 +1130,6 @@ export function Desktop() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [commandPaletteOpen, confirmRestoreDefault, contextMenu, onboardingOpen, order, closeWindow])
-
-  const topId = order[order.length - 1]
-  const minimizedWindows = windows.filter((w) => w.status === 'minimized')
-  const visibleWindows = windows.filter((w) => w.status !== 'minimized')
-  const defaultIconLayout = useMemo(
-    () => (isMobile ? {} : getDefaultIconLayout(desktopItemIds)),
-    [desktopItemIds, isMobile, viewportCategory],
-  )
 
   useEffect(() => {
     if (!booted || !restoredInitialSession.current) return
@@ -1170,7 +1181,9 @@ export function Desktop() {
   const commandRegistry = useMemo<JackOsCommand[]>(() => {
     const appIds: WindowId[] = [
       'home',
+      'recruiter',
       'system-info',
+      'shortcuts',
       'about',
       'projects',
       'certifications',
@@ -1180,13 +1193,16 @@ export function Desktop() {
       'secrets',
     ]
     const appAliases: Partial<Record<WindowId, readonly string[]>> = {
-      home: ['welcome', 'start'],
+      home: ['welcome', 'start', 'intro'],
+      recruiter: ['recruiter view', 'hire', 'professional overview', 'guided'],
       'system-info': ['system information', 'about this computer', 'about jack os', 'version'],
-      about: ['about me', 'jack', 'bio'],
+      shortcuts: ['keyboard shortcuts', 'help', 'interaction help', 'controls'],
+      about: ['about me', 'jack', 'bio', 'biography', 'profile'],
+      projects: ['work', 'portfolio', 'case studies', 'development', 'website'],
       resume: ['cv'],
-      contact: ['email', 'mail'],
-      certifications: ['credentials', 'certifications', 'certificates'],
-      wallpapers: ['personalize', 'background', 'desktop'],
+      contact: ['email', 'mail', 'gmail', 'linkedin', 'github', 'connect', 'hire'],
+      certifications: ['credentials', 'certifications', 'certificates', 'education', 'cisco', 'cybersecurity', 'azure', 'aws'],
+      wallpapers: ['personalize', 'background', 'desktop', 'settings', 'preferences', 'theme', 'sound', 'crt'],
       secrets: ['hidden', 'files', 'manual'],
     }
 
@@ -1217,6 +1233,43 @@ export function Desktop() {
     return [
       ...appCommands,
       {
+        id: 'enter-recruiter-view',
+        title: 'Enter Recruiter View',
+        subtitle: 'Guided professional overview',
+        keywords: ['recruiter', 'hire', 'overview', 'professional', 'guided'],
+        Icon: WINDOW_APPS.recruiter.Icon,
+        action: () => openWindow('recruiter'),
+      },
+      {
+        id: 'open-jack-os-case-study',
+        title: 'Open Jack OS Case Study',
+        subtitle: 'Featured project',
+        keywords: ['jack os', 'case study', 'project', 'website', 'portfolio'],
+        Icon: WINDOW_APPS.projects.Icon,
+        action: () => openProjectDetail('jack-os'),
+      },
+      {
+        id: 'copy-portfolio-link',
+        title: 'Copy Portfolio Link',
+        subtitle: 'Share current Jack OS view',
+        keywords: ['copy link', 'share', 'portfolio url', 'website'],
+        action: copyPortfolioLink,
+      },
+      {
+        id: 'copy-email',
+        title: 'Copy Email',
+        subtitle: CONTACT.email,
+        keywords: ['email', 'gmail', 'contact', 'copy', 'connect'],
+        action: copyEmailToClipboard,
+      },
+      {
+        id: 'restart-jack-os',
+        title: 'Restart Jack OS',
+        subtitle: 'Replay startup',
+        keywords: ['restart', 'boot', 'startup', 'power'],
+        action: restartJackOs,
+      },
+      {
         id: 'toggle-theme',
         title: 'Toggle Light/Dark Theme',
         subtitle: `Current: ${theme}`,
@@ -1236,14 +1289,6 @@ export function Desktop() {
         subtitle: soundEffects.soundEffectsEnabled ? 'Currently On' : 'Currently Off',
         keywords: ['sound', 'audio', 'effects'],
         action: toggleSoundEffectsWithNotice,
-      },
-      {
-        id: 'open-wallpapers-system',
-        title: 'Open Wallpapers',
-        subtitle: 'Personalization',
-        keywords: ['personalize', 'wallpaper', 'background'],
-        Icon: WINDOW_APPS.wallpapers.Icon,
-        action: () => openWindow('wallpapers'),
       },
       {
         id: 'open-personalize',
@@ -1276,16 +1321,9 @@ export function Desktop() {
         action: resetWelcomeTour,
       },
       {
-        id: 'reset-desktop-layout',
-        title: 'Reset Desktop Layout',
-        subtitle: 'Restore desktop icon positions',
-        keywords: ['reset icons', 'desktop layout', 'icon positions'],
-        action: resetDesktopLayout,
-      },
-      {
         id: 'restore-default-desktop',
         title: 'Restore Default Desktop',
-        subtitle: 'Reset open windows and icon positions',
+        subtitle: 'Reset open windows and saved window positions',
         keywords: ['restore desktop', 'reset windows', 'default desktop'],
         action: () => setConfirmRestoreDefault(true),
       },
@@ -1311,12 +1349,15 @@ export function Desktop() {
       ...unlockedSecretCommands,
     ]
   }, [
+    copyEmailToClipboard,
+    copyPortfolioLink,
     isMobile,
     minimizedWindows.length,
     minimizeActiveWindow,
+    openProjectDetail,
     openWindow,
-    resetDesktopLayout,
     resetWelcomeTour,
+    restartJackOs,
     restoreAllMinimized,
     scanlines,
     secretUnlocks.unlockedIds,
@@ -1335,6 +1376,8 @@ export function Desktop() {
         return (
           <HomeContent
             onOpen={openWindow}
+            onOpenProject={openProjectDetail}
+            onEnterRecruiterView={() => openWindow('recruiter')}
             theme={theme}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
             scanlines={scanlines}
@@ -1352,14 +1395,20 @@ export function Desktop() {
             viewportCategory={viewportCategory}
             sessionStartedAt={sessionStartedAt.current}
             onShowTour={showWelcomeTour}
-            onResetDesktopLayout={resetDesktopLayout}
             onRestoreDefaultDesktop={() => setConfirmRestoreDefault(true)}
           />
         )
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':
-        return <ProjectsContent />
+        return (
+          <ProjectsContent
+            selectedProjectSlug={selectedProjectSlug}
+            onSelectProject={openProjectDetail}
+            onBackToProjects={showProjectsIndex}
+            onCopyProjectLink={copyProjectLink}
+          />
+        )
       case 'certifications':
         return <CertificationsContent />
       case 'resume':
@@ -1371,7 +1420,12 @@ export function Desktop() {
           />
         )
       case 'contact':
-        return <ContactContent onCopyEmail={copyEmailToClipboard} />
+        return (
+          <ContactContent
+            onCopyEmail={copyEmailToClipboard}
+            onCopyPortfolioLink={copyPortfolioLink}
+          />
+        )
       case 'wallpapers':
         return (
           <WallpapersContent
@@ -1394,6 +1448,18 @@ export function Desktop() {
             onResetUnlocks={resetSecretUnlocks}
           />
         )
+      case 'recruiter':
+        return (
+          <RecruiterViewContent
+            onOpen={openWindow}
+            onOpenProject={openProjectDetail}
+            onCopyEmail={copyEmailToClipboard}
+            onCopyPortfolioLink={copyPortfolioLink}
+            onExit={() => closeWindow('recruiter')}
+          />
+        )
+      case 'shortcuts':
+        return <KeyboardShortcutsContent />
     }
   }
 
@@ -1411,6 +1477,12 @@ export function Desktop() {
 
       <MenuBar
         onOpen={openWindow}
+        onOpenProjectCaseStudy={openProjectDetail}
+        onRestart={restartJackOs}
+        onRestoreDefaultDesktop={() => setConfirmRestoreDefault(true)}
+        onShowWelcomeTour={showWelcomeTour}
+        onCopyPortfolioLink={copyPortfolioLink}
+        onCopyEmail={copyEmailToClipboard}
         scanlines={scanlines}
         onToggleScanlines={toggleScanlinesWithNotice}
         theme={theme}
@@ -1459,22 +1531,40 @@ export function Desktop() {
         {!isMobile ? (
           <div
             data-desktop-interactive="true"
-            className="absolute inset-0 z-[3] pointer-events-none"
+            className="pointer-events-none absolute inset-0 z-[3]"
           >
-            {desktopItems.map((item) => (
-              <DesktopIcon
-                key={item.id}
-                item={item}
-                variant="desktop"
-                onOpenWindow={openWindow}
-                draggable
-                position={getIconPixelPosition(
-                  iconLayout[item.id] ?? defaultIconLayout[item.id],
-                )}
-                onClampDragPosition={(x, y) => getIconPixelPosition(getGridPositionFromPixels(x, y))}
-                onCommitDragPosition={commitIconPosition}
-              />
-            ))}
+            <div className="pointer-events-auto absolute left-4 top-[20rem] grid grid-cols-2 gap-x-3 gap-y-3 xl:top-[18rem]">
+              {primaryDesktopItems.map((item) => (
+                <DesktopIcon
+                  key={item.id}
+                  item={item}
+                  variant="desktop"
+                  onOpenWindow={openWindow}
+                />
+              ))}
+            </div>
+
+            <div className="pointer-events-auto absolute right-4 top-12 grid grid-cols-1 gap-3">
+              {systemDesktopItems.map((item) => (
+                <DesktopIcon
+                  key={item.id}
+                  item={item}
+                  variant="desktop"
+                  onOpenWindow={openWindow}
+                />
+              ))}
+            </div>
+
+            <div className="pointer-events-auto absolute bottom-24 right-4 grid grid-cols-2 gap-3">
+              {externalDesktopItems.map((item) => (
+                <DesktopIcon
+                  key={item.id}
+                  item={item}
+                  variant="desktop"
+                  onOpenWindow={openWindow}
+                />
+              ))}
+            </div>
           </div>
         ) : null}
 
@@ -1490,11 +1580,6 @@ export function Desktop() {
               </p>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-4">
-              <DesktopIcon
-                item={{ kind: 'window', id: 'home', label: 'Home', Icon: WINDOW_APPS.home.Icon }}
-                variant="mobile"
-                onOpenWindow={openWindow}
-              />
               {desktopItems.map((item) => (
                 <DesktopIcon
                   key={item.id}
@@ -1563,7 +1648,6 @@ export function Desktop() {
             onClose={closeContextMenu}
             onPersonalize={openPersonalize}
             onResetWallpaper={resetWallpaperWithNotice}
-            onResetDesktopLayout={resetDesktopLayout}
           />
         ) : null}
 
@@ -1584,13 +1668,14 @@ export function Desktop() {
             onFinish={finishWelcomeTour}
             onSkip={skipWelcomeTour}
             onClose={skipWelcomeTour}
+            onOpenShortcuts={openKeyboardShortcutsFromTour}
           />
         ) : null}
 
         {confirmRestoreDefault ? (
           <SystemConfirmationDialog
             title="Restore Default Desktop"
-            message="This resets open windows and desktop icon positions. Wallpaper, theme, sound, CRT, and secret unlocks stay intact."
+            message="This resets open windows and saved window positions. Wallpaper, theme, sound, CRT, and secret unlocks stay intact."
             confirmLabel="Restore Desktop"
             onCancel={() => setConfirmRestoreDefault(false)}
             onConfirm={restoreDefaultDesktop}
