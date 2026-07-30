@@ -14,6 +14,7 @@ import {
 
 export type WindowId =
   | 'home'
+  | 'system-info'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -35,6 +36,13 @@ export type WindowApp = {
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   home: { id: 'home', title: 'Welcome to Jack OS', Icon: JackSystemIcon, width: 460, height: 480 },
+  'system-info': {
+    id: 'system-info',
+    title: 'About This Jack OS',
+    Icon: JackSystemIcon,
+    width: 560,
+    height: 560,
+  },
   about: { id: 'about', title: 'About Me', Icon: JackIdIcon, width: 560, height: 540 },
   projects: { id: 'projects', title: 'Projects', Icon: JackProjectsIcon, width: 620, height: 520 },
   certifications: {
@@ -64,6 +72,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
 
 export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   home: 'home',
+  'system-info': 'about-jack-os',
   about: 'about',
   projects: 'projects',
   certifications: 'credentials',

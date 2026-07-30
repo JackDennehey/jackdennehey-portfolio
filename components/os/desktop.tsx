@@ -26,15 +26,53 @@ import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
+import { SystemInfoContent } from './content/system-info-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
 import { MinimizedWindowStrip } from './minimized-window-strip'
 import { useSecretUnlocks } from './use-secret-unlocks'
+import { useJackNotifications } from './use-jack-notifications'
+import { NotificationCenter } from './notification-center'
+import { OnboardingDialog } from './onboarding-dialog'
+import { SystemConfirmationDialog } from './system-confirmation-dialog'
 import {
   getSecretDefinition,
   type SecretId,
 } from '@/lib/secrets'
-import { DEFAULT_WALLPAPER_ID, getWallpaperAsset, isHiddenWallpaper } from '@/lib/wallpapers'
+import { CONTACT } from '@/lib/portfolio-data'
+import {
+  DEFAULT_WALLPAPER_ID,
+  getWallpaperAsset,
+  isHiddenWallpaper,
+} from '@/lib/wallpapers'
+import {
+  clearDesktopIconLayout,
+  readDesktopIconLayout,
+  writeDesktopIconLayout,
+  type DesktopIconGridPosition,
+  type DesktopIconLayout,
+} from '@/lib/desktop-icon-layout'
+import {
+  clearDesktopSession,
+  readDesktopSession,
+  writeDesktopSession,
+  type PersistedDesktopSession,
+  type PersistedWindowStatus,
+} from '@/lib/desktop-session'
+import {
+  clearOnboardingComplete,
+  readOnboardingComplete,
+  writeOnboardingComplete,
+} from '@/lib/onboarding'
+import {
+  CRT_LINES_STORAGE_KEY,
+  DEFAULT_CRT_LINES_ENABLED,
+  parseCrtPreference,
+} from '@/lib/crt-preferences'
+import {
+  JACK_OS_RELEASE_NAME,
+  JACK_OS_VERSION,
+} from '@/lib/release'
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -49,7 +87,7 @@ type OpenWindowOptions = { playSound?: boolean; updateHash?: boolean }
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
-const CONTEXT_MENU_HEIGHT = 92
+const CONTEXT_MENU_HEIGHT = 132
 const WINDOW_OPEN_DURATION_MS = 180
 const WINDOW_CLOSE_DURATION_MS = 160
 const DESKTOP_EDGE_PADDING = 8
@@ -57,6 +95,14 @@ const MENU_BAR_HEIGHT = 32
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
 const MAXIMIZED_MARGIN = 8
+const DESKTOP_ICON_GRID_WIDTH = 108
+const DESKTOP_ICON_GRID_HEIGHT = 88
+const DESKTOP_ICON_WIDTH = 96
+const DESKTOP_ICON_HEIGHT = 78
+const DESKTOP_ICON_TOP = 44
+const DESKTOP_ICON_LEFT = 10
+const DESKTOP_ICON_BOTTOM_SAFE = 96
+const DESKTOP_SESSION_WINDOW_LIMIT = 7
 
 function clampWindowPosition(id: WindowId, x: number, y: number) {
   if (typeof window === 'undefined') {
@@ -130,14 +176,205 @@ function syncWindowHash(id: WindowId) {
   window.history.replaceState(null, '', nextUrl)
 }
 
+function readStoredCrtLines() {
+  if (typeof window === 'undefined') return DEFAULT_CRT_LINES_ENABLED
+
+  try {
+    return parseCrtPreference(window.localStorage.getItem(CRT_LINES_STORAGE_KEY))
+  } catch {
+    return DEFAULT_CRT_LINES_ENABLED
+  }
+}
+
+function writeStoredCrtLines(enabled: boolean) {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(CRT_LINES_STORAGE_KEY, String(enabled))
+  } catch {
+    // CRT preference persistence is best effort.
+  }
+}
+
+function getViewportCategory() {
+  if (typeof window === 'undefined') return 'desktop'
+  if (window.innerWidth < 640) return 'mobile'
+  if (window.innerWidth < 1024) return 'tablet'
+  if (window.innerWidth < 1440) return 'laptop'
+  return 'desktop'
+}
+
+function getIconGridBounds() {
+  if (typeof window === 'undefined') {
+    return { maxColumn: 6, maxRow: 6 }
+  }
+
+  return {
+    maxColumn: Math.max(
+      0,
+      Math.floor((window.innerWidth - DESKTOP_ICON_LEFT * 2 - DESKTOP_ICON_WIDTH) / DESKTOP_ICON_GRID_WIDTH),
+    ),
+    maxRow: Math.max(
+      0,
+      Math.floor(
+        (window.innerHeight - DESKTOP_ICON_TOP - DESKTOP_ICON_BOTTOM_SAFE - DESKTOP_ICON_HEIGHT) /
+          DESKTOP_ICON_GRID_HEIGHT,
+      ),
+    ),
+  }
+}
+
+function clampIconGridPosition(position: DesktopIconGridPosition): DesktopIconGridPosition {
+  const bounds = getIconGridBounds()
+  return {
+    column: Math.min(Math.max(position.column, 0), bounds.maxColumn),
+    row: Math.min(Math.max(position.row, 0), bounds.maxRow),
+  }
+}
+
+function getIconPixelPosition(position: DesktopIconGridPosition) {
+  const clamped = clampIconGridPosition(position)
+  return {
+    x: DESKTOP_ICON_LEFT + clamped.column * DESKTOP_ICON_GRID_WIDTH,
+    y: DESKTOP_ICON_TOP + clamped.row * DESKTOP_ICON_GRID_HEIGHT,
+  }
+}
+
+function getGridPositionFromPixels(x: number, y: number): DesktopIconGridPosition {
+  return clampIconGridPosition({
+    column: Math.round((x - DESKTOP_ICON_LEFT) / DESKTOP_ICON_GRID_WIDTH),
+    row: Math.round((y - DESKTOP_ICON_TOP) / DESKTOP_ICON_GRID_HEIGHT),
+  })
+}
+
+function getDefaultIconLayout(itemIds: readonly string[]): DesktopIconLayout {
+  const { maxColumn, maxRow } = getIconGridBounds()
+  const rowsPerColumn = Math.max(1, maxRow + 1)
+  const layout: DesktopIconLayout = {}
+
+  itemIds.forEach((id, index) => {
+    const columnOffset = Math.floor(index / rowsPerColumn)
+    layout[id] = {
+      column: Math.max(0, maxColumn - columnOffset),
+      row: index % rowsPerColumn,
+    }
+  })
+
+  return layout
+}
+
+function resolveIconCollision(
+  id: string,
+  desired: DesktopIconGridPosition,
+  currentLayout: DesktopIconLayout,
+  itemIds: readonly string[],
+) {
+  const { maxColumn, maxRow } = getIconGridBounds()
+  const occupied = new Set(
+    Object.entries(currentLayout)
+      .filter(([itemId]) => itemId !== id && itemIds.includes(itemId))
+      .map(([, position]) => {
+        const clamped = clampIconGridPosition(position)
+        return `${clamped.column}:${clamped.row}`
+      }),
+  )
+
+  const desiredKey = `${desired.column}:${desired.row}`
+  if (!occupied.has(desiredKey)) return desired
+
+  const available: DesktopIconGridPosition[] = []
+  for (let column = 0; column <= maxColumn; column += 1) {
+    for (let row = 0; row <= maxRow; row += 1) {
+      const key = `${column}:${row}`
+      if (!occupied.has(key)) {
+        available.push({ column, row })
+      }
+    }
+  }
+
+  return (
+    available.sort((a, b) => {
+      const aDistance = Math.abs(a.column - desired.column) + Math.abs(a.row - desired.row)
+      const bDistance = Math.abs(b.column - desired.column) + Math.abs(b.row - desired.row)
+      if (aDistance !== bDistance) return aDistance - bDistance
+      if (a.row !== b.row) return a.row - b.row
+      return b.column - a.column
+    })[0] ?? desired
+  )
+}
+
+function toPersistedWindowStatus(status: WindowStatus): PersistedWindowStatus | null {
+  if (status === 'open' || status === 'minimized' || status === 'maximized') return status
+  return null
+}
+
+function restorePersistedSession(
+  session: PersistedDesktopSession,
+  isMobile: boolean,
+): { windows: OpenWindow[]; order: WindowId[] } {
+  const restoredWindows = session.windows
+    .slice(0, DESKTOP_SESSION_WINDOW_LIMIT)
+    .map((record) => {
+      const id = record.id as WindowId
+      const status = isMobile && record.status === 'minimized' ? 'open' : record.status
+      const geometry =
+        status === 'maximized' && !isMobile
+          ? getMaximizedGeometry()
+          : clampWindowGeometry(id, record)
+      const normal = clampWindowGeometry(id, record.normal)
+      return {
+        id,
+        ...geometry,
+        normal,
+        status,
+        restoreStatus:
+          status === 'minimized'
+            ? record.restoreStatus ?? 'open'
+            : undefined,
+      } satisfies OpenWindow
+    })
+
+  const restoredIds = new Set(restoredWindows.map((windowRecord) => windowRecord.id))
+  const orderedIds = session.order.filter((id): id is WindowId =>
+    restoredIds.has(id as WindowId),
+  )
+  const missingIds = restoredWindows
+    .map((windowRecord) => windowRecord.id)
+    .filter((id) => !orderedIds.includes(id))
+  const baseOrder = [...orderedIds, ...missingIds].filter(
+    (id, index, ids) => ids.indexOf(id) === index,
+  )
+
+  const activeWindow =
+    session.activeWindowId && restoredIds.has(session.activeWindowId as WindowId)
+      ? (session.activeWindowId as WindowId)
+      : null
+  const activeWindowRecord = activeWindow
+    ? restoredWindows.find((windowRecord) => windowRecord.id === activeWindow)
+    : null
+  const nextOrder: WindowId[] =
+    activeWindow && activeWindowRecord && activeWindowRecord.status !== 'minimized'
+      ? [...baseOrder.filter((id) => id !== activeWindow), activeWindow]
+      : baseOrder
+
+  return {
+    windows: restoredWindows,
+    order: nextOrder,
+  }
+}
+
 export function Desktop() {
   const [booted, setBooted] = useState(false)
-  const [scanlines, setScanlines] = useState(true)
+  const [scanlines, setScanlines] = useState(DEFAULT_CRT_LINES_ENABLED)
   const [isMobile, setIsMobile] = useState(false)
+  const [viewportCategory, setViewportCategory] = useState('desktop')
   const [windows, setWindows] = useState<OpenWindow[]>([])
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [confirmRestoreDefault, setConfirmRestoreDefault] = useState(false)
+  const [iconLayout, setIconLayout] = useState<DesktopIconLayout>({})
   const secretUnlocks = useSecretUnlocks()
   const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
     secretUnlocks.unlockedIds,
@@ -145,26 +382,84 @@ export function Desktop() {
   )
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
+  const notifications = useJackNotifications()
   const windowsRef = useRef<OpenWindow[]>([])
+  const orderRef = useRef<WindowId[]>([])
+  const preferencesRef = useRef(preferences)
   const handledInitialHash = useRef(false)
+  const restoredInitialSession = useRef(false)
+  const showedInitialOnboarding = useRef(false)
+  const iconLayoutLoaded = useRef(false)
+  const sessionStartedAt = useRef(Date.now())
   const windowOpenSequence = useRef(0)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
+  const windowAppIds = useMemo(() => Object.keys(WINDOW_APPS) as WindowId[], [])
+  const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
+  const desktopItemIds = useMemo(
+    () => desktopItems.map((item) => item.id),
+    [desktopItems],
+  )
 
   useEffect(() => {
     windowsRef.current = windows
   }, [windows])
 
   useEffect(() => {
+    orderRef.current = order
+  }, [order])
+
+  useEffect(() => {
+    preferencesRef.current = preferences
+  }, [preferences])
+
+  useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
-    const update = () => setIsMobile(mq.matches)
+    const update = () => {
+      setIsMobile(mq.matches)
+      setViewportCategory(getViewportCategory())
+    }
     update()
     mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
+    window.addEventListener('resize', update)
+    return () => {
+      mq.removeEventListener('change', update)
+      window.removeEventListener('resize', update)
+    }
   }, [])
 
+  useEffect(() => {
+    setScanlines(readStoredCrtLines())
+  }, [])
+
+  useEffect(() => {
+    if (iconLayoutLoaded.current || isMobile) return
+
+    const storedLayout = readDesktopIconLayout(desktopItemIds)
+    const defaultLayout = getDefaultIconLayout(desktopItemIds)
+    iconLayoutLoaded.current = true
+    setIconLayout({ ...defaultLayout, ...storedLayout })
+  }, [desktopItemIds, isMobile])
+
+  useEffect(() => {
+    if (isMobile || !iconLayoutLoaded.current) return
+    setIconLayout((current) => {
+      const defaultLayout = getDefaultIconLayout(desktopItemIds)
+      const next: DesktopIconLayout = {}
+      desktopItemIds.forEach((id) => {
+        const desired = clampIconGridPosition(current[id] ?? defaultLayout[id])
+        next[id] = resolveIconCollision(id, desired, next, desktopItemIds)
+      })
+      return next
+    })
+  }, [desktopItemIds, isMobile, viewportCategory])
+
   const focusWindow = useCallback((id: WindowId) => {
-    setOrder((prev) => [...prev.filter((w) => w !== id), id])
+    setOrder((prev) => {
+      const next = [...prev.filter((w) => w !== id), id]
+      orderRef.current = next
+      return next
+    })
   }, [])
 
   const focusDesktop = useCallback(() => {
@@ -254,8 +549,16 @@ export function Desktop() {
     closeTimers.current[id] = setTimeout(() => {
       windowsRef.current = windowsRef.current.filter((w) => w.id !== id)
       setWindows((prev) => prev.filter((w) => w.id !== id))
-      setOrder((prev) => prev.filter((w) => w !== id))
-      focusDesktop()
+      const nextOrder = orderRef.current.filter((w) => w !== id)
+      orderRef.current = nextOrder
+      setOrder(nextOrder)
+      const nextFocusedWindow = [...nextOrder].reverse().find((windowId) => {
+        const windowRecord = windowsRef.current.find((w) => w.id === windowId)
+        return windowRecord && windowRecord.status !== 'minimized'
+      })
+      if (!nextFocusedWindow) {
+        focusDesktop()
+      }
       delete closeTimers.current[id]
     }, WINDOW_CLOSE_DURATION_MS)
   }, [focusDesktop, soundEffects])
@@ -291,7 +594,11 @@ export function Desktop() {
       w.id === id ? { ...w, normal, status: 'minimized', restoreStatus } : w,
     )
     setWindows(windowsRef.current)
-    setOrder((prev) => prev.filter((w) => w !== id))
+    setOrder((prev) => {
+      const next = prev.filter((w) => w !== id)
+      orderRef.current = next
+      return next
+    })
     focusDesktop()
   }, [focusDesktop])
 
@@ -329,10 +636,14 @@ export function Desktop() {
 
     windowsRef.current = restoredWindows
     setWindows(restoredWindows)
-    setOrder((prev) => [
-      ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
-      ...minimizedWindows.map((w) => w.id),
-    ])
+    setOrder((prev) => {
+      const next = [
+        ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
+        ...minimizedWindows.map((w) => w.id),
+      ]
+      orderRef.current = next
+      return next
+    })
   }, [])
 
   const maximizeWindow = useCallback((id: WindowId) => {
@@ -372,6 +683,215 @@ export function Desktop() {
     setCommandPaletteOpen(false)
   }, [])
 
+  const notify = notifications.notify
+
+  const toggleThemeWithNotice = useCallback(() => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    toggleTheme()
+    notify({
+      title: 'Theme changed',
+      message: `${nextTheme} theme is now active.`,
+      type: 'success',
+    })
+  }, [notify, theme, toggleTheme])
+
+  const toggleScanlinesWithNotice = useCallback(() => {
+    setScanlines((current) => {
+      const next = !current
+      writeStoredCrtLines(next)
+      notify({
+        title: next ? 'CRT enabled' : 'CRT disabled',
+        message: next ? 'Scanlines are visible.' : 'Scanlines are hidden.',
+        type: 'success',
+      })
+      return next
+    })
+  }, [notify])
+
+  const setSoundEffectsWithNotice = useCallback(
+    (enabled: boolean) => {
+      soundEffects.setSoundEffectsEnabled(enabled)
+      notify({
+        title: enabled ? 'Sound enabled' : 'Sound disabled',
+        message: enabled ? 'Future system sounds will play.' : 'Future system sounds are muted.',
+        type: 'success',
+      })
+    },
+    [notify, soundEffects],
+  )
+
+  const toggleSoundEffectsWithNotice = useCallback(() => {
+    setSoundEffectsWithNotice(!soundEffects.soundEffectsEnabled)
+  }, [setSoundEffectsWithNotice, soundEffects.soundEffectsEnabled])
+
+  const updateDesktopPreferences = useCallback(
+    (patch: Partial<typeof preferences>) => {
+      const previous = preferencesRef.current
+      updatePreferences(patch)
+
+      if (patch.wallpaperId && patch.wallpaperId !== previous.wallpaperId) {
+        const wallpaper = getWallpaperAsset(patch.wallpaperId)
+        notify({
+          title: patch.wallpaperId === DEFAULT_WALLPAPER_ID ? 'Wallpaper reset' : 'Wallpaper changed',
+          message: `${wallpaper.displayName} is now active.`,
+          type: 'success',
+        })
+      }
+
+      if (typeof patch.showClock === 'boolean' && patch.showClock !== previous.showClock) {
+        notify({
+          title: patch.showClock ? 'Clock shown' : 'Clock hidden',
+          type: 'success',
+        })
+      }
+
+      if (
+        typeof patch.showCalendar === 'boolean' &&
+        patch.showCalendar !== previous.showCalendar
+      ) {
+        notify({
+          title: patch.showCalendar ? 'Calendar shown' : 'Calendar hidden',
+          type: 'success',
+        })
+      }
+    },
+    [notify, updatePreferences],
+  )
+
+  const resetWallpaperWithNotice = useCallback(() => {
+    resetWallpaper()
+    notify({
+      title: 'Wallpaper reset',
+      message: 'Jack OS Classic is now active.',
+      type: 'success',
+    })
+  }, [notify, resetWallpaper])
+
+  const copyEmailToClipboard = useCallback(() => {
+    const email = CONTACT.email
+    if (!navigator.clipboard) {
+      notify({
+        title: 'Copy unavailable',
+        message: email,
+        type: 'warning',
+      })
+      return
+    }
+
+    void navigator.clipboard
+      .writeText(email)
+      .then(() => {
+        notify({
+          title: 'Email copied',
+          message: email,
+          type: 'success',
+        })
+      })
+      .catch(() => {
+        notify({
+          title: 'Copy unavailable',
+          message: email,
+          type: 'warning',
+        })
+      })
+  }, [notify])
+
+  const showResumeUnavailableNotice = useCallback(() => {
+    notify({
+      title: 'Resume unavailable',
+      message: 'The public resume is being prepared.',
+      type: 'info',
+    })
+  }, [notify])
+
+  const resetDesktopLayout = useCallback(() => {
+    const defaultLayout = getDefaultIconLayout(desktopItemIds)
+    clearDesktopIconLayout()
+    setIconLayout(defaultLayout)
+    notify({
+      title: 'Desktop layout reset',
+      message: 'Desktop icons returned to their default positions.',
+      type: 'success',
+    })
+  }, [desktopItemIds, notify])
+
+  const commitIconPosition = useCallback(
+    (id: string, x: number, y: number) => {
+      setIconLayout((current) => {
+        const desired = getGridPositionFromPixels(x, y)
+        const resolved = resolveIconCollision(id, desired, current, desktopItemIds)
+        const next = { ...current, [id]: resolved }
+        writeDesktopIconLayout(next)
+        return next
+      })
+    },
+    [desktopItemIds],
+  )
+
+  const restoreDefaultDesktop = useCallback(() => {
+    setConfirmRestoreDefault(false)
+    clearDesktopSession()
+    clearDesktopIconLayout()
+    Object.values(openTimers.current).forEach((timer) => {
+      if (timer) clearTimeout(timer)
+    })
+    Object.values(closeTimers.current).forEach((timer) => {
+      if (timer) clearTimeout(timer)
+    })
+    openTimers.current = {}
+    closeTimers.current = {}
+    const defaultLayout = getDefaultIconLayout(desktopItemIds)
+    setIconLayout(defaultLayout)
+    windowsRef.current = []
+    orderRef.current = []
+    setWindows([])
+    setOrder([])
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+    }
+    windowOpenSequence.current = 0
+    if (!isMobile) {
+      window.setTimeout(() => openWindow('home', { playSound: false, updateHash: false }), 0)
+    }
+    notify({
+      title: 'Settings restored',
+      message: 'Window state and desktop icon layout were reset.',
+      type: 'success',
+    })
+  }, [desktopItemIds, isMobile, notify, openWindow])
+
+  const showWelcomeTour = useCallback(() => {
+    setCommandPaletteOpen(false)
+    setOnboardingOpen(true)
+  }, [])
+
+  const finishWelcomeTour = useCallback(() => {
+    writeOnboardingComplete(true)
+    setOnboardingOpen(false)
+    notify({
+      title: 'Welcome tour completed',
+      type: 'success',
+    })
+  }, [notify])
+
+  const skipWelcomeTour = useCallback(() => {
+    writeOnboardingComplete(true)
+    setOnboardingOpen(false)
+    notify({
+      title: 'Welcome tour skipped',
+      type: 'info',
+    })
+  }, [notify])
+
+  const resetWelcomeTour = useCallback(() => {
+    clearOnboardingComplete()
+    notify({
+      title: 'Welcome tour reset',
+      message: 'It will appear on the next fresh visit, or you can show it now.',
+      type: 'success',
+    })
+  }, [notify])
+
   const openPersonalize = useCallback(() => {
     openWindow('wallpapers')
   }, [openWindow])
@@ -383,21 +903,38 @@ export function Desktop() {
   const unlockSecret = useCallback(
     (id: SecretId) => {
       const result = secretUnlocks.unlock(id)
+      const secret = getSecretDefinition(id)
       if (result === 'unlocked') {
         soundEffects.playSecretUnlock(id)
+        notify({
+          title: 'Secret unlocked',
+          message: secret ? `${secret.wallpaperTitle} recovered.` : 'Hidden file recovered.',
+          type: 'success',
+        })
+      } else {
+        notify({
+          title: 'Already unlocked',
+          message: secret ? `${secret.wallpaperTitle} is already available.` : undefined,
+          type: 'info',
+        })
       }
       return result
     },
-    [secretUnlocks, soundEffects],
+    [notify, secretUnlocks, soundEffects],
   )
 
   const resetSecretUnlocks = useCallback(() => {
     const activeWallpaper = getWallpaperAsset(preferences.wallpaperId)
     secretUnlocks.reset()
     if (isHiddenWallpaper(activeWallpaper)) {
-      updatePreferences({ wallpaperId: DEFAULT_WALLPAPER_ID })
+      updateDesktopPreferences({ wallpaperId: DEFAULT_WALLPAPER_ID })
     }
-  }, [preferences.wallpaperId, secretUnlocks, updatePreferences])
+    notify({
+      title: 'Settings restored',
+      message: 'Secret unlock records were cleared.',
+      type: 'success',
+    })
+  }, [notify, preferences.wallpaperId, secretUnlocks, updateDesktopPreferences])
 
   const handleDesktopContextMenu = useCallback(
     (event: MouseEvent<HTMLElement>) => {
@@ -446,13 +983,28 @@ export function Desktop() {
     const hashWindow = getWindowIdFromHash(window.location.hash)
     if (hashWindow) {
       openWindow(hashWindow, { playSound: false, updateHash: false })
+      restoredInitialSession.current = true
       return
+    }
+
+    const storedSession = readDesktopSession(windowAppIds)
+    if (storedSession) {
+      const restored = restorePersistedSession(storedSession, isMobile)
+      if (restored.windows.length > 0) {
+        windowsRef.current = restored.windows
+        orderRef.current = restored.order
+        setWindows(restored.windows)
+        setOrder(restored.order)
+        restoredInitialSession.current = true
+        return
+      }
     }
 
     if (!isMobile && windowsRef.current.length === 0) {
       openWindow('home', { playSound: false, updateHash: false })
     }
-  }, [booted, isMobile, openWindow])
+    restoredInitialSession.current = true
+  }, [booted, isMobile, openWindow, windowAppIds])
 
   useEffect(() => {
     const onHashChange = () => {
@@ -467,6 +1019,18 @@ export function Desktop() {
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [booted, openWindow])
+
+  useEffect(() => {
+    if (!booted || showedInitialOnboarding.current) return
+    showedInitialOnboarding.current = true
+    if (readOnboardingComplete()) return
+
+    const timer = window.setTimeout(() => {
+      setOnboardingOpen(true)
+    }, 450)
+
+    return () => window.clearTimeout(timer)
+  }, [booted])
 
   useEffect(() => {
     const onResize = () => {
@@ -507,10 +1071,14 @@ export function Desktop() {
         : w,
     )
     setWindows(windowsRef.current)
-    setOrder((prev) => [
-      ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
-      ...minimizedWindows.map((w) => w.id),
-    ])
+    setOrder((prev) => {
+      const next = [
+        ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
+        ...minimizedWindows.map((w) => w.id),
+      ]
+      orderRef.current = next
+      return next
+    })
   }, [isMobile])
 
   useEffect(() => {
@@ -528,10 +1096,10 @@ export function Desktop() {
     }
   }, [])
 
-  // Escape closes the top-most window.
+  // Established Jack OS behavior: Escape closes the top-most app window after temporary UI.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (contextMenu || commandPaletteOpen) return
+      if (contextMenu || commandPaletteOpen || onboardingOpen || confirmRestoreDefault) return
       const visibleOrder = order.filter((id) => {
         const windowRecord = windowsRef.current.find((w) => w.id === id)
         return windowRecord && windowRecord.status !== 'minimized'
@@ -542,12 +1110,56 @@ export function Desktop() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [commandPaletteOpen, contextMenu, order, closeWindow])
+  }, [commandPaletteOpen, confirmRestoreDefault, contextMenu, onboardingOpen, order, closeWindow])
 
   const topId = order[order.length - 1]
-  const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
   const minimizedWindows = windows.filter((w) => w.status === 'minimized')
   const visibleWindows = windows.filter((w) => w.status !== 'minimized')
+  const defaultIconLayout = useMemo(
+    () => (isMobile ? {} : getDefaultIconLayout(desktopItemIds)),
+    [desktopItemIds, isMobile, viewportCategory],
+  )
+
+  useEffect(() => {
+    if (!booted || !restoredInitialSession.current) return
+
+    const timer = window.setTimeout(() => {
+      const restorableWindows = windowsRef.current
+        .map((windowRecord) => {
+          const status = toPersistedWindowStatus(windowRecord.status)
+          if (!status) return null
+          return {
+            id: windowRecord.id,
+            x: windowRecord.x,
+            y: windowRecord.y,
+            width: windowRecord.width,
+            height: windowRecord.height,
+            normal: windowRecord.normal,
+            status,
+            restoreStatus: windowRecord.restoreStatus,
+          }
+        })
+        .filter((windowRecord): windowRecord is NonNullable<typeof windowRecord> =>
+          Boolean(windowRecord),
+        )
+        .slice(-DESKTOP_SESSION_WINDOW_LIMIT)
+
+      if (restorableWindows.length === 0) {
+        clearDesktopSession()
+        return
+      }
+
+      writeDesktopSession({
+        windows: restorableWindows,
+        order: orderRef.current.filter((id) =>
+          restorableWindows.some((windowRecord) => windowRecord.id === id),
+        ),
+        activeWindowId: topId ?? null,
+      })
+    }, 150)
+
+    return () => window.clearTimeout(timer)
+  }, [booted, order, topId, windows])
 
   const minimizeActiveWindow = useCallback(() => {
     if (topId) {
@@ -558,6 +1170,7 @@ export function Desktop() {
   const commandRegistry = useMemo<JackOsCommand[]>(() => {
     const appIds: WindowId[] = [
       'home',
+      'system-info',
       'about',
       'projects',
       'certifications',
@@ -567,8 +1180,11 @@ export function Desktop() {
       'secrets',
     ]
     const appAliases: Partial<Record<WindowId, readonly string[]>> = {
-      home: ['welcome', 'system', 'start'],
+      home: ['welcome', 'start'],
+      'system-info': ['system information', 'about this computer', 'about jack os', 'version'],
       about: ['about me', 'jack', 'bio'],
+      resume: ['cv'],
+      contact: ['email', 'mail'],
       certifications: ['credentials', 'certifications', 'certificates'],
       wallpapers: ['personalize', 'background', 'desktop'],
       secrets: ['hidden', 'files', 'manual'],
@@ -605,22 +1221,21 @@ export function Desktop() {
         title: 'Toggle Light/Dark Theme',
         subtitle: `Current: ${theme}`,
         keywords: ['theme', 'light', 'dark'],
-        action: toggleTheme,
+        action: toggleThemeWithNotice,
       },
       {
         id: 'toggle-scanlines',
         title: 'Toggle CRT Lines',
         subtitle: scanlines ? 'Currently On' : 'Currently Off',
         keywords: ['crt', 'scanlines', 'lines'],
-        action: () => setScanlines((value) => !value),
+        action: toggleScanlinesWithNotice,
       },
       {
         id: 'toggle-sound-effects',
         title: 'Toggle Sound Effects',
         subtitle: soundEffects.soundEffectsEnabled ? 'Currently On' : 'Currently Off',
         keywords: ['sound', 'audio', 'effects'],
-        action: () =>
-          soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled),
+        action: toggleSoundEffectsWithNotice,
       },
       {
         id: 'open-wallpapers-system',
@@ -629,6 +1244,50 @@ export function Desktop() {
         keywords: ['personalize', 'wallpaper', 'background'],
         Icon: WINDOW_APPS.wallpapers.Icon,
         action: () => openWindow('wallpapers'),
+      },
+      {
+        id: 'open-personalize',
+        title: 'Open Personalize',
+        subtitle: 'Wallpaper and desktop settings',
+        keywords: ['personalize', 'settings', 'wallpapers'],
+        Icon: WINDOW_APPS.wallpapers.Icon,
+        action: () => openWindow('wallpapers'),
+      },
+      {
+        id: 'open-secrets-system',
+        title: 'Open Secrets',
+        subtitle: 'Some parts of Jack OS are not listed in the manual.',
+        keywords: ['secrets', 'hidden', 'manual'],
+        Icon: WINDOW_APPS.secrets.Icon,
+        action: () => openWindow('secrets'),
+      },
+      {
+        id: 'show-welcome-tour',
+        title: 'Show Welcome Tour',
+        subtitle: 'Onboarding',
+        keywords: ['welcome tour', 'onboarding', 'help', 'intro'],
+        action: showWelcomeTour,
+      },
+      {
+        id: 'reset-welcome-tour',
+        title: 'Reset Welcome Tour',
+        subtitle: 'Show again on the next fresh visit',
+        keywords: ['reset onboarding', 'reset welcome tour', 'tour'],
+        action: resetWelcomeTour,
+      },
+      {
+        id: 'reset-desktop-layout',
+        title: 'Reset Desktop Layout',
+        subtitle: 'Restore desktop icon positions',
+        keywords: ['reset icons', 'desktop layout', 'icon positions'],
+        action: resetDesktopLayout,
+      },
+      {
+        id: 'restore-default-desktop',
+        title: 'Restore Default Desktop',
+        subtitle: 'Reset open windows and icon positions',
+        keywords: ['restore desktop', 'reset windows', 'default desktop'],
+        action: () => setConfirmRestoreDefault(true),
       },
       {
         id: 'restore-all-minimized',
@@ -656,12 +1315,17 @@ export function Desktop() {
     minimizedWindows.length,
     minimizeActiveWindow,
     openWindow,
+    resetDesktopLayout,
+    resetWelcomeTour,
     restoreAllMinimized,
     scanlines,
     secretUnlocks.unlockedIds,
+    showWelcomeTour,
     soundEffects,
     theme,
-    toggleTheme,
+    toggleScanlinesWithNotice,
+    toggleSoundEffectsWithNotice,
+    toggleThemeWithNotice,
     topId,
   ])
 
@@ -674,6 +1338,22 @@ export function Desktop() {
             theme={theme}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
             scanlines={scanlines}
+            onShowTour={showWelcomeTour}
+          />
+        )
+      case 'system-info':
+        return (
+          <SystemInfoContent
+            theme={theme}
+            scanlines={scanlines}
+            soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+            wallpaperId={preferences.wallpaperId}
+            unlockedSecretCount={secretUnlocks.unlockedIds.length}
+            viewportCategory={viewportCategory}
+            sessionStartedAt={sessionStartedAt.current}
+            onShowTour={showWelcomeTour}
+            onResetDesktopLayout={resetDesktopLayout}
+            onRestoreDefaultDesktop={() => setConfirmRestoreDefault(true)}
           />
         )
       case 'about':
@@ -683,17 +1363,23 @@ export function Desktop() {
       case 'certifications':
         return <CertificationsContent />
       case 'resume':
-        return <ResumeContent />
+        return (
+          <ResumeContent
+            onOpen={openWindow}
+            onCopyEmail={copyEmailToClipboard}
+            onResumeUnavailable={showResumeUnavailableNotice}
+          />
+        )
       case 'contact':
-        return <ContactContent />
+        return <ContactContent onCopyEmail={copyEmailToClipboard} />
       case 'wallpapers':
         return (
           <WallpapersContent
             preferences={preferences}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
-            onUpdatePreferences={updatePreferences}
-            onResetWallpaper={resetWallpaper}
-            onSetSoundEffectsEnabled={soundEffects.setSoundEffectsEnabled}
+            onUpdatePreferences={updateDesktopPreferences}
+            onResetWallpaper={resetWallpaperWithNotice}
+            onSetSoundEffectsEnabled={setSoundEffectsWithNotice}
             onFirstCustomWallpaperSet={soundEffects.firstWallpaperSet}
             unlockedSecretIds={secretUnlocks.unlockedIds}
             onOpenSecrets={openSecrets}
@@ -726,13 +1412,11 @@ export function Desktop() {
       <MenuBar
         onOpen={openWindow}
         scanlines={scanlines}
-        onToggleScanlines={() => setScanlines((s) => !s)}
+        onToggleScanlines={toggleScanlinesWithNotice}
         theme={theme}
-        onToggleTheme={toggleTheme}
+        onToggleTheme={toggleThemeWithNotice}
         soundEffectsEnabled={soundEffects.soundEffectsEnabled}
-        onToggleSoundEffects={() =>
-          soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
-        }
+        onToggleSoundEffects={toggleSoundEffectsWithNotice}
         onOpenCommandPalette={openCommandPalette}
       />
 
@@ -751,7 +1435,9 @@ export function Desktop() {
           aria-hidden
           className="pointer-events-none absolute bottom-4 left-4 max-w-xs font-pixel text-[9px] leading-relaxed text-muted-foreground/60"
         >
-          Jack OS v1.0
+          Jack OS Version {JACK_OS_VERSION}
+          <br />
+          {JACK_OS_RELEASE_NAME}
           <br />
           {isMobile ? 'Tap an icon to open' : 'Double-click an icon to open'}
         </p>
@@ -769,15 +1455,24 @@ export function Desktop() {
           </div>
         ) : null}
 
-        {/* Desktop icons (right rail) */}
+        {/* Desktop icons */}
         {!isMobile ? (
-          <div className="absolute right-3 top-11 flex flex-col items-end gap-3">
+          <div
+            data-desktop-interactive="true"
+            className="absolute inset-0 z-[3] pointer-events-none"
+          >
             {desktopItems.map((item) => (
               <DesktopIcon
                 key={item.id}
                 item={item}
                 variant="desktop"
                 onOpenWindow={openWindow}
+                draggable
+                position={getIconPixelPosition(
+                  iconLayout[item.id] ?? defaultIconLayout[item.id],
+                )}
+                onClampDragPosition={(x, y) => getIconPixelPosition(getGridPositionFromPixels(x, y))}
+                onCommitDragPosition={commitIconPosition}
               />
             ))}
           </div>
@@ -867,7 +1562,8 @@ export function Desktop() {
             y={contextMenu.y}
             onClose={closeContextMenu}
             onPersonalize={openPersonalize}
-            onResetWallpaper={resetWallpaper}
+            onResetWallpaper={resetWallpaperWithNotice}
+            onResetDesktopLayout={resetDesktopLayout}
           />
         ) : null}
 
@@ -876,6 +1572,30 @@ export function Desktop() {
           commands={commandRegistry}
           onClose={closeCommandPalette}
         />
+
+        <NotificationCenter
+          notifications={notifications.notifications}
+          onDismiss={notifications.dismiss}
+        />
+
+        {onboardingOpen ? (
+          <OnboardingDialog
+            isMobile={isMobile}
+            onFinish={finishWelcomeTour}
+            onSkip={skipWelcomeTour}
+            onClose={skipWelcomeTour}
+          />
+        ) : null}
+
+        {confirmRestoreDefault ? (
+          <SystemConfirmationDialog
+            title="Restore Default Desktop"
+            message="This resets open windows and desktop icon positions. Wallpaper, theme, sound, CRT, and secret unlocks stay intact."
+            confirmLabel="Restore Desktop"
+            onCancel={() => setConfirmRestoreDefault(false)}
+            onConfirm={restoreDefaultDesktop}
+          />
+        ) : null}
       </WallpaperManager>
     </div>
   )
