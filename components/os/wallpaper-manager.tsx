@@ -18,13 +18,18 @@ type WallpaperManagerProps = ComponentPropsWithoutRef<'main'> & {
 type WallpaperCssProperties = CSSProperties & {
   '--wallpaper-art'?: string
   '--wallpaper-position'?: string
+  '--wallpaper-base'?: string
 }
 
-function getWallpaperStyle(wallpaper: WallpaperAsset): WallpaperCssProperties | undefined {
-  if (!wallpaper.imagePath && !wallpaper.backgroundPosition) return undefined
+function getWallpaperStyle(
+  wallpaper: WallpaperAsset,
+  imagePath = wallpaper.imagePath,
+): WallpaperCssProperties | undefined {
+  if (!imagePath && !wallpaper.backgroundPosition && !wallpaper.fallbackColor) return undefined
 
   return {
-    ...(wallpaper.imagePath ? { '--wallpaper-art': `url('${wallpaper.imagePath}')` } : {}),
+    ...(wallpaper.fallbackColor ? { '--wallpaper-base': wallpaper.fallbackColor } : {}),
+    ...(imagePath ? { '--wallpaper-art': `url('${imagePath}')` } : {}),
     ...(wallpaper.backgroundPosition
       ? { '--wallpaper-position': wallpaper.backgroundPosition }
       : {}),
@@ -57,19 +62,40 @@ export function WallpaperManager({
 export function WallpaperPreview({
   wallpaperId,
   className,
+  full = false,
+  priority = false,
 }: {
   wallpaperId: WallpaperId
   className?: string
+  full?: boolean
+  priority?: boolean
 }) {
-  const wallpaper = getWallpaperAsset(wallpaperId)
-  const wallpaperStyle = getWallpaperStyle(wallpaper)
+  const wallpaper: WallpaperAsset = getWallpaperAsset(wallpaperId)
+  const imagePath = full ? wallpaper.imagePath : wallpaper.thumbnailPath ?? wallpaper.imagePath
+  const wallpaperStyle = getWallpaperStyle(wallpaper, imagePath ? null : undefined)
 
   return (
     <span
       aria-hidden
       data-wallpaper-id={wallpaper.id}
       style={wallpaperStyle}
-      className={cn('wallpaper-preview block', wallpaper.className, className)}
-    />
+      className={cn(
+        'wallpaper-preview relative block overflow-hidden',
+        imagePath ? null : wallpaper.className,
+        className,
+      )}
+    >
+      {imagePath ? (
+        <img
+          src={imagePath}
+          alt=""
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={priority ? 'high' : 'low'}
+          className="absolute inset-0 size-full object-cover"
+          style={{ objectPosition: wallpaper.backgroundPosition ?? 'center' }}
+        />
+      ) : null}
+    </span>
   )
 }

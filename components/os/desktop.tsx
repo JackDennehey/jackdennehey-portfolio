@@ -31,6 +31,7 @@ import { RecruiterViewContent } from './content/recruiter-view-content'
 import { KeyboardShortcutsContent } from './content/keyboard-shortcuts-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
+import { useActiveWallpaperPreload } from './use-active-wallpaper-preload'
 import { MinimizedWindowStrip } from './minimized-window-strip'
 import { useSecretUnlocks } from './use-secret-unlocks'
 import { useJackNotifications } from './use-jack-notifications'
@@ -92,11 +93,12 @@ const CONTEXT_MENU_HEIGHT = 92
 const WINDOW_OPEN_DURATION_MS = 180
 const WINDOW_CLOSE_DURATION_MS = 160
 const DESKTOP_EDGE_PADDING = 8
-const MENU_BAR_HEIGHT = 32
+const MENU_BAR_HEIGHT = 36
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
-const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
+const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 64
 const MAXIMIZED_MARGIN = 8
 const DESKTOP_SESSION_WINDOW_LIMIT = 7
+const DESKTOP_ICON_RAIL_WIDTH = 260
 const OBSOLETE_DESKTOP_ICON_LAYOUT_STORAGE_KEY = 'jack-os:desktop-icon-layout.v1'
 const PRIMARY_DESKTOP_ITEM_IDS: readonly string[] = [
   'home',
@@ -133,7 +135,7 @@ function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): WindowGeom
   }
 
   const maxWidth = Math.max(280, window.innerWidth - DESKTOP_EDGE_PADDING * 2)
-  const maxHeight = Math.max(220, window.innerHeight - MENU_BAR_HEIGHT - 24)
+  const maxHeight = Math.max(220, window.innerHeight - MENU_BAR_HEIGHT - 40)
   const width = Math.min(geometry.width, maxWidth)
   const height = Math.min(geometry.height, maxHeight)
   const position = clampWindowPosition(id, geometry.x, geometry.y)
@@ -161,10 +163,12 @@ function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
   }
 
   const app = WINDOW_APPS[id]
-  const baseX = Math.max(24, (window.innerWidth - app.width) / 2 - 80)
+  const iconReserve = window.innerWidth >= 900 ? DESKTOP_ICON_RAIL_WIDTH : 0
+  const usableWidth = Math.max(320, window.innerWidth - iconReserve)
+  const baseX = Math.max(24, (usableWidth - app.width) / 2)
   return clampWindowGeometry(id, {
-    x: baseX + count * 30,
-    y: 60 + count * 30,
+    x: baseX + count * 26,
+    y: MENU_BAR_HEIGHT + 28 + count * 26,
     width: app.width,
     height: app.height,
   })
@@ -307,12 +311,19 @@ export function Desktop() {
   const [confirmRestoreDefault, setConfirmRestoreDefault] = useState(false)
   const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(null)
   const secretUnlocks = useSecretUnlocks()
-  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
-    secretUnlocks.unlockedIds,
-    secretUnlocks.loaded,
-  )
+  const {
+    preferences,
+    loaded: preferencesLoaded,
+    updatePreferences,
+    resetWallpaper,
+  } = useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
+  const activeWallpaperPreload = useActiveWallpaperPreload(
+    preferences.wallpaperId,
+    secretUnlocks.unlockedIds,
+    preferencesLoaded,
+  )
   const notifications = useJackNotifications()
   const windowsRef = useRef<OpenWindow[]>([])
   const orderRef = useRef<WindowId[]>([])
@@ -374,7 +385,7 @@ export function Desktop() {
     try {
       window.localStorage.removeItem(OBSOLETE_DESKTOP_ICON_LAYOUT_STORAGE_KEY)
     } catch {
-      // Old Phase 4B icon coordinates are ignored in Phase 4C.
+      // Old draggable icon coordinates are ignored by the fixed Phase 4D rail.
     }
   }, [])
 
@@ -1468,6 +1479,7 @@ export function Desktop() {
       {!booted ? (
         <BootScreen
           onPowerOn={soundEffects.playStartup}
+          readyToReveal={preferencesLoaded && activeWallpaperPreload.ready}
           onDone={() => {
             setBooted(true)
             soundEffects.startAmbience()
@@ -1497,7 +1509,7 @@ export function Desktop() {
         tabIndex={-1}
         wallpaperId={preferences.wallpaperId}
         unlockedSecretIds={secretUnlocks.unlockedIds}
-        className="relative min-h-[100dvh] pt-8"
+        className="relative min-h-[100dvh] pt-9"
         aria-label="Jack OS desktop"
         onContextMenu={handleDesktopContextMenu}
         onPointerDown={contextMenu ? () => closeContextMenu() : undefined}
@@ -1518,7 +1530,7 @@ export function Desktop() {
         {!isMobile && booted && (preferences.showClock || preferences.showCalendar) ? (
           <div
             data-desktop-interactive="true"
-            className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
+            className="absolute left-4 top-14 z-[2] flex w-[190px] flex-col gap-3"
           >
             {preferences.showClock ? <DesktopClock /> : null}
             {preferences.showCalendar ? (
@@ -1533,37 +1545,49 @@ export function Desktop() {
             data-desktop-interactive="true"
             className="pointer-events-none absolute inset-0 z-[3]"
           >
-            <div className="pointer-events-auto absolute left-4 top-[20rem] grid grid-cols-2 gap-x-3 gap-y-3 xl:top-[18rem]">
-              {primaryDesktopItems.map((item) => (
-                <DesktopIcon
-                  key={item.id}
-                  item={item}
-                  variant="desktop"
-                  onOpenWindow={openWindow}
-                />
-              ))}
-            </div>
+            <div className="desktop-icon-rail">
+              <div className="desktop-icon-stack">
+                <div className="desktop-icon-group" role="group" aria-label="Portfolio apps">
+                  {primaryDesktopItems.map((item) => (
+                    <DesktopIcon
+                      key={item.id}
+                      item={item}
+                      variant="desktop"
+                      onOpenWindow={openWindow}
+                    />
+                  ))}
+                </div>
 
-            <div className="pointer-events-auto absolute right-4 top-12 grid grid-cols-1 gap-3">
-              {systemDesktopItems.map((item) => (
-                <DesktopIcon
-                  key={item.id}
-                  item={item}
-                  variant="desktop"
-                  onOpenWindow={openWindow}
-                />
-              ))}
-            </div>
+                <div
+                  className="desktop-icon-group desktop-icon-group-secondary"
+                  role="group"
+                  aria-label="Jack OS utilities"
+                >
+                  {systemDesktopItems.map((item) => (
+                    <DesktopIcon
+                      key={item.id}
+                      item={item}
+                      variant="desktop"
+                      onOpenWindow={openWindow}
+                    />
+                  ))}
+                </div>
+              </div>
 
-            <div className="pointer-events-auto absolute bottom-24 right-4 grid grid-cols-2 gap-3">
-              {externalDesktopItems.map((item) => (
-                <DesktopIcon
-                  key={item.id}
-                  item={item}
-                  variant="desktop"
-                  onOpenWindow={openWindow}
-                />
-              ))}
+              <div
+                className="desktop-icon-group desktop-icon-group-external"
+                role="group"
+                aria-label="External links"
+              >
+                {externalDesktopItems.map((item) => (
+                  <DesktopIcon
+                    key={item.id}
+                    item={item}
+                    variant="desktop"
+                    onOpenWindow={openWindow}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         ) : null}

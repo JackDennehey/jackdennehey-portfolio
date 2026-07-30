@@ -46,21 +46,21 @@ export function RecruiterViewContent({
   const back = () => setStepIndex((index) => Math.max(0, index - 1))
 
   return (
-    <div className="grid min-h-full gap-4 lg:grid-cols-[190px_minmax(0,1fr)]">
-      <aside className="os-border bg-secondary p-2 lg:sticky lg:top-0 lg:self-start">
-        <p className="px-2 py-1 font-pixel text-[8px] leading-relaxed text-muted-foreground">
+    <div className="grid min-h-full gap-5 xl:grid-cols-[230px_minmax(0,1fr)]">
+      <aside className="os-border bg-secondary p-3 xl:sticky xl:top-0 xl:self-start">
+        <p className="px-2 py-1 font-pixel text-[9px] font-semibold leading-relaxed text-muted-foreground">
           Recruiter View
         </p>
-        <nav aria-label="Recruiter View sections" className="mt-2 grid gap-1">
+        <nav aria-label="Recruiter View sections" className="mt-3 grid gap-1.5">
           {STEPS.map((item, index) => (
             <button
               key={item}
               type="button"
               onClick={() => setStepIndex(index)}
               aria-current={index === stepIndex ? 'step' : undefined}
-              className={`os-border px-2 py-2 text-left font-pixel text-[8px] leading-relaxed transition-colors focus-visible:outline-none ${
+              className={`os-border px-3 py-2.5 text-left font-pixel text-[9px] font-semibold leading-relaxed transition-colors focus-visible:outline-none ${
                 index === stepIndex
-                  ? 'bg-foreground text-primary-foreground'
+                  ? 'bg-foreground text-primary-foreground ring-2 ring-inset ring-primary-foreground'
                   : 'bg-card text-foreground hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground'
               }`}
             >
@@ -70,23 +70,23 @@ export function RecruiterViewContent({
         </nav>
       </aside>
 
-      <section className="space-y-4">
-        <div className="os-border bg-secondary p-4">
-          <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
+      <section className="space-y-5">
+        <div className="os-border bg-secondary p-5">
+          <p className="font-pixel text-[10px] font-semibold leading-relaxed text-muted-foreground">
             {stepIndex + 1} of {STEPS.length}
           </p>
-          <h2 className="mt-2 font-pixel text-base leading-relaxed text-foreground">
+          <h2 className="mt-2 font-pixel text-lg leading-relaxed text-foreground">
             {step}
           </h2>
         </div>
 
         {step === 'Introduction' ? (
           <Panel>
-            <p className="text-sm leading-relaxed text-foreground text-pretty">
+            <p className="text-base leading-7 text-foreground text-pretty">
               Jack Dennehey is a business student with a technical background in cybersecurity,
               networking, cloud computing, and artificial intelligence.
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground text-pretty">
+            <p className="mt-3 text-base leading-7 text-muted-foreground text-pretty">
               Jack OS is built to make that professional direction easy to understand while still
               showing personality, product thinking, and front-end execution.
             </p>
@@ -103,18 +103,18 @@ export function RecruiterViewContent({
 
         {step === 'Education' ? (
           <Panel>
-            <p className="text-sm leading-relaxed text-foreground text-pretty">
+            <p className="text-base leading-7 text-foreground text-pretty">
               Jack is studying business at Penn State while continuing to build technical knowledge
               across security, networking, cloud services, and AI.
             </p>
             <div className="mt-4 grid gap-3">
               {EDUCATION.map((item) => (
-                <article key={item.school} className="os-border bg-secondary p-3">
-                  <p className="font-pixel text-[9px] leading-relaxed text-foreground">
+                <article key={item.school} className="os-border bg-secondary p-4">
+                  <p className="font-pixel text-[10px] font-semibold leading-relaxed text-foreground">
                     {item.school}
                   </p>
-                  <p className="text-sm text-foreground">{item.degree}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  <p className="text-base leading-7 text-foreground">{item.degree}</p>
+                  <p className="mt-1 text-base leading-7 text-muted-foreground">
                     {item.detail}
                   </p>
                 </article>
@@ -127,16 +127,16 @@ export function RecruiterViewContent({
           <Panel>
             <div className="grid gap-3">
               {featuredCredentials.map((credential) => (
-                <article key={credential.id} className="os-border bg-secondary p-3">
+                <article key={credential.id} className="os-border bg-secondary p-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-pixel text-[9px] leading-relaxed text-foreground">
+                    <p className="font-pixel text-[10px] font-semibold leading-relaxed text-foreground">
                       {credential.title}
                     </p>
-                    <span className="os-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    <span className="os-border bg-card px-2 py-1 text-[11px] text-foreground">
                       {credential.status}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  <p className="mt-2 text-base leading-7 text-muted-foreground">
                     {credential.summary}
                   </p>
                 </article>
@@ -150,19 +150,19 @@ export function RecruiterViewContent({
 
         {step === 'Projects' ? (
           <Panel>
-            <p className="text-sm leading-relaxed text-foreground text-pretty">
+            <p className="text-base leading-7 text-foreground text-pretty">
               The featured project is Jack OS, the portfolio experience you are using now.
             </p>
-            <article className="os-border mt-4 bg-secondary p-3">
-              <p className="font-pixel text-[10px] leading-relaxed text-foreground">
+            <article className="os-border mt-4 bg-secondary p-4">
+              <p className="font-pixel text-[11px] font-semibold leading-relaxed text-foreground">
                 {featuredProject.title}
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 text-base leading-7 text-muted-foreground">
                 {featuredProject.description}
               </p>
               <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Technologies">
                 {featuredProject.technologies.map((tech) => (
-                  <li key={tech} className="border border-border/40 bg-card px-1.5 py-0.5 text-[11px]">
+                  <li key={tech} className="border border-border/40 bg-card px-2 py-1 text-xs">
                     {tech}
                   </li>
                 ))}
@@ -183,13 +183,13 @@ export function RecruiterViewContent({
           <Panel>
             <div className="grid gap-3 sm:grid-cols-2">
               {SKILLS.map((skill) => (
-                <article key={skill.group} className="os-border bg-secondary p-3">
-                  <p className="font-pixel text-[9px] leading-relaxed text-foreground">
+                <article key={skill.group} className="os-border bg-secondary p-4">
+                  <p className="font-pixel text-[10px] font-semibold leading-relaxed text-foreground">
                     {skill.group}
                   </p>
                   <ul className="mt-2 flex flex-wrap gap-1.5">
                     {skill.items.map((item) => (
-                      <li key={item} className="border border-border/40 bg-card px-1.5 py-0.5 text-[11px]">
+                      <li key={item} className="border border-border/40 bg-card px-2 py-1 text-xs">
                         {item}
                       </li>
                     ))}
@@ -202,11 +202,11 @@ export function RecruiterViewContent({
 
         {step === 'Contact' ? (
           <Panel>
-            <p className="text-sm leading-relaxed text-foreground text-pretty">
+            <p className="text-base leading-7 text-foreground text-pretty">
               Open to internships, entry-level opportunities, collaboration, and professional
               connections.
             </p>
-            <p className="mt-3 font-pixel text-[9px] leading-relaxed text-foreground">
+            <p className="mt-3 font-pixel text-[10px] font-semibold leading-relaxed text-foreground">
               {CONTACT.email}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -256,8 +256,8 @@ export function RecruiterViewContent({
 }
 
 const buttonClass =
-  'os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none'
+  'os-border bg-card px-4 py-2.5 font-pixel text-[9px] font-semibold leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none'
 
 function Panel({ children }: { children: ReactNode }) {
-  return <div className="os-border bg-card p-4">{children}</div>
+  return <div className="os-border bg-card p-5 sm:p-6">{children}</div>
 }

@@ -33,7 +33,7 @@ export function DesktopContextMenu({
       data-desktop-interactive="true"
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => event.stopPropagation()}
-      className="fixed z-[80] w-44 os-border bg-paper py-1 font-pixel text-[9px] leading-none text-foreground os-shadow"
+      className="fixed z-[80] w-52 os-border bg-paper py-1.5 font-pixel text-[10px] leading-none text-foreground os-shadow"
       style={{ left: x, top: y }}
     >
       <button
@@ -43,11 +43,11 @@ export function DesktopContextMenu({
           onPersonalize()
           onClose()
         }}
-        className="block w-full px-3 py-2 text-left transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        className="block w-full px-3.5 py-2.5 text-left transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
       >
         Personalize...
       </button>
-      <span aria-hidden className="my-1 block border-t-2 border-border" />
+      <span aria-hidden className="my-1.5 block border-t-2 border-border" />
       <button
         type="button"
         role="menuitem"
@@ -55,7 +55,7 @@ export function DesktopContextMenu({
           onResetWallpaper()
           onClose()
         }}
-        className="block w-full px-3 py-2 text-left transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        className="block w-full px-3.5 py-2.5 text-left transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
       >
         Reset Wallpaper
       </button>

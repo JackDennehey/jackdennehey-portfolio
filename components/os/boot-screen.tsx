@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { STARTUP_AUDIO_DURATION_MS } from './use-sound-effects'
 
 const STARTUP_COMPLETE_BUFFER_MS = 120
+const WALLPAPER_READY_TIMEOUT_MS = 1400
 
 function getStartupMessage(progress: number) {
   if (progress < 0.18) return 'Jack OS'
@@ -16,9 +17,11 @@ function getStartupMessage(progress: number) {
 export function BootScreen({
   onPowerOn,
   onDone,
+  readyToReveal = true,
 }: {
   onPowerOn: () => void
   onDone: () => void
+  readyToReveal?: boolean
 }) {
   const [started, setStarted] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -28,13 +31,14 @@ export function BootScreen({
 
     let frame = 0
     const startedAt = performance.now()
-    const totalMs = STARTUP_AUDIO_DURATION_MS + STARTUP_COMPLETE_BUFFER_MS
+    const startupCompleteMs = STARTUP_AUDIO_DURATION_MS + STARTUP_COMPLETE_BUFFER_MS
+    const revealDeadlineMs = startupCompleteMs + WALLPAPER_READY_TIMEOUT_MS
 
     const tick = (now: number) => {
-      const nextElapsed = Math.min(totalMs, now - startedAt)
+      const nextElapsed = Math.min(revealDeadlineMs, now - startedAt)
       setElapsed(nextElapsed)
 
-      if (nextElapsed >= totalMs) {
+      if (nextElapsed >= startupCompleteMs && (readyToReveal || nextElapsed >= revealDeadlineMs)) {
         onDone()
         return
       }
@@ -44,7 +48,7 @@ export function BootScreen({
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [onDone, started])
+  }, [onDone, readyToReveal, started])
 
   const start = () => {
     if (started) return
@@ -54,7 +58,9 @@ export function BootScreen({
 
   const progress = Math.min(1, elapsed / STARTUP_AUDIO_DURATION_MS)
   const message = started ? getStartupMessage(progress) : 'Jack OS'
-  const complete = progress >= 0.98
+  const revealTimedOut =
+    elapsed >= STARTUP_AUDIO_DURATION_MS + STARTUP_COMPLETE_BUFFER_MS + WALLPAPER_READY_TIMEOUT_MS
+  const complete = progress >= 0.98 && (readyToReveal || revealTimedOut)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

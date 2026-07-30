@@ -28,10 +28,10 @@ type Props = {
   onMove: (x: number, y: number) => void
 }
 
-const MENU_BAR_HEIGHT = 32
+const MENU_BAR_HEIGHT = 36
 const DESKTOP_EDGE_PADDING = 8
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
-const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
+const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 64
 
 export function OsWindow({
   app,
@@ -127,14 +127,14 @@ export function OsWindow({
     width,
     maxWidth: 'calc(100vw - 24px)',
     height,
-    maxHeight: `calc(100vh - ${MENU_BAR_HEIGHT + 24}px)`,
+    maxHeight: `calc(100vh - ${MENU_BAR_HEIGHT + 40}px)`,
     zIndex: Math.max(0, z),
     display: status === 'minimized' ? 'none' : undefined,
   }
   const titlebarDraggable =
     !isMobile && status !== 'closing' && status !== 'minimized' && status !== 'maximized'
   const titlebarControlClass =
-    'grid size-4 place-items-center border-2 border-current bg-transparent font-pixel text-[8px] leading-none transition-colors hover:border-border hover:bg-transparent focus-visible:border-border focus-visible:outline-none disabled:cursor-default disabled:opacity-60'
+    'grid size-5 place-items-center border-2 border-current bg-transparent font-pixel text-[9px] leading-none transition-colors hover:border-border hover:bg-transparent focus-visible:border-border focus-visible:outline-none disabled:cursor-default disabled:opacity-70'
 
   return (
     <section
@@ -164,7 +164,7 @@ export function OsWindow({
       <header
         onPointerDown={startDrag}
         onDoubleClick={isMobile || status === 'closing' ? undefined : onMaximize}
-        className={`flex h-8 shrink-0 select-none items-center gap-2 border-b-2 border-border px-2 ${
+        className={`flex h-9 shrink-0 select-none items-center gap-2 border-b-2 border-border px-2.5 ${
           titlebarDraggable ? 'cursor-grab active:cursor-grabbing' : ''
         } ${focused ? 'bg-titlebar text-titlebar-foreground' : 'bg-secondary text-muted-foreground'}`}
       >
@@ -193,7 +193,7 @@ export function OsWindow({
           ) : null}
           <div className="flex min-w-0 max-w-full items-center gap-1.5 px-2">
             <app.Icon aria-hidden className="size-3.5 shrink-0" />
-            <h2 className="truncate font-pixel text-[9px] leading-none sm:text-[10px]">
+            <h2 className="truncate font-pixel text-[10px] leading-none sm:text-[11px]">
               {app.title}
             </h2>
           </div>
@@ -244,7 +244,7 @@ export function OsWindow({
       </header>
 
       {/* Body */}
-      <div className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5">
+      <div className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-5 text-card-foreground sm:p-6">
         {children}
       </div>
     </section>

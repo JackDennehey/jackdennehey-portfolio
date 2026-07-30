@@ -95,26 +95,28 @@ export function WallpapersContent({
         <div className="os-border bg-secondary p-2">
           <WallpaperPreview
             wallpaperId={previewedWallpaper.id}
+            full
+            priority
             className="aspect-video w-full border border-current"
           />
         </div>
 
         <div className="flex min-w-0 flex-col gap-3">
           <div className="space-y-2">
-            <p className="font-pixel text-[10px] leading-relaxed text-foreground">
+            <p className="font-pixel text-[11px] font-semibold leading-relaxed text-foreground">
               {previewedWallpaper.displayName}
             </p>
             {previewedPhaseLabel ? (
-              <p className="font-pixel text-[7px] leading-relaxed text-muted-foreground">
+              <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
                 {previewedPhaseLabel}
               </p>
             ) : null}
             {previewedExclusiveLabel ? (
-              <p className="font-pixel text-[7px] leading-relaxed text-muted-foreground">
+              <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
                 {previewedExclusiveLabel}
               </p>
             ) : null}
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <p className="text-sm leading-6 text-muted-foreground">
               {previewedWallpaper.description}
             </p>
           </div>
@@ -125,7 +127,7 @@ export function WallpapersContent({
               onClick={setWallpaper}
               disabled={!canSetWallpaper || isActiveWallpaper}
               className={cn(
-                'os-border px-3 py-2 text-center font-pixel text-[8px] leading-relaxed transition-colors focus-visible:outline-none',
+                'os-border px-3 py-2.5 text-center font-pixel text-[9px] font-semibold leading-relaxed transition-colors focus-visible:outline-none',
                 canSetWallpaper && !isActiveWallpaper
                   ? 'bg-card text-foreground hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground'
                   : 'cursor-default bg-secondary text-muted-foreground',
@@ -143,7 +145,7 @@ export function WallpapersContent({
                 href={previewedWallpaper.imagePath}
                 download
                 data-wallpaper-preview-download={previewedWallpaper.id}
-                className="os-border bg-card px-3 py-2 text-center font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+                className="os-border bg-card px-3 py-2.5 text-center font-pixel text-[9px] font-semibold leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
               >
                 Download
               </a>
@@ -152,7 +154,7 @@ export function WallpapersContent({
                 type="button"
                 disabled
                 title={previewedExclusiveLabel}
-                className="os-border cursor-default bg-secondary px-3 py-2 text-center font-pixel text-[8px] leading-relaxed text-muted-foreground"
+                className="os-border cursor-default bg-secondary px-3 py-2.5 text-center font-pixel text-[9px] font-semibold leading-relaxed text-muted-foreground"
               >
                 {topDownloadLabel}
               </button>
@@ -161,7 +163,7 @@ export function WallpapersContent({
             <button
               type="button"
               onClick={resetWallpaper}
-              className="os-border bg-card px-3 py-2 text-center font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+              className="os-border bg-card px-3 py-2.5 text-center font-pixel text-[9px] font-semibold leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
             >
               Reset
             </button>
@@ -190,7 +192,7 @@ export function WallpapersContent({
       />
 
       <section className="os-border space-y-3 bg-secondary p-3">
-        <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
+        <h3 className="font-pixel text-[11px] font-semibold leading-relaxed text-foreground">
           Desktop Widgets
         </h3>
         <label className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -257,7 +259,7 @@ function WallpaperSection({
 }) {
   return (
     <section className="space-y-2">
-      <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
+      <h3 className="font-pixel text-[11px] font-semibold leading-relaxed text-foreground">
         {title}
       </h3>
       <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -297,10 +299,10 @@ function HiddenWallpaperSection({
   return (
     <section className="space-y-2">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
+        <h3 className="font-pixel text-[11px] font-semibold leading-relaxed text-foreground">
           Hidden Files
         </h3>
-        <p className="font-pixel text-[7px] leading-relaxed text-muted-foreground">
+        <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
           Unlock through Secrets
         </p>
       </div>
@@ -327,7 +329,7 @@ function HiddenWallpaperSection({
 
 function LockedWallpaperTile({ onOpenSecrets }: { onOpenSecrets: () => void }) {
   return (
-    <article className="os-border flex h-full min-h-44 min-w-0 flex-col bg-card p-2 text-foreground">
+    <article className="os-border flex h-full min-h-48 min-w-0 flex-col bg-card p-2.5 text-foreground">
       <button
         type="button"
         onClick={onOpenSecrets}
@@ -342,13 +344,13 @@ function LockedWallpaperTile({ onOpenSecrets }: { onOpenSecrets: () => void }) {
             <JackSecretsIcon className="size-6" />
           </span>
         </span>
-        <span className="mt-2 font-pixel text-[7px] leading-relaxed">
+        <span className="mt-2 font-pixel text-[8px] font-semibold leading-relaxed">
           Locked Wallpaper
         </span>
-        <span className="mt-1 block min-h-10 text-xs leading-relaxed opacity-75">
+        <span className="mt-1 block min-h-12 text-sm leading-relaxed opacity-75">
           Unlock through Secrets.
         </span>
-        <span className="os-border mt-auto block w-full bg-secondary px-2 py-1 text-center font-pixel text-[7px] leading-relaxed">
+        <span className="os-border mt-auto block w-full bg-secondary px-2.5 py-1.5 text-center font-pixel text-[8px] leading-relaxed">
           Open Secrets
         </span>
       </button>
@@ -381,7 +383,7 @@ function WallpaperTile({
       data-wallpaper-selectable={wallpaper.selectable && unlocked}
       data-wallpaper-active={active}
       className={cn(
-        'os-border flex h-full min-h-44 min-w-0 flex-col bg-card p-2 text-foreground',
+        'os-border flex h-full min-h-48 min-w-0 flex-col bg-card p-2.5 text-foreground',
         active
           ? 'bg-foreground text-primary-foreground outline outline-2 outline-offset-[-6px] outline-current'
           : null,
@@ -400,26 +402,26 @@ function WallpaperTile({
           className="aspect-video w-full border border-current"
         />
         <span className="mt-2 flex min-w-0 items-start justify-between gap-2">
-          <span className="min-w-0 font-pixel text-[7px] leading-relaxed [overflow-wrap:anywhere]">
+          <span className="min-w-0 font-pixel text-[8px] font-semibold leading-relaxed [overflow-wrap:anywhere]">
             {wallpaper.displayName}
           </span>
           {active ? (
-            <span className="shrink-0 font-pixel text-[7px] leading-relaxed">Current</span>
+            <span className="shrink-0 font-pixel text-[8px] leading-relaxed">Current</span>
           ) : previewing ? (
-            <span className="shrink-0 font-pixel text-[7px] leading-relaxed">View</span>
+            <span className="shrink-0 font-pixel text-[8px] leading-relaxed">View</span>
           ) : null}
         </span>
         {phaseLabel ? (
-          <span className="mt-1 block font-pixel text-[6px] leading-relaxed opacity-75">
+          <span className="mt-1 block font-pixel text-[7px] leading-relaxed opacity-75">
             {phaseLabel}
           </span>
         ) : null}
         {exclusiveLabel ? (
-          <span className="mt-1 block font-pixel text-[6px] leading-relaxed opacity-75">
+          <span className="mt-1 block font-pixel text-[7px] leading-relaxed opacity-75">
             {exclusiveLabel}
           </span>
         ) : null}
-        <span className="mt-1 block min-h-10 text-xs leading-relaxed opacity-75">
+        <span className="mt-1 block min-h-12 text-sm leading-relaxed opacity-75">
           {wallpaper.description}
         </span>
       </button>
@@ -431,7 +433,7 @@ function WallpaperTile({
           onClick={onSetWallpaper}
           data-wallpaper-set={wallpaper.id}
           className={cn(
-            'os-border mt-2 block w-full px-2 py-1 text-center font-pixel text-[7px] leading-relaxed transition-colors focus-visible:outline-none',
+            'os-border mt-2 block w-full px-2.5 py-1.5 text-center font-pixel text-[8px] font-semibold leading-relaxed transition-colors focus-visible:outline-none',
             active
               ? 'cursor-default border-primary-foreground bg-primary-foreground text-foreground'
               : 'bg-card text-foreground hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground',
@@ -444,7 +446,7 @@ function WallpaperTile({
           type="button"
           disabled
           title={exclusiveLabel}
-          className="os-border mt-2 block w-full cursor-default bg-secondary px-2 py-1 text-center font-pixel text-[7px] leading-relaxed text-muted-foreground"
+          className="os-border mt-2 block w-full cursor-default bg-secondary px-2.5 py-1.5 text-center font-pixel text-[8px] leading-relaxed text-muted-foreground"
         >
           Download Unavailable
         </button>
@@ -454,7 +456,7 @@ function WallpaperTile({
           download
           data-wallpaper-download={wallpaper.id}
           className={cn(
-            'os-border mt-2 block px-2 py-1 text-center font-pixel text-[7px] leading-relaxed transition-colors focus-visible:outline-none',
+            'os-border mt-2 block px-2.5 py-1.5 text-center font-pixel text-[8px] font-semibold leading-relaxed transition-colors focus-visible:outline-none',
             active
               ? 'border-primary-foreground bg-transparent text-primary-foreground hover:bg-primary-foreground hover:text-foreground focus-visible:bg-primary-foreground focus-visible:text-foreground'
               : 'bg-card text-foreground hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground',

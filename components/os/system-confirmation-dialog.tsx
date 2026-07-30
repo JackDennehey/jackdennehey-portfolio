@@ -81,29 +81,29 @@ export function SystemConfirmationDialog({
         aria-modal="true"
         aria-label={title}
         onKeyDown={onKeyDown}
-        className="w-full max-w-md overflow-hidden os-border bg-paper text-foreground os-shadow-lg"
+        className="w-full max-w-lg overflow-hidden os-border bg-paper text-foreground os-shadow-lg"
       >
-        <header className="flex h-8 items-center gap-2 border-b-2 border-border bg-titlebar px-2 text-titlebar-foreground">
-          <span className="font-pixel text-[10px] leading-none">{title}</span>
+        <header className="flex h-9 items-center gap-2 border-b-2 border-border bg-titlebar px-2.5 text-titlebar-foreground">
+          <span className="font-pixel text-[11px] leading-none">{title}</span>
           <span aria-hidden className="titlebar-lines h-3 flex-1 opacity-60" />
         </header>
-        <div className="space-y-4 p-4">
-          <div className="text-sm leading-relaxed text-muted-foreground text-pretty">
+        <div className="space-y-5 p-5">
+          <div className="text-base leading-7 text-muted-foreground text-pretty">
             {message}
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2.5">
             <button
               ref={firstButtonRef}
               type="button"
               onClick={onCancel}
-              className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+              className="os-border bg-card px-4 py-2.5 font-pixel text-[9px] font-semibold leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
             >
               {cancelLabel}
             </button>
             <button
               type="button"
               onClick={onConfirm}
-              className="os-border bg-foreground px-3 py-2 font-pixel text-[8px] leading-relaxed text-primary-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:bg-card focus-visible:text-foreground focus-visible:outline-none"
+              className="os-border bg-foreground px-4 py-2.5 font-pixel text-[9px] font-semibold leading-relaxed text-primary-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:bg-card focus-visible:text-foreground focus-visible:outline-none"
             >
               {confirmLabel}
             </button>

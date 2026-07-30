@@ -166,15 +166,15 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
         aria-modal="true"
         aria-label="Search Jack OS"
         onKeyDown={onDialogKeyDown}
-        className="w-full max-w-xl overflow-hidden os-border bg-paper text-foreground os-shadow-lg"
+        className="w-full max-w-2xl overflow-hidden os-border bg-paper text-foreground os-shadow-lg"
       >
-        <header className="flex h-8 items-center gap-2 border-b-2 border-border bg-titlebar px-2 text-titlebar-foreground">
-          <span className="font-pixel text-[10px] leading-none">Search Jack OS</span>
+        <header className="flex h-9 items-center gap-2 border-b-2 border-border bg-titlebar px-2.5 text-titlebar-foreground">
+          <span className="font-pixel text-[11px] leading-none">Search Jack OS</span>
           <span aria-hidden className="titlebar-lines h-3 flex-1 opacity-60" />
-          <span className="hidden font-pixel text-[7px] leading-none sm:block">Esc</span>
+          <span className="hidden font-pixel text-[8px] leading-none sm:block">Esc</span>
         </header>
 
-        <div className="p-3">
+        <div className="p-4">
           <label htmlFor="jack-os-command-palette-search" className="sr-only">
             Type an app or command
           </label>
@@ -190,13 +190,13 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
             autoComplete="off"
             spellCheck={false}
             placeholder="Type an app or command..."
-            className="w-full os-border bg-card px-3 py-2 font-pixel text-[9px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full os-border bg-card px-3.5 py-2.5 font-pixel text-[10px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           />
 
           <div
             role="listbox"
             aria-label="Command results"
-            className="mt-3 max-h-[min(58dvh,360px)] overflow-y-auto os-border bg-secondary p-1"
+            className="mt-3 max-h-[min(58dvh,390px)] overflow-y-auto os-border bg-secondary p-1.5"
           >
             {visibleCommands.length > 0 ? (
               visibleCommands.map((command, index) => {
@@ -212,7 +212,7 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                     onMouseEnter={() => setSelectedIndex(index)}
                     onClick={() => activateCommand(command)}
                     className={cn(
-                      'flex w-full min-w-0 items-center gap-2 px-2 py-2 text-left transition-colors focus-visible:outline-none',
+                      'flex w-full min-w-0 items-center gap-2.5 px-2.5 py-2.5 text-left transition-colors focus-visible:outline-none',
                       selected
                         ? 'bg-foreground text-primary-foreground'
                         : 'text-foreground hover:bg-card focus-visible:bg-card',
@@ -221,22 +221,32 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                   >
                     <span
                       aria-hidden
-                      className="grid size-7 shrink-0 place-items-center border-2 border-current bg-paper text-foreground"
+                      className="grid size-8 shrink-0 place-items-center border-2 border-current bg-paper text-foreground"
                     >
-                      {Icon ? <Icon className="size-4" /> : <span className="font-pixel text-[8px]">J</span>}
+                      {Icon ? <Icon className="size-[1.125rem]" /> : <span className="font-pixel text-[9px]">J</span>}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-pixel text-[8px] leading-relaxed">
+                      <span className="block truncate font-pixel text-[9px] leading-relaxed">
                         {command.title}
                       </span>
                       {command.subtitle ? (
-                        <span className="block truncate text-xs leading-relaxed opacity-75">
+                        <span
+                          className={cn(
+                            'block truncate text-sm leading-relaxed',
+                            selected ? 'text-primary-foreground' : 'text-muted-foreground',
+                          )}
+                        >
                           {command.subtitle}
                         </span>
                       ) : null}
                     </span>
                     {command.shortcut ? (
-                      <span className="hidden shrink-0 font-pixel text-[7px] leading-none opacity-70 sm:block">
+                      <span
+                        className={cn(
+                          'hidden shrink-0 font-pixel text-[8px] leading-none sm:block',
+                          selected ? 'text-primary-foreground' : 'text-muted-foreground',
+                        )}
+                      >
                         {command.shortcut}
                       </span>
                     ) : null}
@@ -244,7 +254,7 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                 )
               })
             ) : (
-              <p className="px-2 py-3 font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              <p className="px-2.5 py-4 font-pixel text-[9px] leading-relaxed text-muted-foreground">
                 No matching command.
               </p>
             )}

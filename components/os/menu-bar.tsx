@@ -38,9 +38,9 @@ type MenuDefinition = {
 
 const MENU_ORDER: MenuName[] = ['jack', 'system', 'about']
 const menuButtonClass =
-  'flex h-full items-center px-2 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none'
+  'flex h-full items-center px-2.5 font-pixel text-[11px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none'
 const menuItemClass =
-  'flex w-full min-w-44 items-center justify-between gap-4 px-3 py-2 text-left font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:text-muted-foreground disabled:hover:bg-transparent disabled:hover:text-muted-foreground'
+  'flex w-full min-w-56 items-center justify-between gap-5 px-3.5 py-2.5 text-left font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:text-muted-foreground disabled:hover:bg-transparent disabled:hover:text-muted-foreground'
 
 export function MenuBar({
   onOpen,
@@ -285,7 +285,7 @@ export function MenuBar({
   return (
     <header
       ref={headerRef}
-      className="fixed inset-x-0 top-0 z-50 flex h-8 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3"
+      className="fixed inset-x-0 top-0 z-50 flex h-9 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3"
     >
       <nav aria-label="Main" className="flex h-full min-w-0 items-center">
         {menus.map((menu) => (
@@ -321,7 +321,7 @@ export function MenuBar({
                 data-desktop-interactive="true"
                 data-jack-os-menu-open="true"
                 onKeyDown={(event) => onMenuKeyDown(event, menu.id)}
-                className="absolute left-0 top-full z-[75] mt-0 w-max os-border bg-paper py-1 text-foreground os-shadow"
+                className="absolute left-0 top-full z-[75] mt-0 w-max max-w-[calc(100vw-1rem)] overflow-hidden os-border bg-paper py-1.5 text-foreground os-shadow"
               >
                 {menu.entries.map((entry, index) => {
                   if (entry.type === 'separator') {
@@ -329,7 +329,7 @@ export function MenuBar({
                       <span
                         key={`${menu.id}-separator-${index}`}
                         aria-hidden
-                        className="my-1 block border-t-2 border-border"
+                        className="my-1.5 block border-t-2 border-border"
                       />
                     )
                   }
@@ -346,7 +346,7 @@ export function MenuBar({
                         className={menuItemClass}
                       >
                         <span>{entry.label}</span>
-                        {entry.detail ? <span className="text-[7px] opacity-70">{entry.detail}</span> : null}
+                        {entry.detail ? <span className="text-[8px] text-muted-foreground">{entry.detail}</span> : null}
                       </a>
                     )
                   }
@@ -361,7 +361,7 @@ export function MenuBar({
                       className={menuItemClass}
                     >
                       <span>{entry.label}</span>
-                      {entry.detail ? <span className="text-[7px] opacity-70">{entry.detail}</span> : null}
+                      {entry.detail ? <span className="text-[8px] text-muted-foreground">{entry.detail}</span> : null}
                     </button>
                   )
                 })}
