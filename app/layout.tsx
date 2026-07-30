@@ -56,11 +56,30 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light',
+  colorScheme: 'light dark',
   themeColor: '#eae7df',
   width: 'device-width',
   initialScale: 1,
 }
+
+const themeInitScript = `
+(() => {
+  try {
+    const key = 'jack-os:interface-theme';
+    const stored = window.localStorage.getItem(key);
+    const valid = stored === 'light' || stored === 'dark';
+    const theme = valid
+      ? stored
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle('light', theme === 'light');
+  } catch {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.classList.add('light');
+  }
+})();
+`
 
 export default function RootLayout({
   children,
@@ -68,7 +87,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`light ${geistSans.variable} ${pressStart.variable}`}>
+    <html
+      lang="en"
+      data-theme="light"
+      suppressHydrationWarning
+      className={`light ${geistSans.variable} ${pressStart.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="bg-background antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

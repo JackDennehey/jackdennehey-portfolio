@@ -101,6 +101,45 @@ export function JackScanlinesOffIcon(props: IconProps) {
   )
 }
 
+export function JackThemeLightIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="5" y="5" width="14" height="14" />
+      <path d="M12 8v8M8 12h8" />
+      <path d="M4 12H2M22 12h-2M12 4V2M12 22v-2" />
+    </JackIcon>
+  )
+}
+
+export function JackThemeDarkIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="5" y="5" width="14" height="14" />
+      <path d="M15 8a5 5 0 1 0 0 8" />
+      <path d="M16 10h2M16 14h2" />
+    </JackIcon>
+  )
+}
+
+export function JackSoundOnIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M4 10h4l5-4v12l-5-4H4z" />
+      <path d="M16 9l2 3-2 3" />
+      <path d="M19 7l3 5-3 5" />
+    </JackIcon>
+  )
+}
+
+export function JackSoundOffIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M4 10h4l5-4v12l-5-4H4z" />
+      <path d="M16 9l6 6M22 9l-6 6" />
+    </JackIcon>
+  )
+}
+
 export function JackPersonalizeIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

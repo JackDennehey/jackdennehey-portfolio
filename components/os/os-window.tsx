@@ -8,12 +8,16 @@ type Props = {
   children: ReactNode
   x: number
   y: number
+  width: number
+  height: number
   z: number
-  status: 'open' | 'closing'
+  status: 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
   focused: boolean
   isMobile: boolean
   onFocus: () => void
   onClose: () => void
+  onMinimize: () => void
+  onMaximize: () => void
   onMove: (x: number, y: number) => void
 }
 
@@ -27,12 +31,16 @@ export function OsWindow({
   children,
   x,
   y,
+  width,
+  height,
   z,
   status,
   focused,
   isMobile,
   onFocus,
   onClose,
+  onMinimize,
+  onMaximize,
   onMove,
 }: Props) {
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
@@ -82,7 +90,13 @@ export function OsWindow({
   useEffect(() => stopDrag, [stopDrag])
 
   const startDrag = (e: React.PointerEvent) => {
-    if (isMobile || status === 'closing' || e.button !== 0) return
+    if (
+      isMobile ||
+      status === 'closing' ||
+      status === 'minimized' ||
+      status === 'maximized' ||
+      e.button !== 0
+    ) return
     e.preventDefault()
     e.currentTarget.setPointerCapture?.(e.pointerId)
     onFocus()
@@ -103,24 +117,34 @@ export function OsWindow({
     position: 'absolute',
     left: x,
     top: y,
-    width: app.width,
+    width,
     maxWidth: 'calc(100vw - 24px)',
-    height: app.height,
+    height,
     maxHeight: `calc(100vh - ${MENU_BAR_HEIGHT + 24}px)`,
-    zIndex: z,
+    zIndex: Math.max(0, z),
+    display: status === 'minimized' ? 'none' : undefined,
   }
+  const titlebarDraggable =
+    !isMobile && status !== 'closing' && status !== 'minimized' && status !== 'maximized'
+  const titlebarControlClass =
+    'grid size-4 place-items-center border-2 border-current bg-transparent font-pixel text-[8px] leading-none transition-colors hover:border-border hover:bg-transparent focus-visible:border-border focus-visible:outline-none disabled:cursor-default disabled:opacity-60'
 
   return (
     <section
       role="dialog"
       aria-label={app.title}
       aria-modal={isMobile}
+      aria-hidden={!isMobile && status === 'minimized'}
       data-window-status={status}
       data-window-focused={focused ? 'true' : 'false'}
       style={isMobile ? mobileStyle : desktopStyle}
-      onPointerDown={status === 'closing' ? undefined : onFocus}
-      className={`flex flex-col overflow-hidden bg-paper os-border ${
-        status === 'closing' ? 'animate-window-close' : 'animate-window-open'
+      onPointerDown={status === 'closing' || status === 'minimized' ? undefined : onFocus}
+      className={`os-window-frame flex flex-col overflow-hidden bg-paper os-border ${
+        status === 'closing'
+          ? 'animate-window-close'
+          : status === 'minimized'
+            ? 'animate-window-minimize'
+            : 'animate-window-open'
       } ${
         isMobile
           ? ''
@@ -132,9 +156,9 @@ export function OsWindow({
       {/* Title bar */}
       <header
         onPointerDown={startDrag}
-        onDoubleClick={isMobile || status === 'closing' ? undefined : onClose}
+        onDoubleClick={isMobile || status === 'closing' ? undefined : onMaximize}
         className={`flex h-8 shrink-0 select-none items-center gap-2 border-b-2 border-border px-2 ${
-          isMobile ? '' : 'cursor-grab active:cursor-grabbing'
+          titlebarDraggable ? 'cursor-grab active:cursor-grabbing' : ''
         } ${focused ? 'bg-titlebar text-titlebar-foreground' : 'bg-secondary text-muted-foreground'}`}
       >
         <button
@@ -143,12 +167,11 @@ export function OsWindow({
           onClick={onClose}
           onPointerDown={(e) => e.stopPropagation()}
           aria-label={`Close ${app.title}`}
-          className="group/close grid size-4 place-items-center border-2 border-current bg-transparent transition-colors hover:bg-current focus-visible:bg-current focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
+          className={titlebarControlClass}
         >
           <span
             aria-hidden
-            className="font-pixel text-[7px] leading-none opacity-0 group-hover/close:opacity-100 group-focus-visible/close:opacity-100"
-            style={{ color: 'var(--paper)' }}
+            className="opacity-80"
           >
             x
           </span>
@@ -175,7 +198,44 @@ export function OsWindow({
           ) : null}
         </div>
 
-        <span aria-hidden className="size-4 shrink-0" />
+        {!isMobile ? (
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              disabled={status === 'closing'}
+              onClick={onMinimize}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label={`Minimize ${app.title}`}
+              className={titlebarControlClass}
+            >
+              <span
+                aria-hidden
+                className="opacity-80"
+              >
+                -
+              </span>
+            </button>
+            <button
+              type="button"
+              disabled={status === 'closing'}
+              onClick={onMaximize}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label={
+                status === 'maximized' ? `Restore ${app.title}` : `Maximize ${app.title}`
+              }
+              className={titlebarControlClass}
+            >
+              <span
+                aria-hidden
+                className="opacity-80"
+              >
+                {status === 'maximized' ? '=' : '+'}
+              </span>
+            </button>
+          </div>
+        ) : (
+          <span aria-hidden className="size-4 shrink-0" />
+        )}
       </header>
 
       {/* Body */}
