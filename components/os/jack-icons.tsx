@@ -159,3 +159,14 @@ export function JackWallpapersIcon(props: IconProps) {
     </JackIcon>
   )
 }
+
+export function JackSecretsIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M7 10V8a5 5 0 0 1 10 0v2" />
+      <rect x="5" y="10" width="14" height="10" />
+      <path d="M12 14v3M10 14h4" />
+      <path d="M8 4h1M15 4h1" />
+    </JackIcon>
+  )
+}

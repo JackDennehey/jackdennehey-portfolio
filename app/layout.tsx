@@ -1,17 +1,19 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Press_Start_2P } from 'next/font/google'
+import {
+  SITE_DESCRIPTION,
+  SITE_OG_ALT,
+  SITE_TITLE,
+  SITE_URL,
+} from '@/lib/site-metadata'
 import './globals.css'
 
-const siteUrl = 'https://jackdennehey.com'
-const siteTitle = 'Jack Dennehey | Cybersecurity, Business & Technology Portfolio'
-const siteDescription =
-  'Explore Jack Dennehey’s interactive retro OS portfolio, featuring cybersecurity credentials, networking knowledge, cloud and AI studies, business education, and technical projects.'
 const socialImage = {
   url: '/opengraph-image',
   width: 1200,
   height: 630,
-  alt: 'Jack OS — Jack Dennehey’s cybersecurity, business, and technology portfolio',
+  alt: SITE_OG_ALT,
 }
 
 const geistSans = Geist({
@@ -28,12 +30,12 @@ const pressStart = Press_Start_2P({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: siteTitle,
+    default: SITE_TITLE,
     template: '%s | Jack Dennehey',
   },
-  description: siteDescription,
+  description: SITE_DESCRIPTION,
   keywords: [
     'Jack Dennehey',
     'cybersecurity portfolio',
@@ -68,16 +70,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: 'https://jackdennehey.com/',
-    title: siteTitle,
-    description: siteDescription,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     siteName: 'Jack OS',
     locale: 'en_US',
     images: [socialImage],
   },
   twitter: {
     card: 'summary_large_image',
-    title: siteTitle,
-    description: siteDescription,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [socialImage],
   },
   icons: {

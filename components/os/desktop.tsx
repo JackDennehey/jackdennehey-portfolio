@@ -17,6 +17,7 @@ import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
 import { useDesktopPreferences } from './use-desktop-preferences'
 import { WallpaperManager } from './wallpaper-manager'
+import { CommandPalette, type JackOsCommand } from './command-palette'
 import { HomeContent } from './content/home-content'
 import { AboutContent } from './content/about-content'
 import { ProjectsContent } from './content/projects-content'
@@ -24,9 +25,16 @@ import { CertificationsContent } from './content/certifications-content'
 import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
+import { SecretsContent } from './content/secrets-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
 import { MinimizedWindowStrip } from './minimized-window-strip'
+import { useSecretUnlocks } from './use-secret-unlocks'
+import {
+  getSecretDefinition,
+  type SecretId,
+} from '@/lib/secrets'
+import { DEFAULT_WALLPAPER_ID, getWallpaperAsset, isHiddenWallpaper } from '@/lib/wallpapers'
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -129,7 +137,12 @@ export function Desktop() {
   const [windows, setWindows] = useState<OpenWindow[]>([])
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
-  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences()
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const secretUnlocks = useSecretUnlocks()
+  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
+    secretUnlocks.unlockedIds,
+    secretUnlocks.loaded,
+  )
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
   const windowsRef = useRef<OpenWindow[]>([])
@@ -152,6 +165,12 @@ export function Desktop() {
 
   const focusWindow = useCallback((id: WindowId) => {
     setOrder((prev) => [...prev.filter((w) => w !== id), id])
+  }, [])
+
+  const focusDesktop = useCallback(() => {
+    window.setTimeout(() => {
+      document.getElementById('jack-os-desktop')?.focus()
+    }, 0)
   }, [])
 
   const openWindow = useCallback(
@@ -236,9 +255,10 @@ export function Desktop() {
       windowsRef.current = windowsRef.current.filter((w) => w.id !== id)
       setWindows((prev) => prev.filter((w) => w.id !== id))
       setOrder((prev) => prev.filter((w) => w !== id))
+      focusDesktop()
       delete closeTimers.current[id]
     }, WINDOW_CLOSE_DURATION_MS)
-  }, [soundEffects])
+  }, [focusDesktop, soundEffects])
 
   const moveWindow = useCallback((id: WindowId, x: number, y: number) => {
     const target = windowsRef.current.find((w) => w.id === id)
@@ -272,7 +292,8 @@ export function Desktop() {
     )
     setWindows(windowsRef.current)
     setOrder((prev) => prev.filter((w) => w !== id))
-  }, [])
+    focusDesktop()
+  }, [focusDesktop])
 
   const restoreWindow = useCallback((id: WindowId) => {
     const target = windowsRef.current.find((w) => w.id === id)
@@ -292,6 +313,27 @@ export function Desktop() {
     setWindows(windowsRef.current)
     focusWindow(id)
   }, [focusWindow])
+
+  const restoreAllMinimized = useCallback(() => {
+    const minimizedWindows = windowsRef.current.filter((w) => w.status === 'minimized')
+    if (minimizedWindows.length === 0) return
+
+    const restoredWindows = windowsRef.current.map((w) => {
+      if (w.status !== 'minimized') return w
+
+      const restoredStatus = w.restoreStatus ?? 'open'
+      const restoredGeometry =
+        restoredStatus === 'maximized' ? getMaximizedGeometry() : clampWindowGeometry(w.id, w.normal)
+      return { ...w, ...restoredGeometry, status: restoredStatus, restoreStatus: undefined }
+    })
+
+    windowsRef.current = restoredWindows
+    setWindows(restoredWindows)
+    setOrder((prev) => [
+      ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
+      ...minimizedWindows.map((w) => w.id),
+    ])
+  }, [])
 
   const maximizeWindow = useCallback((id: WindowId) => {
     const target = windowsRef.current.find((w) => w.id === id)
@@ -318,11 +360,44 @@ export function Desktop() {
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
+    focusDesktop()
+  }, [focusDesktop])
+
+  const openCommandPalette = useCallback(() => {
+    setContextMenu(null)
+    setCommandPaletteOpen(true)
+  }, [])
+
+  const closeCommandPalette = useCallback(() => {
+    setCommandPaletteOpen(false)
   }, [])
 
   const openPersonalize = useCallback(() => {
     openWindow('wallpapers')
   }, [openWindow])
+
+  const openSecrets = useCallback(() => {
+    openWindow('secrets')
+  }, [openWindow])
+
+  const unlockSecret = useCallback(
+    (id: SecretId) => {
+      const result = secretUnlocks.unlock(id)
+      if (result === 'unlocked') {
+        soundEffects.playSecretUnlock(id)
+      }
+      return result
+    },
+    [secretUnlocks, soundEffects],
+  )
+
+  const resetSecretUnlocks = useCallback(() => {
+    const activeWallpaper = getWallpaperAsset(preferences.wallpaperId)
+    secretUnlocks.reset()
+    if (isHiddenWallpaper(activeWallpaper)) {
+      updatePreferences({ wallpaperId: DEFAULT_WALLPAPER_ID })
+    }
+  }, [preferences.wallpaperId, secretUnlocks, updatePreferences])
 
   const handleDesktopContextMenu = useCallback(
     (event: MouseEvent<HTMLElement>) => {
@@ -342,6 +417,7 @@ export function Desktop() {
         return
       }
 
+      setCommandPaletteOpen(false)
       setContextMenu({
         x: Math.max(8, Math.min(event.clientX, window.innerWidth - CONTEXT_MENU_WIDTH - 8)),
         y: Math.max(40, Math.min(event.clientY, window.innerHeight - CONTEXT_MENU_HEIGHT - 8)),
@@ -349,6 +425,19 @@ export function Desktop() {
     },
     [closeContextMenu, isMobile],
   )
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!booted) return
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        openCommandPalette()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [booted, openCommandPalette])
 
   useEffect(() => {
     if (!booted || handledInitialHash.current) return
@@ -442,7 +531,7 @@ export function Desktop() {
   // Escape closes the top-most window.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (contextMenu) return
+      if (contextMenu || commandPaletteOpen) return
       const visibleOrder = order.filter((id) => {
         const windowRecord = windowsRef.current.find((w) => w.id === id)
         return windowRecord && windowRecord.status !== 'minimized'
@@ -453,7 +542,128 @@ export function Desktop() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [contextMenu, order, closeWindow])
+  }, [commandPaletteOpen, contextMenu, order, closeWindow])
+
+  const topId = order[order.length - 1]
+  const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
+  const minimizedWindows = windows.filter((w) => w.status === 'minimized')
+  const visibleWindows = windows.filter((w) => w.status !== 'minimized')
+
+  const minimizeActiveWindow = useCallback(() => {
+    if (topId) {
+      minimizeWindow(topId)
+    }
+  }, [minimizeWindow, topId])
+
+  const commandRegistry = useMemo<JackOsCommand[]>(() => {
+    const appIds: WindowId[] = [
+      'home',
+      'about',
+      'projects',
+      'certifications',
+      'resume',
+      'contact',
+      'wallpapers',
+      'secrets',
+    ]
+    const appAliases: Partial<Record<WindowId, readonly string[]>> = {
+      home: ['welcome', 'system', 'start'],
+      about: ['about me', 'jack', 'bio'],
+      certifications: ['credentials', 'certifications', 'certificates'],
+      wallpapers: ['personalize', 'background', 'desktop'],
+      secrets: ['hidden', 'files', 'manual'],
+    }
+
+    const appCommands = appIds.map((id) => {
+      const app = WINDOW_APPS[id]
+      return {
+        id: `open-${id}`,
+        title: id === 'home' ? 'Open Welcome' : `Open ${app.title}`,
+        subtitle: 'Application',
+        keywords: [app.title, id, ...(appAliases[id] ?? [])],
+        Icon: app.Icon,
+        action: () => openWindow(id),
+      }
+    })
+
+    const unlockedSecretCommands = secretUnlocks.unlockedIds
+      .map((secretId) => getSecretDefinition(secretId))
+      .filter((secret): secret is NonNullable<typeof secret> => Boolean(secret))
+      .map((secret) => ({
+        id: `find-${secret.id}`,
+        title: `Find ${secret.wallpaperTitle} in Wallpapers`,
+        subtitle: 'Hidden file recovered',
+        keywords: [secret.wallpaperTitle, 'hidden wallpaper', 'exclusive'],
+        Icon: WINDOW_APPS.wallpapers.Icon,
+        action: () => openWindow('wallpapers'),
+      }))
+
+    return [
+      ...appCommands,
+      {
+        id: 'toggle-theme',
+        title: 'Toggle Light/Dark Theme',
+        subtitle: `Current: ${theme}`,
+        keywords: ['theme', 'light', 'dark'],
+        action: toggleTheme,
+      },
+      {
+        id: 'toggle-scanlines',
+        title: 'Toggle CRT Lines',
+        subtitle: scanlines ? 'Currently On' : 'Currently Off',
+        keywords: ['crt', 'scanlines', 'lines'],
+        action: () => setScanlines((value) => !value),
+      },
+      {
+        id: 'toggle-sound-effects',
+        title: 'Toggle Sound Effects',
+        subtitle: soundEffects.soundEffectsEnabled ? 'Currently On' : 'Currently Off',
+        keywords: ['sound', 'audio', 'effects'],
+        action: () =>
+          soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled),
+      },
+      {
+        id: 'open-wallpapers-system',
+        title: 'Open Wallpapers',
+        subtitle: 'Personalization',
+        keywords: ['personalize', 'wallpaper', 'background'],
+        Icon: WINDOW_APPS.wallpapers.Icon,
+        action: () => openWindow('wallpapers'),
+      },
+      {
+        id: 'restore-all-minimized',
+        title: 'Restore all minimized windows',
+        subtitle:
+          minimizedWindows.length > 0
+            ? `${minimizedWindows.length} minimized`
+            : 'No minimized windows',
+        keywords: ['restore', 'windows', 'minimized'],
+        disabled: minimizedWindows.length === 0,
+        action: restoreAllMinimized,
+      },
+      {
+        id: 'minimize-active-window',
+        title: 'Minimize active window',
+        subtitle: topId ? WINDOW_APPS[topId].title : 'No active window',
+        keywords: ['minimize', 'active', 'window'],
+        disabled: !topId || isMobile,
+        action: minimizeActiveWindow,
+      },
+      ...unlockedSecretCommands,
+    ]
+  }, [
+    isMobile,
+    minimizedWindows.length,
+    minimizeActiveWindow,
+    openWindow,
+    restoreAllMinimized,
+    scanlines,
+    secretUnlocks.unlockedIds,
+    soundEffects,
+    theme,
+    toggleTheme,
+    topId,
+  ])
 
   const renderContent = (id: WindowId) => {
     switch (id) {
@@ -485,15 +695,21 @@ export function Desktop() {
             onResetWallpaper={resetWallpaper}
             onSetSoundEffectsEnabled={soundEffects.setSoundEffectsEnabled}
             onFirstCustomWallpaperSet={soundEffects.firstWallpaperSet}
+            unlockedSecretIds={secretUnlocks.unlockedIds}
+            onOpenSecrets={openSecrets}
+          />
+        )
+      case 'secrets':
+        return (
+          <SecretsContent
+            unlockedIds={secretUnlocks.unlockedIds}
+            onUnlockSecret={unlockSecret}
+            onOpenWallpapers={openPersonalize}
+            onResetUnlocks={resetSecretUnlocks}
           />
         )
     }
   }
-
-  const topId = order[order.length - 1]
-  const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
-  const minimizedWindows = windows.filter((w) => w.status === 'minimized')
-  const visibleWindows = windows.filter((w) => w.status !== 'minimized')
 
   return (
     <div className={scanlines ? 'scanlines' : undefined}>
@@ -517,16 +733,18 @@ export function Desktop() {
         onToggleSoundEffects={() =>
           soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
         }
+        onOpenCommandPalette={openCommandPalette}
       />
 
       <WallpaperManager
         id="jack-os-desktop"
         tabIndex={-1}
         wallpaperId={preferences.wallpaperId}
+        unlockedSecretIds={secretUnlocks.unlockedIds}
         className="relative min-h-[100dvh] pt-8"
         aria-label="Jack OS desktop"
         onContextMenu={handleDesktopContextMenu}
-        onPointerDown={contextMenu ? closeContextMenu : undefined}
+        onPointerDown={contextMenu ? () => closeContextMenu() : undefined}
       >
         {/* Desktop watermark */}
         <p
@@ -652,6 +870,12 @@ export function Desktop() {
             onResetWallpaper={resetWallpaper}
           />
         ) : null}
+
+        <CommandPalette
+          open={commandPaletteOpen}
+          commands={commandRegistry}
+          onClose={closeCommandPalette}
+        />
       </WallpaperManager>
     </div>
   )

@@ -7,6 +7,7 @@ import {
   JackIdIcon,
   JackMailIcon,
   JackProjectsIcon,
+  JackSecretsIcon,
   JackSystemIcon,
   JackWallpapersIcon,
 } from './jack-icons'
@@ -19,6 +20,7 @@ export type WindowId =
   | 'resume'
   | 'contact'
   | 'wallpapers'
+  | 'secrets'
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
 
@@ -51,6 +53,13 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 720,
     height: 640,
   },
+  secrets: {
+    id: 'secrets',
+    title: 'Secrets',
+    Icon: JackSecretsIcon,
+    width: 500,
+    height: 500,
+  },
 }
 
 export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
@@ -61,6 +70,7 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   resume: 'resume',
   contact: 'contact',
   wallpapers: 'wallpapers',
+  secrets: 'secrets',
 }
 
 const WINDOW_IDS_BY_HASH = Object.entries(WINDOW_HASH_SLUGS).reduce(
@@ -93,4 +103,5 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
   { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
   { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
+  { kind: 'window', id: 'secrets', label: 'Secrets', Icon: JackSecretsIcon },
 ]

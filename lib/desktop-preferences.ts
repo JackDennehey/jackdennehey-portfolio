@@ -18,13 +18,16 @@ export const DEFAULT_DESKTOP_PREFERENCES: DesktopPreferences = {
   showCalendar: true,
 }
 
-export function parseDesktopPreferences(value: string | null): DesktopPreferences {
+export function parseDesktopPreferences(
+  value: string | null,
+  unlockedSecretIds: readonly string[] = [],
+): DesktopPreferences {
   if (!value) return DEFAULT_DESKTOP_PREFERENCES
 
   try {
     const parsed = JSON.parse(value) as Partial<DesktopPreferences>
     return {
-      wallpaperId: isSelectableWallpaperId(parsed.wallpaperId)
+      wallpaperId: isSelectableWallpaperId(parsed.wallpaperId, unlockedSecretIds)
         ? parsed.wallpaperId
         : DEFAULT_DESKTOP_PREFERENCES.wallpaperId,
       showClock:

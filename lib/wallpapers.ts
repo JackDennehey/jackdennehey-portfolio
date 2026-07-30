@@ -1,6 +1,6 @@
 export const DEFAULT_WALLPAPER_ID = 'jack-os-default'
 
-export type WallpaperCollection = 'current' | 'concept'
+export type WallpaperCollection = 'current' | 'concept' | 'hidden'
 export type WallpaperAssetType = 'css' | 'png' | 'svg'
 
 export type WallpaperAsset = {
@@ -15,6 +15,8 @@ export type WallpaperAsset = {
   className?: string
   backgroundPosition?: string
   phaseLabel?: string
+  secretId?: string
+  exclusiveLabel?: string
 }
 
 export const WALLPAPER_ASSETS = [
@@ -140,6 +142,58 @@ export const WALLPAPER_ASSETS = [
     className: 'wallpaper-image wallpaper-contrast-soft',
   },
   {
+    id: 'signal-loss',
+    displayName: 'Signal Loss',
+    description: 'A damaged transmission from somewhere between memory and static.',
+    imagePath: '/wallpapers/signal-loss.PNG',
+    assetType: 'png',
+    collection: 'hidden',
+    downloadable: false,
+    selectable: true,
+    className: 'wallpaper-image wallpaper-contrast-soft',
+    secretId: 'signal-loss',
+    exclusiveLabel: 'Jack OS Exclusive',
+  },
+  {
+    id: 'orange-horizon',
+    displayName: 'Orange Horizon',
+    description: 'A warm engine, an empty street, and the last light of the day.',
+    imagePath: '/wallpapers/orange-horizon.PNG',
+    assetType: 'png',
+    collection: 'hidden',
+    downloadable: false,
+    selectable: true,
+    className: 'wallpaper-image wallpaper-contrast-soft',
+    secretId: 'orange-horizon',
+    exclusiveLabel: 'Jack OS Exclusive',
+  },
+  {
+    id: 'moonstep',
+    displayName: 'Moonstep',
+    description: 'Six movements preserved beneath the stage lights.',
+    imagePath: '/wallpapers/moonstep.PNG',
+    assetType: 'png',
+    collection: 'hidden',
+    downloadable: false,
+    selectable: true,
+    className: 'wallpaper-image wallpaper-contrast-medium',
+    secretId: 'moonstep',
+    exclusiveLabel: 'Jack OS Exclusive',
+  },
+  {
+    id: 'the-crossing',
+    displayName: 'The Crossing',
+    description: 'Four travelers crossing a quiet road with no destination listed.',
+    imagePath: '/wallpapers/the-crossing.PNG',
+    assetType: 'png',
+    collection: 'hidden',
+    downloadable: false,
+    selectable: true,
+    className: 'wallpaper-image wallpaper-contrast-soft',
+    secretId: 'the-crossing',
+    exclusiveLabel: 'Jack OS Exclusive',
+  },
+  {
     id: 'concept-retro-beach',
     displayName: 'Retro Beach',
     description: 'Original Phase 2 beach concept.',
@@ -254,7 +308,13 @@ export const CURRENT_WALLPAPERS = WALLPAPERS
 export const CONCEPT_WALLPAPERS = WALLPAPER_ASSETS.filter(
   (wallpaper) => wallpaper.collection === 'concept',
 )
+export const HIDDEN_WALLPAPERS = WALLPAPER_ASSETS.filter(
+  (wallpaper) => wallpaper.collection === 'hidden',
+)
 export const SELECTABLE_WALLPAPERS = WALLPAPER_ASSETS.filter((wallpaper) => wallpaper.selectable)
+export const PUBLIC_SELECTABLE_WALLPAPERS = SELECTABLE_WALLPAPERS.filter(
+  (wallpaper) => wallpaper.collection !== 'hidden',
+)
 
 export type Wallpaper = (typeof WALLPAPER_ASSETS)[number]
 export type WallpaperId = Wallpaper['id']
@@ -263,10 +323,29 @@ export function isWallpaperId(value: unknown): value is WallpaperId {
   return typeof value === 'string' && WALLPAPER_ASSETS.some((wallpaper) => wallpaper.id === value)
 }
 
-export function isSelectableWallpaperId(value: unknown): value is WallpaperId {
+export function isHiddenWallpaper(wallpaper: WallpaperAsset) {
+  return wallpaper.collection === 'hidden'
+}
+
+export function isWallpaperUnlocked(
+  wallpaper: WallpaperAsset,
+  unlockedSecretIds: readonly string[] = [],
+) {
+  return (
+    !isHiddenWallpaper(wallpaper) ||
+    (typeof wallpaper.secretId === 'string' && unlockedSecretIds.includes(wallpaper.secretId))
+  )
+}
+
+export function isSelectableWallpaperId(
+  value: unknown,
+  unlockedSecretIds: readonly string[] = [],
+): value is WallpaperId {
   return (
     typeof value === 'string' &&
-    SELECTABLE_WALLPAPERS.some((wallpaper) => wallpaper.id === value)
+    SELECTABLE_WALLPAPERS.some(
+      (wallpaper) => wallpaper.id === value && isWallpaperUnlocked(wallpaper, unlockedSecretIds),
+    )
   )
 }
 
@@ -274,6 +353,13 @@ export function getWallpaperAsset(id: string | null | undefined): Wallpaper {
   return WALLPAPER_ASSETS.find((wallpaper) => wallpaper.id === id) ?? WALLPAPER_ASSETS[0]
 }
 
-export function getWallpaper(id: string | null | undefined): Wallpaper {
-  return SELECTABLE_WALLPAPERS.find((wallpaper) => wallpaper.id === id) ?? SELECTABLE_WALLPAPERS[0]
+export function getWallpaper(
+  id: string | null | undefined,
+  unlockedSecretIds: readonly string[] = [],
+): Wallpaper {
+  return (
+    SELECTABLE_WALLPAPERS.find(
+      (wallpaper) => wallpaper.id === id && isWallpaperUnlocked(wallpaper, unlockedSecretIds),
+    ) ?? PUBLIC_SELECTABLE_WALLPAPERS[0]
+  )
 }

@@ -7,6 +7,7 @@ import {
   SOUND_EFFECTS_STORAGE_KEY,
   parseSoundEffectsPreference,
 } from '@/lib/sound-preferences'
+import type { SecretId } from '@/lib/secrets'
 
 export const SOUND_EFFECT_SOURCES = {
   appOpen: '/sounds/app-open.mp3',
@@ -14,10 +15,21 @@ export const SOUND_EFFECT_SOURCES = {
   firstWallpaperSet: '/sounds/wallpaper-first-set.mp3',
   startup: '/sounds/boot-up.mp3',
   ambience: '/sounds/desktop-ambience.mp3',
+  secretSignalLoss: '/sounds/secret-signal-loss.mp3',
+  secretOrangeHorizon: '/sounds/secret-orange-horizon.mp3',
+  secretMoonstep: '/sounds/secret-moonstep.mp3',
+  secretTheCrossing: '/sounds/secret-the-crossing.mp3',
 } as const
 
 export type SoundEffectName = 'appOpen' | 'windowClose' | 'firstWallpaperSet' | 'startup'
 export type JackOsAudioName = keyof typeof SOUND_EFFECT_SOURCES
+
+const SECRET_UNLOCK_AUDIO_BY_ID: Record<SecretId, JackOsAudioName> = {
+  'signal-loss': 'secretSignalLoss',
+  'orange-horizon': 'secretOrangeHorizon',
+  moonstep: 'secretMoonstep',
+  'the-crossing': 'secretTheCrossing',
+}
 
 export const STARTUP_AUDIO_DURATION_MS = 5424
 
@@ -27,6 +39,10 @@ const SOUND_VOLUMES: Record<JackOsAudioName, number> = {
   firstWallpaperSet: 0.28,
   startup: 0.32,
   ambience: 0.08,
+  secretSignalLoss: 0.28,
+  secretOrangeHorizon: 0.28,
+  secretMoonstep: 0.28,
+  secretTheCrossing: 0.28,
 }
 const AMBIENCE_FADE_MS = 900
 const AMBIENCE_LOOP_START_SECONDS = 0.048
@@ -587,7 +603,7 @@ export function useSoundEffects() {
   }, [playAmbience, soundEffectsEnabled, stopAmbience])
 
   const playSound = useCallback(
-    (name: SoundEffectName) => {
+    (name: JackOsAudioName) => {
       if (!soundEffectsEnabled) {
         return
       }
@@ -612,6 +628,13 @@ export function useSoundEffects() {
       }
     },
     [getAudio, soundEffectsEnabled],
+  )
+
+  const playSecretUnlock = useCallback(
+    (secretId: SecretId) => {
+      playSound(SECRET_UNLOCK_AUDIO_BY_ID[secretId])
+    },
+    [playSound],
   )
 
   const playFirstWallpaperSet = useCallback(() => {
@@ -736,6 +759,7 @@ export function useSoundEffects() {
       appOpen: () => playSound('appOpen'),
       windowClose: () => playSound('windowClose'),
       firstWallpaperSet: playFirstWallpaperSet,
+      playSecretUnlock,
       playStartup,
       startAmbience,
       stopAmbience,
@@ -744,6 +768,7 @@ export function useSoundEffects() {
     }),
     [
       playFirstWallpaperSet,
+      playSecretUnlock,
       playStartup,
       playSound,
       pauseAmbience,
