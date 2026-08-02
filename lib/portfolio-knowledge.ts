@@ -54,6 +54,17 @@ export const PORTFOLIO_KNOWLEDGE = {
     portfolio: `https://${CONTACT.domain}`,
     domain: CONTACT.domain,
   },
+  career: {
+    opportunityStatement:
+      'Open to internships, entry-level opportunities, professional connections, and projects that combine business and technology.',
+    businessTechnology:
+      "Jack's direction is the overlap between business judgment and technical understanding. Cybersecurity and networking explain how systems behave, cloud and AI expand what tools are available, and business helps decide when those tools solve a real problem.",
+    managementLeadership:
+      'The public portfolio supports business studies, communication, analysis, and project-management interests. It does not claim formal management employment or leadership roles beyond those approved public skills and educational direction.',
+    navigationSummary:
+      'For a quick professional path, open Recruiter Mode. For proof points, open Credentials or Projects. For direct outreach, open Contact or copy the public email.',
+    navigationTargets: ['Recruiter Mode', 'Projects', 'Credentials', 'Contact'],
+  },
   education: {
     current: currentEducation,
     prior: priorEducation,

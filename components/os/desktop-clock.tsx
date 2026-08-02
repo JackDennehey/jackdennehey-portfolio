@@ -29,7 +29,7 @@ export function DesktopClock({ className }: { className?: string }) {
       data-desktop-widget="clock"
       dateTime={now?.toISOString()}
       className={cn(
-        'os-border block bg-paper/85 px-2.5 py-2 font-pixel text-[10px] leading-none text-foreground',
+        'os-border block w-full bg-paper/85 px-2.5 py-2 font-pixel text-[10px] leading-none text-foreground',
         className,
       )}
       suppressHydrationWarning

@@ -142,6 +142,7 @@ export function OsWindow({
       aria-label={app.title}
       aria-modal={isMobile}
       aria-hidden={!isMobile && status === 'minimized'}
+      data-window-id={app.id}
       data-window-status={status}
       data-window-focused={focused ? 'true' : 'false'}
       style={isMobile ? mobileStyle : desktopStyle}
@@ -199,6 +200,17 @@ export function OsWindow({
               >
                 <app.Icon className="size-3" />
               </span>
+            ) : app.id === 'assistant' ? (
+              <span
+                aria-hidden
+                className="grid size-4 shrink-0 place-items-center overflow-hidden border border-current bg-paper"
+              >
+                <img
+                  src="/images/jd/jd-bot.png"
+                  alt=""
+                  className="h-full w-full object-contain pixelated"
+                />
+              </span>
             ) : (
               <app.Icon aria-hidden className="size-3.5 shrink-0" />
             )}
@@ -253,7 +265,10 @@ export function OsWindow({
       </header>
 
       {/* Body */}
-      <div className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5">
+      <div
+        data-window-body-id={app.id}
+        className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5"
+      >
         {children}
       </div>
     </section>

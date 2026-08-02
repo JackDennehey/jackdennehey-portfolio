@@ -15,6 +15,7 @@ import {
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
+import { JdWidget } from './jd-widget'
 import { useDesktopPreferences } from './use-desktop-preferences'
 import { WallpaperManager } from './wallpaper-manager'
 import { CommandPalette, type JackOsCommand } from './command-palette'
@@ -63,19 +64,58 @@ const DESKTOP_EDGE_PADDING = 8
 const MENU_BAR_HEIGHT = 32
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
+const DESKTOP_BOTTOM_SAFE_AREA = 72
 const MAXIMIZED_MARGIN = 8
 const COPY_CONFIRMATION_DURATION_MS = 2200
+const INITIAL_WINDOW_CASCADE_STEP = 28
+const INITIAL_WINDOW_CASCADE_SLOTS = 5
 
-function clampWindowPosition(id: WindowId, x: number, y: number) {
+function getUsableDesktopBounds() {
+  if (typeof window === 'undefined') {
+    return { left: 8, top: 40, right: 720, bottom: 600, width: 712, height: 560 }
+  }
+
+  const left = DESKTOP_EDGE_PADDING
+  const top = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
+  const right = Math.max(left + 320, window.innerWidth - DESKTOP_EDGE_PADDING)
+  const bottom = Math.max(top + 260, window.innerHeight - DESKTOP_BOTTOM_SAFE_AREA)
+
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+  }
+}
+
+function clampWindowPosition(
+  id: WindowId,
+  x: number,
+  y: number,
+  options: {
+    width?: number
+    height?: number
+    fullyVisible?: boolean
+  } = {},
+) {
   if (typeof window === 'undefined') {
     return { x, y }
   }
 
   const app = WINDOW_APPS[id]
-  const minX = DESKTOP_EDGE_PADDING
-  const minY = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
-  const maxX = Math.max(minX, window.innerWidth - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, app.width))
-  const maxY = Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
+  const bounds = getUsableDesktopBounds()
+  const width = options.width ?? app.width
+  const height = options.height ?? app.height
+  const minX = bounds.left
+  const minY = bounds.top
+  const maxX = options.fullyVisible
+    ? Math.max(minX, bounds.right - width)
+    : Math.max(minX, bounds.right - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, width))
+  const maxY = options.fullyVisible
+    ? Math.max(minY, bounds.bottom - height)
+    : Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
 
   return {
     x: Math.min(Math.max(x, minX), maxX),
@@ -88,11 +128,16 @@ function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): WindowGeom
     return geometry
   }
 
-  const maxWidth = Math.max(280, window.innerWidth - DESKTOP_EDGE_PADDING * 2)
-  const maxHeight = Math.max(220, window.innerHeight - MENU_BAR_HEIGHT - 24)
+  const bounds = getUsableDesktopBounds()
+  const maxWidth = Math.max(280, bounds.width)
+  const maxHeight = Math.max(220, bounds.height)
   const width = Math.min(geometry.width, maxWidth)
   const height = Math.min(geometry.height, maxHeight)
-  const position = clampWindowPosition(id, geometry.x, geometry.y)
+  const position = clampWindowPosition(id, geometry.x, geometry.y, {
+    width,
+    height,
+    fullyVisible: true,
+  })
 
   return { ...position, width, height }
 }
@@ -117,12 +162,18 @@ function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
   }
 
   const app = WINDOW_APPS[id]
-  const baseX = Math.max(24, (window.innerWidth - app.width) / 2 - 80)
+  const bounds = getUsableDesktopBounds()
+  const width = Math.min(app.width, bounds.width)
+  const height = Math.min(app.height, bounds.height)
+  const cascadeIndex = count % INITIAL_WINDOW_CASCADE_SLOTS
+  const baseX = bounds.left + Math.max(0, (bounds.width - width) / 2)
+  const baseY = bounds.top + Math.max(0, (bounds.height - height) / 2)
+
   return clampWindowGeometry(id, {
-    x: baseX + count * 30,
-    y: 60 + count * 30,
-    width: app.width,
-    height: app.height,
+    x: baseX + cascadeIndex * INITIAL_WINDOW_CASCADE_STEP,
+    y: baseY + cascadeIndex * INITIAL_WINDOW_CASCADE_STEP,
+    width,
+    height,
   })
 }
 
@@ -309,7 +360,10 @@ export function Desktop() {
       return
     }
 
-    const position = clampWindowPosition(id, x, y)
+    const position = clampWindowPosition(id, x, y, {
+      width: target.width,
+      height: target.height,
+    })
     windowsRef.current = windowsRef.current.map((w) =>
       w.id === id ? { ...w, ...position, normal: { ...w.normal, ...position } } : w,
     )
@@ -656,8 +710,16 @@ export function Desktop() {
 
   const topId = order[order.length - 1]
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
+  const desktopIconItems = useMemo(
+    () => desktopItems.filter((item) => !(item.kind === 'window' && item.id === 'assistant')),
+    [desktopItems],
+  )
   const minimizedWindows = windows.filter((w) => w.status === 'minimized')
   const visibleWindows = windows.filter((w) => w.status !== 'minimized')
+  const recruiterVisible = windows.some(
+    (w) => w.id === 'recruiter' && w.status !== 'minimized',
+  )
+  const effectiveScanlines = scanlines && !recruiterVisible
 
   const minimizeActiveWindow = useCallback(() => {
     if (topId) {
@@ -843,6 +905,7 @@ export function Desktop() {
             onSectionChange={selectRecruiterSection}
             onOpen={openWindow}
             onCopyEmail={copyEmailToClipboard}
+            onAskAssistant={() => openAssistant()}
           />
         )
       case 'resume':
@@ -883,7 +946,7 @@ export function Desktop() {
   }
 
   return (
-    <div className={scanlines ? 'scanlines' : undefined}>
+    <div className={effectiveScanlines ? 'scanlines' : undefined}>
       {!booted ? (
         <BootScreen
           onPowerOn={soundEffects.playStartup}
@@ -928,7 +991,7 @@ export function Desktop() {
         </p>
 
         {/* Desktop widgets */}
-        {!isMobile && booted && (preferences.showClock || preferences.showCalendar) ? (
+        {!isMobile && booted ? (
           <div
             data-desktop-interactive="true"
             className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
@@ -937,13 +1000,14 @@ export function Desktop() {
             {preferences.showCalendar ? (
               <DesktopCalendar onOpenCalendar={() => undefined} />
             ) : null}
+            <JdWidget onOpen={() => openAssistant()} />
           </div>
         ) : null}
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
           <div className="absolute right-3 top-11 flex max-h-[calc(100dvh-4rem)] flex-col items-end gap-3 overflow-y-auto pr-1">
-            {desktopItems.map((item) => (
+            {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}
                 item={item}

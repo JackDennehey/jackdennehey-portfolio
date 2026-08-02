@@ -90,7 +90,7 @@ export function WallpapersContent({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1280px] space-y-5">
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_190px]">
         <div className="os-border bg-secondary p-2">
           <WallpaperPreview
@@ -256,11 +256,11 @@ function WallpaperSection({
   unlockedSecretIds: readonly SecretId[]
 }) {
   return (
-    <section className="space-y-2">
+    <section className="wallpaper-gallery-section space-y-2">
       <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
         {title}
       </h3>
-      <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="wallpaper-gallery-grid">
         {wallpapers.map((wallpaper) => (
           <WallpaperTile
             key={wallpaper.id}
@@ -295,7 +295,7 @@ function HiddenWallpaperSection({
   onOpenSecrets: () => void
 }) {
   return (
-    <section className="space-y-2">
+    <section className="wallpaper-gallery-section space-y-2">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h3 className="font-pixel text-[10px] leading-relaxed text-foreground">
           Hidden Files
@@ -304,7 +304,7 @@ function HiddenWallpaperSection({
           Unlock through Secrets
         </p>
       </div>
-      <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="wallpaper-gallery-grid">
         {wallpapers.map((wallpaper) =>
           isWallpaperUnlocked(wallpaper, unlockedSecretIds) ? (
             <WallpaperTile

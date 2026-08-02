@@ -8,6 +8,7 @@ import {
   JD_ASSISTANT_INTRO,
   JD_SUGGESTED_PROMPTS,
   type AssistantAction,
+  type AssistantIntent,
 } from '@/lib/jd-assistant'
 import { cn } from '@/lib/utils'
 
@@ -39,16 +40,25 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
     },
   ])
   const [input, setInput] = useState('')
+  const [inputNotice, setInputNotice] = useState('')
+  const [lastIntent, setLastIntent] = useState<AssistantIntent | null>(null)
   const nextId = useRef(2)
+  const submittingRef = useRef(false)
   const lastSeedNonce = useRef<number | null>(null)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const logRef = useRef<HTMLDivElement | null>(null)
 
   const addExchange = (question: string) => {
     const trimmed = question.trim()
-    if (!trimmed) return
+    if (!trimmed) {
+      setInputNotice('Type a question for J.D. first.')
+      window.setTimeout(() => inputRef.current?.focus(), 0)
+      return
+    }
+    if (submittingRef.current) return
 
-    const response = answerPortfolioQuestion(trimmed)
+    submittingRef.current = true
+    const response = answerPortfolioQuestion(trimmed, { lastIntent })
     setMessages((current) => [
       ...current,
       { id: nextId.current++, role: 'visitor', content: trimmed },
@@ -59,7 +69,12 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
         actions: response.actions,
       },
     ])
+    setLastIntent(response.intent)
     setInput('')
+    setInputNotice('')
+    window.setTimeout(() => {
+      submittingRef.current = false
+    }, 0)
   }
 
   useEffect(() => {
@@ -85,6 +100,7 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
 
   const clearMessages = () => {
     nextId.current = 2
+    setLastIntent(null)
     setMessages([
       {
         id: 1,
@@ -94,22 +110,29 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
       },
     ])
     setInput('')
+    setInputNotice('')
     window.setTimeout(() => inputRef.current?.focus(), 0)
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-3">
+    <div className="mx-auto flex min-h-full w-full max-w-[900px] flex-col gap-3">
       <section className="os-border bg-secondary p-3">
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="os-border grid size-10 shrink-0 place-items-center bg-card font-pixel text-[9px] text-foreground"
+            className="os-border grid size-12 shrink-0 place-items-center overflow-hidden bg-card"
           >
-            J.D.
+            <img
+              src="/images/jd/jd-bot.png"
+              alt=""
+              loading="eager"
+              decoding="async"
+              className="h-full w-full object-contain pixelated"
+            />
           </span>
           <div className="min-w-0">
             <h3 className="font-pixel text-[11px] leading-relaxed text-foreground">
-              Portfolio Assistant
+              Local Portfolio Assistant
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground text-pretty">
               Ask about Jack&apos;s education, credentials, projects, skills, or professional
@@ -125,7 +148,7 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
         aria-live="polite"
         aria-relevant="additions"
         aria-label="J.D. conversation"
-        className="os-border min-h-[210px] flex-1 space-y-3 overflow-y-auto bg-card p-3"
+        className="os-border min-h-[230px] flex-1 space-y-4 overflow-y-auto bg-card p-3"
       >
         {messages.map((message) => (
           <article
@@ -140,7 +163,7 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
             </p>
             <div
               className={cn(
-                'os-border p-3 text-sm leading-relaxed text-pretty',
+                'os-border p-3 text-sm leading-6 text-pretty',
                 message.role === 'visitor'
                   ? 'bg-foreground text-primary-foreground'
                   : 'bg-paper text-foreground',
@@ -178,7 +201,10 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
       </section>
 
       <form onSubmit={submit} className="space-y-2">
-        <label htmlFor="jd-assistant-input" className="sr-only">
+        <label
+          htmlFor="jd-assistant-input"
+          className="block font-pixel text-[8px] leading-relaxed text-muted-foreground"
+        >
           Ask J.D. about Jack&apos;s portfolio
         </label>
         <textarea
@@ -192,13 +218,18 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
           placeholder="Ask about projects, credentials, or contact..."
           className="w-full resize-none os-border bg-card px-3 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
         />
+        {inputNotice ? (
+          <p role="status" className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+            {inputNotice}
+          </p>
+        ) : null}
         <div className="flex flex-wrap justify-between gap-2">
           <button
             type="button"
             onClick={clearMessages}
             className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
-            Clear
+            Clear Conversation
           </button>
           <button
             type="submit"
