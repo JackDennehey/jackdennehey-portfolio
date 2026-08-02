@@ -1,6 +1,8 @@
 'use client'
 
+import type { KeyboardEvent } from 'react'
 import type { DesktopItem } from './apps'
+import { cn } from '@/lib/utils'
 
 export function DesktopIcon({
   item,
@@ -12,16 +14,40 @@ export function DesktopIcon({
   onOpenWindow: (id: string) => void
 }) {
   const { Icon, label } = item
+  const isRecruiter = item.kind === 'window' && item.id === 'recruiter'
+  const accessibleLabel = isRecruiter
+    ? 'Recruiter Mode — guided professional overview'
+    : label
+  const openItem = () => {
+    if (item.kind === 'window') {
+      onOpenWindow(item.id)
+    }
+  }
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    openItem()
+  }
 
   const inner = (
     <>
       <span
         aria-hidden
-        className="os-border grid size-12 place-items-center bg-paper text-foreground transition-colors group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground sm:size-14"
+        className={cn(
+          'os-border grid size-12 place-items-center transition-colors sm:size-14',
+          isRecruiter
+            ? 'recruiter-icon-frame'
+            : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground',
+        )}
       >
         <Icon className="size-6 sm:size-7" />
       </span>
-      <span className="w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]">
+      <span
+        className={cn(
+          'w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]',
+          isRecruiter ? 'recruiter-icon-label' : null,
+        )}
+      >
         {label}
       </span>
     </>
@@ -38,7 +64,7 @@ export function DesktopIcon({
         rel="noopener noreferrer"
         data-desktop-icon="true"
         className={className}
-        aria-label={`${label} (opens in a new tab)`}
+        aria-label={`${accessibleLabel} (opens in a new tab)`}
       >
         {inner}
       </a>
@@ -50,8 +76,10 @@ export function DesktopIcon({
       type="button"
       data-desktop-icon="true"
       className={className}
-      onClick={variant === 'mobile' ? () => onOpenWindow(item.id) : undefined}
-      onDoubleClick={variant === 'desktop' ? () => onOpenWindow(item.id) : undefined}
+      onClick={variant === 'mobile' ? openItem : undefined}
+      onDoubleClick={variant === 'desktop' ? openItem : undefined}
+      onKeyDown={variant === 'desktop' ? onKeyDown : undefined}
+      aria-label={accessibleLabel}
     >
       {inner}
     </button>

@@ -1,12 +1,15 @@
 import type { InterfaceTheme } from '@/lib/interface-theme'
+import type { WindowId } from '../apps'
 
 export function HomeContent({
   onOpen,
+  onAskAssistant,
   theme,
   soundEffectsEnabled,
   scanlines,
 }: {
-  onOpen: (id: string) => void
+  onOpen: (id: WindowId) => void
+  onAskAssistant: () => void
   theme: InterfaceTheme
   soundEffectsEnabled: boolean
   scanlines: boolean
@@ -24,7 +27,7 @@ export function HomeContent({
           Jack Dennehey
         </p>
         <p className="mt-1 text-sm font-medium text-muted-foreground">
-          Business Student at Penn State
+          Business Student at Penn State Brandywine
         </p>
       </div>
 
@@ -57,6 +60,20 @@ export function HomeContent({
       </section>
 
       <div className="flex flex-wrap gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => onOpen('recruiter')}
+          className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Enter Recruiter Mode
+        </button>
+        <button
+          type="button"
+          onClick={onAskAssistant}
+          className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Ask J.D.
+        </button>
         {[
           ['about', 'About Me'],
           ['projects', 'Projects'],
@@ -65,7 +82,7 @@ export function HomeContent({
           <button
             key={id}
             type="button"
-            onClick={() => onOpen(id)}
+            onClick={() => onOpen(id as WindowId)}
             className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
             {`Open ${label}`}

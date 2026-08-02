@@ -192,7 +192,16 @@ export function OsWindow({
             />
           ) : null}
           <div className="flex min-w-0 max-w-full items-center gap-1.5 px-2">
-            <app.Icon aria-hidden className="size-3.5 shrink-0" />
+            {app.tone === 'recruiter' ? (
+              <span
+                aria-hidden
+                className="recruiter-inline-icon grid size-4 shrink-0 place-items-center border"
+              >
+                <app.Icon className="size-3" />
+              </span>
+            ) : (
+              <app.Icon aria-hidden className="size-3.5 shrink-0" />
+            )}
             <h2 className="truncate font-pixel text-[9px] leading-none sm:text-[10px]">
               {app.title}
             </h2>

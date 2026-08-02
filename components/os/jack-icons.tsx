@@ -170,3 +170,26 @@ export function JackSecretsIcon(props: IconProps) {
     </JackIcon>
   )
 }
+
+export function JackRecruiterIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="4" y="8" width="16" height="11" />
+      <path d="M9 8V6h6v2" />
+      <path d="M4 12h16M11 12v2h2v-2" />
+      <rect x="7" y="4" width="4" height="4" />
+      <path d="M14 5h4M14 7h4" />
+    </JackIcon>
+  )
+}
+
+export function JackAssistantIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="4" y="5" width="16" height="12" />
+      <path d="M7 9h3M12 9h5M7 12h5M14 12h3" />
+      <path d="M8 21l3-4h5" />
+      <path d="M7 15h1M10 15h1M13 15h1" />
+    </JackIcon>
+  )
+}

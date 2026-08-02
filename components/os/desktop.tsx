@@ -26,6 +26,8 @@ import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
+import { RecruiterModeContent } from './content/recruiter-mode-content'
+import { JdAssistantContent } from './content/jd-assistant-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
 import { MinimizedWindowStrip } from './minimized-window-strip'
@@ -35,6 +37,11 @@ import {
   type SecretId,
 } from '@/lib/secrets'
 import { DEFAULT_WALLPAPER_ID, getWallpaperAsset, isHiddenWallpaper } from '@/lib/wallpapers'
+import { CONTACT } from '@/lib/portfolio-data'
+import {
+  isRecruiterSectionId,
+  type RecruiterSectionId,
+} from '@/lib/portfolio-knowledge'
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -57,6 +64,7 @@ const MENU_BAR_HEIGHT = 32
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
 const MAXIMIZED_MARGIN = 8
+const COPY_CONFIRMATION_DURATION_MS = 2200
 
 function clampWindowPosition(id: WindowId, x: number, y: number) {
   if (typeof window === 'undefined') {
@@ -118,16 +126,38 @@ function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
   })
 }
 
-function syncWindowHash(id: WindowId) {
+function writeHashSlug(slug: string, mode: 'push' | 'replace' = 'push') {
   if (typeof window === 'undefined') return
 
-  const slug = getWindowHash(id)
   const nextUrl = `${window.location.pathname}${window.location.search}#${slug}`
   if (`${window.location.pathname}${window.location.search}${window.location.hash}` === nextUrl) {
     return
   }
 
-  window.history.replaceState(null, '', nextUrl)
+  if (mode === 'replace') {
+    window.history.replaceState(null, '', nextUrl)
+    return
+  }
+
+  window.history.pushState(null, '', nextUrl)
+}
+
+function syncWindowHash(id: WindowId, mode: 'push' | 'replace' = 'push') {
+  writeHashSlug(getWindowHash(id), mode)
+}
+
+function getRecruiterSectionFromHash(hash: string): RecruiterSectionId | null {
+  const slug = hash.replace(/^#/, '').trim().toLowerCase()
+  if (slug === 'recruiter') return 'overview'
+  if (!slug.startsWith('recruiter/')) return null
+
+  const sectionSlug = slug.replace(/^recruiter\//, '')
+  if (sectionSlug === 'skills-and-direction') return 'skills'
+  return isRecruiterSectionId(sectionSlug) ? sectionSlug : 'overview'
+}
+
+function getRecruiterHash(section: RecruiterSectionId) {
+  return section === 'overview' ? 'recruiter' : `recruiter/${section}`
 }
 
 export function Desktop() {
@@ -138,6 +168,12 @@ export function Desktop() {
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [recruiterSection, setRecruiterSection] = useState<RecruiterSectionId>('overview')
+  const [assistantSeedPrompt, setAssistantSeedPrompt] = useState<{
+    question: string
+    nonce: number
+  } | null>(null)
+  const [copyStatus, setCopyStatus] = useState<string | null>(null)
   const secretUnlocks = useSecretUnlocks()
   const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
     secretUnlocks.unlockedIds,
@@ -148,6 +184,8 @@ export function Desktop() {
   const windowsRef = useRef<OpenWindow[]>([])
   const handledInitialHash = useRef(false)
   const windowOpenSequence = useRef(0)
+  const assistantPromptSequence = useRef(0)
+  const copyStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
 
@@ -178,11 +216,16 @@ export function Desktop() {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
 
-      if (options.updateHash !== false) {
+      const existing = windowsRef.current.find((w) => w.id === windowId)
+      if (windowId === 'recruiter' && options.updateHash !== false) {
+        if (!existing) {
+          setRecruiterSection('overview')
+        }
+        writeHashSlug(getRecruiterHash(existing ? recruiterSection : 'overview'))
+      } else if (options.updateHash !== false) {
         syncWindowHash(windowId)
       }
 
-      const existing = windowsRef.current.find((w) => w.id === windowId)
       if (existing) {
         if (existing.status === 'minimized') {
           const restoredStatus = existing.restoreStatus ?? 'open'
@@ -230,7 +273,7 @@ export function Desktop() {
         soundEffects.appOpen()
       }
     },
-    [focusWindow, soundEffects],
+    [focusWindow, recruiterSection, soundEffects],
   )
 
   const closeWindow = useCallback((id: WindowId) => {
@@ -380,6 +423,52 @@ export function Desktop() {
     openWindow('secrets')
   }, [openWindow])
 
+  const selectRecruiterSection = useCallback(
+    (section: RecruiterSectionId) => {
+      setRecruiterSection(section)
+      writeHashSlug(getRecruiterHash(section))
+      openWindow('recruiter', { playSound: false, updateHash: false })
+    },
+    [openWindow],
+  )
+
+  const openAssistant = useCallback(
+    (question?: string) => {
+      if (question) {
+        assistantPromptSequence.current += 1
+        setAssistantSeedPrompt({
+          question,
+          nonce: assistantPromptSequence.current,
+        })
+      }
+      openWindow('assistant')
+    },
+    [openWindow],
+  )
+
+  const showCopyStatus = useCallback((message: string) => {
+    if (copyStatusTimer.current) {
+      clearTimeout(copyStatusTimer.current)
+    }
+    setCopyStatus(message)
+    copyStatusTimer.current = setTimeout(() => {
+      setCopyStatus(null)
+      copyStatusTimer.current = null
+    }, COPY_CONFIRMATION_DURATION_MS)
+  }, [])
+
+  const copyEmailToClipboard = useCallback(async () => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard unavailable')
+      }
+      await navigator.clipboard.writeText(CONTACT.email)
+      showCopyStatus('Email copied')
+    } catch {
+      showCopyStatus(`Email: ${CONTACT.email}`)
+    }
+  }, [showCopyStatus])
+
   const unlockSecret = useCallback(
     (id: SecretId) => {
       const result = secretUnlocks.unlock(id)
@@ -443,6 +532,13 @@ export function Desktop() {
     if (!booted || handledInitialHash.current) return
 
     handledInitialHash.current = true
+    const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
+    if (recruiterHashSection) {
+      setRecruiterSection(recruiterHashSection)
+      openWindow('recruiter', { playSound: false, updateHash: false })
+      return
+    }
+
     const hashWindow = getWindowIdFromHash(window.location.hash)
     if (hashWindow) {
       openWindow(hashWindow, { playSound: false, updateHash: false })
@@ -458,6 +554,13 @@ export function Desktop() {
     const onHashChange = () => {
       if (!booted) return
 
+      const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
+      if (recruiterHashSection) {
+        setRecruiterSection(recruiterHashSection)
+        openWindow('recruiter', { playSound: false, updateHash: false })
+        return
+      }
+
       const hashWindow = getWindowIdFromHash(window.location.hash)
       if (hashWindow) {
         openWindow(hashWindow, { playSound: false, updateHash: false })
@@ -465,7 +568,11 @@ export function Desktop() {
     }
 
     window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
+    window.addEventListener('popstate', onHashChange)
+    return () => {
+      window.removeEventListener('hashchange', onHashChange)
+      window.removeEventListener('popstate', onHashChange)
+    }
   }, [booted, openWindow])
 
   useEffect(() => {
@@ -525,6 +632,9 @@ export function Desktop() {
           clearTimeout(timer)
         }
       })
+      if (copyStatusTimer.current) {
+        clearTimeout(copyStatusTimer.current)
+      }
     }
   }, [])
 
@@ -561,8 +671,10 @@ export function Desktop() {
       'about',
       'projects',
       'certifications',
+      'recruiter',
       'resume',
       'contact',
+      'assistant',
       'wallpapers',
       'secrets',
     ]
@@ -570,6 +682,8 @@ export function Desktop() {
       home: ['welcome', 'system', 'start'],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
+      recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
+      assistant: ['jd', 'portfolio assistant', 'ask'],
       wallpapers: ['personalize', 'background', 'desktop'],
       secrets: ['hidden', 'files', 'manual'],
     }
@@ -582,6 +696,11 @@ export function Desktop() {
         subtitle: 'Application',
         keywords: [app.title, id, ...(appAliases[id] ?? [])],
         Icon: app.Icon,
+        tone: app.tone,
+        ariaLabel:
+          id === 'recruiter'
+            ? 'Open Recruiter Mode — guided professional overview'
+            : undefined,
         action: () => openWindow(id),
       }
     })
@@ -600,6 +719,38 @@ export function Desktop() {
 
     return [
       ...appCommands,
+      {
+        id: 'ask-jd',
+        title: 'Ask J.D.',
+        subtitle: 'Portfolio Assistant',
+        keywords: ['assistant', 'jd', 'question', 'ask'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant(),
+      },
+      {
+        id: 'ask-jd-projects',
+        title: 'Ask about projects',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['projects', 'jack os', 'built', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What has Jack built?'),
+      },
+      {
+        id: 'ask-jd-credentials',
+        title: 'Ask about credentials',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['credentials', 'certifications', 'earned', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What credentials has Jack earned?'),
+      },
+      {
+        id: 'copy-email',
+        title: 'Copy Email',
+        subtitle: CONTACT.email,
+        keywords: ['email', 'contact', 'copy', 'gmail'],
+        Icon: WINDOW_APPS.contact.Icon,
+        action: copyEmailToClipboard,
+      },
       {
         id: 'toggle-theme',
         title: 'Toggle Light/Dark Theme',
@@ -652,9 +803,11 @@ export function Desktop() {
       ...unlockedSecretCommands,
     ]
   }, [
+    copyEmailToClipboard,
     isMobile,
     minimizedWindows.length,
     minimizeActiveWindow,
+    openAssistant,
     openWindow,
     restoreAllMinimized,
     scanlines,
@@ -671,6 +824,7 @@ export function Desktop() {
         return (
           <HomeContent
             onOpen={openWindow}
+            onAskAssistant={() => openAssistant()}
             theme={theme}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
             scanlines={scanlines}
@@ -682,10 +836,27 @@ export function Desktop() {
         return <ProjectsContent />
       case 'certifications':
         return <CertificationsContent />
+      case 'recruiter':
+        return (
+          <RecruiterModeContent
+            activeSection={recruiterSection}
+            onSectionChange={selectRecruiterSection}
+            onOpen={openWindow}
+            onCopyEmail={copyEmailToClipboard}
+          />
+        )
       case 'resume':
         return <ResumeContent />
       case 'contact':
-        return <ContactContent />
+        return <ContactContent onCopyEmail={copyEmailToClipboard} />
+      case 'assistant':
+        return (
+          <JdAssistantContent
+            seedPrompt={assistantSeedPrompt}
+            onOpen={openWindow}
+            onCopyEmail={copyEmailToClipboard}
+          />
+        )
       case 'wallpapers':
         return (
           <WallpapersContent
@@ -771,7 +942,7 @@ export function Desktop() {
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
-          <div className="absolute right-3 top-11 flex flex-col items-end gap-3">
+          <div className="absolute right-3 top-11 flex max-h-[calc(100dvh-4rem)] flex-col items-end gap-3 overflow-y-auto pr-1">
             {desktopItems.map((item) => (
               <DesktopIcon
                 key={item.id}
@@ -876,6 +1047,17 @@ export function Desktop() {
           commands={commandRegistry}
           onClose={closeCommandPalette}
         />
+
+        {copyStatus ? (
+          <div
+            role="status"
+            aria-live="polite"
+            data-desktop-interactive="true"
+            className="fixed bottom-16 right-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground os-shadow"
+          >
+            {copyStatus}
+          </div>
+        ) : null}
       </WallpaperManager>
     </div>
   )

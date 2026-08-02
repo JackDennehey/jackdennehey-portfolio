@@ -16,10 +16,9 @@ const MENU: { id: WindowId; label: string }[] = [
   { id: 'about', label: 'About' },
   { id: 'projects', label: 'Projects' },
   { id: 'certifications', label: 'Credentials' },
-  { id: 'resume', label: 'Resume' },
+  { id: 'recruiter', label: 'Recruiter' },
   { id: 'contact', label: 'Contact' },
-  { id: 'wallpapers', label: 'Wallpapers' },
-  { id: 'secrets', label: 'Secrets' },
+  { id: 'assistant', label: 'J.D.' },
 ]
 
 export function MenuBar({

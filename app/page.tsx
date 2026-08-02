@@ -26,7 +26,7 @@ const profileJsonLd = {
     url: SITE_PAGE_URL,
     jobTitle: 'Student',
     description:
-      'Penn State business student with interests in cybersecurity, networking, cloud computing, artificial intelligence, and technology.',
+      'Penn State Brandywine business student with interests in cybersecurity, networking, cloud computing, artificial intelligence, and technology.',
     sameAs: [CONTACT.linkedin, CONTACT.github],
     alumniOf: {
       '@type': 'CollegeOrUniversity',
@@ -35,7 +35,7 @@ const profileJsonLd = {
     },
     affiliation: {
       '@type': 'CollegeOrUniversity',
-      name: 'The Pennsylvania State University',
+      name: 'Penn State Brandywine',
       sameAs: 'https://www.psu.edu/',
     },
     knowsAbout: [
@@ -54,9 +54,9 @@ const profileJsonLd = {
 function SeoContent() {
   return (
     <div id="portfolio-content" className="sr-only">
-      <h1>Jack Dennehey — Business Student at Penn State</h1>
+      <h1>Jack Dennehey — Business Student at Penn State Brandywine</h1>
       <p>
-        Jack Dennehey is a business student at The Pennsylvania State University passionate about
+        Jack Dennehey is a business student at Penn State Brandywine passionate about
         technology, cybersecurity, networking, cloud computing, and artificial intelligence.
       </p>
 

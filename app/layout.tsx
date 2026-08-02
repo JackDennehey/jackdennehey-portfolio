@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   keywords: [
     'Jack Dennehey',
     'cybersecurity portfolio',
-    'Penn State business student',
+    'Penn State Brandywine business student',
     'networking',
     'Cisco Networking Academy',
     'cloud computing',

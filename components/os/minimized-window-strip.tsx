@@ -1,6 +1,7 @@
 'use client'
 
 import type { WindowApp, WindowId } from './apps'
+import { cn } from '@/lib/utils'
 
 export function MinimizedWindowStrip({
   windows,
@@ -26,7 +27,15 @@ export function MinimizedWindowStrip({
           aria-label={`Restore ${app.title}`}
           title={`Restore ${app.title}`}
         >
-          <app.Icon aria-hidden className="size-4 shrink-0" />
+          <span
+            aria-hidden
+            className={cn(
+              'grid size-4 shrink-0 place-items-center',
+              app.tone === 'recruiter' ? 'recruiter-inline-icon border' : null,
+            )}
+          >
+            <app.Icon className={app.tone === 'recruiter' ? 'size-3' : 'size-4'} />
+          </span>
           <span className="truncate font-pixel text-[7px] leading-relaxed">
             {app.title}
           </span>
@@ -35,4 +44,3 @@ export function MinimizedWindowStrip({
     </div>
   )
 }
-

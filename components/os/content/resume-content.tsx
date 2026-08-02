@@ -15,7 +15,7 @@ export function ResumeContent() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-lg font-semibold text-foreground">Jack Dennehey</p>
-          <p className="text-sm text-muted-foreground">Business Student · Penn State</p>
+          <p className="text-sm text-muted-foreground">Business Student · Penn State Brandywine</p>
         </div>
         <a
           href="/jack-dennehey-resume.txt"
