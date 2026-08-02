@@ -18,6 +18,7 @@ import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
 import { JdWidget } from './jd-widget'
 import { useDesktopPreferences } from './use-desktop-preferences'
+import { useHourlyChime } from './use-hourly-chime'
 import { WallpaperManager } from './wallpaper-manager'
 import { CommandPalette, type JackOsCommand } from './command-palette'
 import { HomeContent } from './content/home-content'
@@ -289,6 +290,13 @@ export function Desktop() {
     windowsRef.current = windows
   }, [windows])
 
+  useHourlyChime({
+    booted,
+    enabled: preferences.hourlyChime,
+    soundEffectsEnabled: soundEffects.soundEffectsEnabled,
+    playHourlyChime: soundEffects.playHourlyChime,
+  })
+
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
     const update = () => setIsMobile(mq.matches)
@@ -365,7 +373,10 @@ export function Desktop() {
 
       if (existing) {
         if (existing.status === 'minimized') {
-          const restoredStatus = existing.restoreStatus ?? 'open'
+          const restoredStatus: RestorableWindowStatus =
+            windowId === 'recruiter' && !isMobile
+              ? 'maximized'
+              : (existing.restoreStatus ?? 'open')
           const restoredGeometry =
             restoredStatus === 'maximized'
               ? getMaximizedGeometry()
@@ -377,17 +388,31 @@ export function Desktop() {
               : w,
           )
           setWindows(windowsRef.current)
+        } else if (windowId === 'recruiter' && !isMobile && existing.status !== 'maximized') {
+          const normal = {
+            x: existing.x,
+            y: existing.y,
+            width: existing.width,
+            height: existing.height,
+          }
+          const maximized = getMaximizedGeometry()
+          windowsRef.current = windowsRef.current.map((w) =>
+            w.id === windowId ? { ...w, ...maximized, normal, status: 'maximized' } : w,
+          )
+          setWindows(windowsRef.current)
         }
         focusWindow(windowId)
         return
       }
 
-      const geometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
+      const normalGeometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
+      const geometry =
+        windowId === 'recruiter' && !isMobile ? getMaximizedGeometry() : normalGeometry
       windowOpenSequence.current += 1
       const nextWindow: OpenWindow = {
         id: windowId,
         ...geometry,
-        normal: geometry,
+        normal: normalGeometry,
         status: 'opening',
       }
       windowsRef.current = [...windowsRef.current, nextWindow]
@@ -397,11 +422,15 @@ export function Desktop() {
       focusWindow(windowId)
       openTimers.current[windowId] = setTimeout(() => {
         windowsRef.current = windowsRef.current.map((w) =>
-          w.id === windowId && w.status === 'opening' ? { ...w, status: 'open' } : w,
+          w.id === windowId && w.status === 'opening'
+            ? { ...w, status: windowId === 'recruiter' && !isMobile ? 'maximized' : 'open' }
+            : w,
         )
         setWindows((prev) =>
           prev.map((w) =>
-            w.id === windowId && w.status === 'opening' ? { ...w, status: 'open' } : w,
+            w.id === windowId && w.status === 'opening'
+              ? { ...w, status: windowId === 'recruiter' && !isMobile ? 'maximized' : 'open' }
+              : w,
           ),
         )
         delete openTimers.current[windowId]
@@ -411,7 +440,7 @@ export function Desktop() {
         recordInteractiveAppOpen(windowId)
       }
     },
-    [focusWindow, recruiterSection, recordInteractiveAppOpen, soundEffects],
+    [focusWindow, isMobile, recruiterSection, recordInteractiveAppOpen, soundEffects],
   )
 
   const closeWindow = useCallback((id: WindowId) => {
@@ -841,7 +870,17 @@ export function Desktop() {
       assistant: ['jd', 'portfolio assistant', 'ask'],
       timeline: ['history', 'journey', 'milestones', 'education history', 'system history'],
       guestbook: ['visitor log', 'sign', 'message', 'comments'],
-      firewall: ['network', 'packets', 'security', 'ports', 'traffic', 'simulation'],
+      firewall: [
+        'network',
+        'packets',
+        'security',
+        'ports',
+        'traffic',
+        'simulation',
+        'packet inspector',
+        'beginner guide',
+        'firewall certified',
+      ],
       wallpapers: ['personalize', 'background', 'desktop'],
       secrets: ['hidden', 'files', 'manual'],
     }
@@ -919,6 +958,9 @@ export function Desktop() {
       'ports and protocols',
       'rule priority',
       'sample network traffic',
+      'beginner guide',
+      'packet inspector',
+      'firewall certified',
     ].map((topic) => ({
       id: `firewall-help-${topic.replace(/\s+/g, '-')}`,
       title: `Firewall Help: ${topic}`,
@@ -1002,6 +1044,13 @@ export function Desktop() {
           soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled),
       },
       {
+        id: 'toggle-hourly-chime',
+        title: 'Toggle Hourly Chime',
+        subtitle: preferences.hourlyChime ? 'Currently On' : 'Currently Off',
+        keywords: ['hourly', 'chime', 'clock', 'ambience'],
+        action: () => updatePreferences({ hourlyChime: !preferences.hourlyChime }),
+      },
+      {
         id: 'open-wallpapers-system',
         title: 'Open Wallpapers',
         subtitle: 'Personalization',
@@ -1037,6 +1086,7 @@ export function Desktop() {
     minimizeActiveWindow,
     openAssistant,
     openWindow,
+    preferences.hourlyChime,
     restoreAllMinimized,
     scanlines,
     selectRecruiterSection,
@@ -1045,6 +1095,7 @@ export function Desktop() {
     theme,
     toggleTheme,
     topId,
+    updatePreferences,
   ])
 
   const renderContent = (id: WindowId, active = true) => {
@@ -1056,6 +1107,7 @@ export function Desktop() {
             onAskAssistant={() => openAssistant()}
             theme={theme}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+            hourlyChimeEnabled={preferences.hourlyChime}
             scanlines={scanlines}
           />
         )
@@ -1184,7 +1236,7 @@ export function Desktop() {
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
-          <div className="absolute right-3 top-11 flex max-h-[calc(100dvh-4rem)] flex-col items-end gap-3 overflow-y-auto pr-1">
+          <div className="absolute right-3 top-11 grid max-h-[calc(100dvh-4rem)] w-[168px] grid-cols-2 justify-items-center gap-x-2 gap-y-3 overflow-y-auto pr-1 sm:w-[200px]">
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}

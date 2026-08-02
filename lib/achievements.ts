@@ -1,7 +1,12 @@
 export const ACHIEVEMENTS_STORAGE_KEY = 'jack-os:achievements.v1'
 export const INTERACTIVE_APPS_OPENED_STORAGE_KEY = 'jack-os:interactive-apps-opened.v1'
+export const FIREWALL_PRESET_COMPLETIONS_STORAGE_KEY =
+  'jack-os:firewall-presets-completed.v1'
 
-export type JackOsAchievementId = 'firewall-first-run' | 'interactive-update-explorer'
+export type JackOsAchievementId =
+  | 'firewall-first-run'
+  | 'interactive-update-explorer'
+  | 'firewall-certified'
 export type JackOsInteractiveAppId = 'timeline' | 'guestbook' | 'firewall'
 
 export const ACHIEVEMENT_MESSAGES: Record<
@@ -15,6 +20,10 @@ export const ACHIEVEMENT_MESSAGES: Record<
   'interactive-update-explorer': {
     title: 'Achievement Unlocked',
     message: 'Interactive Explorer',
+  },
+  'firewall-certified': {
+    title: 'Achievement Unlocked',
+    message: '🏆 Firewall Certified',
   },
 }
 

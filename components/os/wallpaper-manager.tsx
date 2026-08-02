@@ -10,13 +10,21 @@ import {
 import { cn } from '@/lib/utils'
 import {
   DEFAULT_WALLPAPER_ID,
+  PUBLIC_SELECTABLE_WALLPAPERS,
   getWallpaper,
   getWallpaperAsset,
   type WallpaperAsset,
   type WallpaperId,
 } from '@/lib/wallpapers'
 
-const ACTIVE_WALLPAPER_PRELOAD_TIMEOUT_MS = 500
+const IDLE_WALLPAPER_PREFETCH_LIMIT = 5
+const preloadedWallpaperPaths = new Set<string>()
+const wallpaperPreloadPromises = new Map<string, Promise<void>>()
+
+type WindowWithIdleCallback = Window & {
+  requestIdleCallback?: (callback: () => void) => number
+  cancelIdleCallback?: (handle: number) => void
+}
 
 type WallpaperManagerProps = ComponentPropsWithoutRef<'main'> & {
   wallpaperId: WallpaperId
@@ -40,12 +48,39 @@ function getWallpaperStyle(wallpaper: WallpaperAsset): WallpaperCssProperties | 
 }
 
 function preloadWallpaperImage(path: string) {
-  return new Promise<void>((resolve, reject) => {
+  if (preloadedWallpaperPaths.has(path)) {
+    return Promise.resolve()
+  }
+
+  const existing = wallpaperPreloadPromises.get(path)
+  if (existing) {
+    return existing
+  }
+
+  const preloadPromise = new Promise<void>((resolve, reject) => {
     const image = new Image()
     image.decoding = 'async'
-    image.onload = () => resolve()
+    image.onload = () => {
+      preloadedWallpaperPaths.add(path)
+      wallpaperPreloadPromises.delete(path)
+      resolve()
+    }
     image.onerror = () => reject(new Error(`Unable to load wallpaper ${path}`))
     image.src = path
+  }).catch((error) => {
+    wallpaperPreloadPromises.delete(path)
+    throw error
+  })
+
+  wallpaperPreloadPromises.set(path, preloadPromise)
+  return preloadPromise
+}
+
+function primeWallpaper(path: string) {
+  void preloadWallpaperImage(path).catch(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`Jack OS wallpaper failed to preload: ${path}`)
+    }
   })
 }
 
@@ -61,42 +96,56 @@ export function WallpaperManager({
     () => getWallpaper(wallpaperId, unlockedSecretIds),
     [wallpaperId, unlockedSecretIds],
   )
-  const [wallpaper, setWallpaper] = useState<WallpaperAsset>(() => targetWallpaper)
+  const [failedWallpaperId, setFailedWallpaperId] = useState<string | null>(null)
+  const wallpaper =
+    failedWallpaperId === targetWallpaper.id
+      ? getWallpaperAsset(DEFAULT_WALLPAPER_ID)
+      : targetWallpaper
   const wallpaperStyle = getWallpaperStyle(wallpaper)
 
   useEffect(() => {
+    setFailedWallpaperId(null)
+
     if (!targetWallpaper.imagePath) {
-      setWallpaper(targetWallpaper)
       return
     }
 
     let cancelled = false
-    let timedOut = false
-    const timeoutId = window.setTimeout(() => {
-      timedOut = true
-    }, ACTIVE_WALLPAPER_PRELOAD_TIMEOUT_MS)
-
     preloadWallpaperImage(targetWallpaper.imagePath)
-      .then(() => {
-        if (!cancelled) {
-          setWallpaper(targetWallpaper)
-        }
-      })
       .catch(() => {
         if (process.env.NODE_ENV !== 'production') {
           console.warn(`Jack OS wallpaper failed to load: ${targetWallpaper.imagePath}`)
         }
-        if (!cancelled && timedOut) {
-          setWallpaper(getWallpaperAsset(DEFAULT_WALLPAPER_ID))
+        if (!cancelled) {
+          setFailedWallpaperId(targetWallpaper.id)
         }
       })
-      .finally(() => window.clearTimeout(timeoutId))
 
     return () => {
       cancelled = true
-      window.clearTimeout(timeoutId)
     }
   }, [targetWallpaper])
+
+  useEffect(() => {
+    const paths = PUBLIC_SELECTABLE_WALLPAPERS
+      .flatMap((item) => (item.imagePath ? [item.imagePath] : []))
+      .slice(0, IDLE_WALLPAPER_PREFETCH_LIMIT)
+
+    if (paths.length === 0) return
+
+    const idleWindow = window as WindowWithIdleCallback
+    if (typeof idleWindow.requestIdleCallback === 'function') {
+      const idleId = idleWindow.requestIdleCallback(() => {
+        paths.forEach(primeWallpaper)
+      })
+      return () => idleWindow.cancelIdleCallback?.(idleId)
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      paths.forEach(primeWallpaper)
+    }, 1200)
+    return () => window.clearTimeout(timeoutId)
+  }, [])
 
   return (
     <main

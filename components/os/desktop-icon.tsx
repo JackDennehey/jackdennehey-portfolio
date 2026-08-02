@@ -14,10 +14,14 @@ export function DesktopIcon({
   onOpenWindow: (id: string) => void
 }) {
   const { Icon, label } = item
+  const tone = item.kind === 'window' ? item.tone : undefined
   const isRecruiter = item.kind === 'window' && item.id === 'recruiter'
+  const isFirewall = item.kind === 'window' && item.id === 'firewall'
   const accessibleLabel = isRecruiter
     ? 'Recruiter Mode — guided professional overview'
-    : label
+    : isFirewall
+      ? 'Network Firewall — flagship simulated packet firewall demonstration'
+      : label
   const openItem = () => {
     if (item.kind === 'window') {
       onOpenWindow(item.id)
@@ -35,9 +39,11 @@ export function DesktopIcon({
         aria-hidden
         className={cn(
           'os-border grid size-12 place-items-center transition-colors sm:size-14',
-          isRecruiter
+          tone === 'recruiter'
             ? 'recruiter-icon-frame'
-            : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground',
+            : tone === 'firewall'
+              ? 'firewall-icon-frame'
+              : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground',
         )}
       >
         <Icon className="size-6 sm:size-7" />
@@ -45,7 +51,8 @@ export function DesktopIcon({
       <span
         className={cn(
           'w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]',
-          isRecruiter ? 'recruiter-icon-label' : null,
+          tone === 'recruiter' ? 'recruiter-icon-label' : null,
+          tone === 'firewall' ? 'firewall-icon-label' : null,
         )}
       >
         {label}
@@ -76,8 +83,8 @@ export function DesktopIcon({
       type="button"
       data-desktop-icon="true"
       className={className}
-      onClick={variant === 'mobile' ? openItem : undefined}
-      onDoubleClick={variant === 'desktop' ? openItem : undefined}
+      onClick={variant === 'mobile' || isRecruiter ? openItem : undefined}
+      onDoubleClick={variant === 'desktop' && !isRecruiter ? openItem : undefined}
       onKeyDown={variant === 'desktop' ? onKeyDown : undefined}
       aria-label={accessibleLabel}
     >

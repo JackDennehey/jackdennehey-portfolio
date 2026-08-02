@@ -74,6 +74,9 @@
   --credential-gold: oklch(0.57 0.085 82);
   --credential-gold-muted: oklch(0.77 0.055 83);
   --credential-gold-shadow: oklch(0.45 0.06 82 / 0.28);
+  --firewall-blue: oklch(0.47 0.075 245);
+  --firewall-blue-muted: oklch(0.78 0.045 235);
+  --firewall-blue-shadow: oklch(0.38 0.06 245 / 0.26);
 }
 
 [data-theme='dark'] {
@@ -107,6 +110,9 @@
   --credential-gold: oklch(0.72 0.065 83);
   --credential-gold-muted: oklch(0.38 0.035 83);
   --credential-gold-shadow: oklch(0.82 0.045 83 / 0.22);
+  --firewall-blue: oklch(0.72 0.06 235);
+  --firewall-blue-muted: oklch(0.34 0.04 235);
+  --firewall-blue-shadow: oklch(0.74 0.045 235 / 0.22);
 }
 
 @layer base {
@@ -339,9 +345,42 @@
     background-size: 18px 18px;
   }
 
+  .firewall-zone-center {
+    border-color: var(--firewall-blue);
+    box-shadow: inset 0 -3px 0 0 var(--firewall-blue-shadow);
+  }
+
+  .firewall-certified-badge {
+    border-color: var(--firewall-blue);
+    color: var(--firewall-blue);
+    box-shadow: inset 0 0 0 1px var(--firewall-blue-shadow);
+  }
+
   .firewall-packet {
+    --packet-accent: var(--foreground);
     left: 0.75rem;
-    animation: firewall-packet-flight 2.1s linear both;
+    border-color: var(--packet-accent);
+    background:
+      linear-gradient(90deg, var(--packet-accent) 0 4px, transparent 4px),
+      var(--card);
+    box-shadow: inset 0 -3px 0 0 color-mix(in oklch, var(--packet-accent) 26%, transparent);
+    animation: firewall-packet-flight var(--packet-duration, 2.1s) linear both;
+  }
+
+  .firewall-packet[data-protocol='dns'],
+  .firewall-packet[data-protocol='dot'] {
+    --packet-accent: var(--firewall-blue);
+  }
+
+  .firewall-packet[data-protocol='https'],
+  .firewall-packet[data-protocol='tls'] {
+    --packet-accent: color-mix(in oklch, var(--firewall-blue) 70%, var(--foreground));
+  }
+
+  .firewall-packet[data-protocol='ssh'],
+  .firewall-packet[data-protocol='rdp'],
+  .firewall-packet[data-protocol='tcp'] {
+    --packet-accent: color-mix(in oklch, var(--credential-gold) 50%, var(--foreground));
   }
 
   .firewall-packet-blocked {
@@ -349,14 +388,19 @@
     background:
       repeating-linear-gradient(
         135deg,
-        var(--card) 0 4px,
+        color-mix(in oklch, var(--packet-accent) 24%, var(--card)) 0 4px,
         var(--secondary) 4px 8px
       );
   }
 
   .firewall-packet-inspected {
-    outline: 2px dashed currentColor;
+    outline: 2px dashed var(--packet-accent);
     outline-offset: -5px;
+  }
+
+  .firewall-packet-selected {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
   }
 
   .achievement-notice {
@@ -485,6 +529,96 @@
     color: var(--credential-gold);
     background: var(--card);
   }
+
+  .firewall-icon-frame {
+    position: relative;
+    border-color: var(--firewall-blue);
+    background: var(--foreground);
+    color: var(--firewall-blue-muted);
+    box-shadow: inset 0 0 0 2px var(--firewall-blue-shadow);
+  }
+
+  .firewall-icon-frame::before,
+  .firewall-icon-frame::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--firewall-blue);
+    pointer-events: none;
+  }
+
+  .firewall-icon-frame::before {
+    left: 3px;
+    bottom: 3px;
+    border-left-width: 2px;
+    border-bottom-width: 2px;
+  }
+
+  .firewall-icon-frame::after {
+    right: 3px;
+    top: 3px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+  }
+
+  .group:hover .firewall-icon-frame,
+  .group:focus-visible .firewall-icon-frame,
+  .firewall-icon-frame[data-active='true'] {
+    background: var(--paper);
+    color: var(--foreground);
+  }
+
+  [data-theme='dark'] .firewall-icon-frame {
+    background: var(--card);
+    color: var(--firewall-blue);
+    box-shadow: inset 0 0 0 2px var(--firewall-blue-muted);
+  }
+
+  [data-theme='dark'] .group:hover .firewall-icon-frame,
+  [data-theme='dark'] .group:focus-visible .firewall-icon-frame,
+  [data-theme='dark'] .firewall-icon-frame[data-active='true'] {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+
+  .firewall-icon-label {
+    width: auto;
+    max-width: 100%;
+    border-bottom: 2px solid var(--firewall-blue);
+    background: color-mix(in oklch, var(--paper) 86%, transparent);
+    padding: 1px 2px;
+    font-weight: 700;
+  }
+
+  .firewall-inline-icon {
+    position: relative;
+    border-color: var(--firewall-blue);
+    background: var(--paper);
+    color: var(--firewall-blue);
+    box-shadow: inset 0 0 0 1px var(--firewall-blue-shadow);
+  }
+
+  .firewall-inline-icon::before {
+    content: '';
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 5px;
+    height: 5px;
+    border-right: 1px solid var(--firewall-blue);
+    border-bottom: 1px solid var(--firewall-blue);
+    pointer-events: none;
+  }
+
+  .recruiter-mode-shell {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .recruiter-mode-shell nav button {
+    min-height: 44px;
+  }
 }
 
 /* CRT scanline overlay */
@@ -535,14 +669,15 @@
 }
 @keyframes firewall-packet-flight {
   0% { transform: translateX(0); opacity: 0; }
-  8% { opacity: 1; }
+  7% { opacity: 1; }
+  54% { transform: translateX(calc(min(360px, 50vw) - 3rem)); opacity: 1; }
   86% { opacity: 1; }
-  100% { transform: translateX(calc(min(720px, 100vw) - 5.5rem)); opacity: 0; }
+  100% { transform: translateX(calc(min(760px, 100vw) - 5.5rem)); opacity: 0; }
 }
 @keyframes firewall-packet-blocked-flight {
   0% { transform: translateX(0); opacity: 0; }
-  8% { opacity: 1; }
-  66% { transform: translateX(calc(min(360px, 50vw) - 3rem)); opacity: 1; }
+  7% { opacity: 1; }
+  72% { transform: translateX(calc(min(360px, 50vw) - 3rem)); opacity: 1; }
   100% { transform: translateX(calc(min(360px, 50vw) - 3rem)); opacity: 0; }
 }
 @keyframes achievement-notice-in {

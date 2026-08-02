@@ -223,6 +223,21 @@ export function WallpapersContent({
           />
           Sound Effects: {soundEffectsEnabled ? 'On' : 'Off'}
         </label>
+        <div className="border-t-2 border-border pt-3">
+          <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+            Desktop Ambience
+          </p>
+          <label className="mt-2 flex items-center gap-2 text-sm font-medium text-foreground">
+            <input
+              type="checkbox"
+              data-preference-toggle="hourly-chime"
+              checked={preferences.hourlyChime}
+              onChange={(event) => onUpdatePreferences({ hourlyChime: event.target.checked })}
+              className="size-4 accent-foreground"
+            />
+            Hourly Chime
+          </label>
+        </div>
       </section>
 
       <WallpaperSection

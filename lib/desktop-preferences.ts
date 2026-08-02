@@ -10,12 +10,14 @@ export type DesktopPreferences = {
   wallpaperId: WallpaperId
   showClock: boolean
   showCalendar: boolean
+  hourlyChime: boolean
 }
 
 export const DEFAULT_DESKTOP_PREFERENCES: DesktopPreferences = {
   wallpaperId: DEFAULT_WALLPAPER_ID,
   showClock: true,
   showCalendar: true,
+  hourlyChime: false,
 }
 
 export function parseDesktopPreferences(
@@ -38,6 +40,10 @@ export function parseDesktopPreferences(
         typeof parsed.showCalendar === 'boolean'
           ? parsed.showCalendar
           : DEFAULT_DESKTOP_PREFERENCES.showCalendar,
+      hourlyChime:
+        typeof parsed.hourlyChime === 'boolean'
+          ? parsed.hourlyChime
+          : DEFAULT_DESKTOP_PREFERENCES.hourlyChime,
     }
   } catch {
     return DEFAULT_DESKTOP_PREFERENCES

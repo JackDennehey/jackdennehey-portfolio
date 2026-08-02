@@ -10,6 +10,7 @@ import {
   type SVGProps,
 } from 'react'
 import { cn } from '@/lib/utils'
+import type { AppTone } from './apps'
 
 export type JackOsCommand = {
   id: string
@@ -18,7 +19,7 @@ export type JackOsCommand = {
   keywords?: readonly string[]
   shortcut?: string
   disabled?: boolean
-  tone?: 'recruiter'
+  tone?: AppTone
   ariaLabel?: string
   Icon?: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
   action: () => void
@@ -228,7 +229,9 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                         'grid size-7 shrink-0 place-items-center border-2',
                         command.tone === 'recruiter'
                           ? 'recruiter-inline-icon'
-                          : 'border-current bg-paper text-foreground',
+                          : command.tone === 'firewall'
+                            ? 'firewall-inline-icon'
+                            : 'border-current bg-paper text-foreground',
                       )}
                     >
                       {Icon ? <Icon className="size-4" /> : <span className="font-pixel text-[8px]">J</span>}

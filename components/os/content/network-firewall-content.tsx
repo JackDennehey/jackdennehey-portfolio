@@ -1,6 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import {
+  FIREWALL_PRESET_COMPLETIONS_STORAGE_KEY,
+  parseStoredIds,
+  type JackOsAchievementId,
+} from '@/lib/achievements'
 import { cn } from '@/lib/utils'
 
 type FirewallPresetId =
@@ -9,26 +14,34 @@ type FirewallPresetId =
   | 'brute-force'
   | 'suspicious-dns'
   | 'web-burst'
+  | 'remote-access'
+  | 'data-sync'
 
 type FirewallAction = 'Allowed' | 'Blocked' | 'Inspected'
+type FirewallRisk = 'low' | 'medium' | 'high'
 
 type FirewallEvent = {
   id: number
+  presetId: FirewallPresetId
   protocol: string
   source: string
   destination: string
+  service: string
   port: number
   action: FirewallAction
   rule: string
   latency: number
   timestamp: string
+  explanation: string
+  risk: FirewallRisk
 }
 
 type PacketVisual = FirewallEvent & {
   lane: number
+  duration: number
 }
 
-type FirewallRuleId = 'blockAdminPorts' | 'inspectDns'
+type FirewallRuleId = 'blockAdminPorts' | 'inspectDns' | 'reviewBursts'
 
 type FirewallRules = Record<FirewallRuleId, boolean>
 
@@ -41,21 +54,25 @@ type FirewallPreset = {
   ports: number[]
 }
 
+type PacketStyle = CSSProperties & {
+  '--packet-duration': string
+}
+
 const FIREWALL_PRESETS: readonly FirewallPreset[] = [
   {
     id: 'normal',
     label: 'Normal Traffic',
-    description: 'Balanced web and DNS requests moving through ordinary rules.',
+    description: 'Balanced web, DNS, and time-sync requests moving through ordinary rules.',
     completionEvents: 28,
-    protocols: ['HTTPS', 'DNS', 'NTP', 'SSH'],
-    ports: [443, 53, 123, 22],
+    protocols: ['HTTPS', 'DNS', 'NTP', 'HTTPS'],
+    ports: [443, 53, 123, 443],
   },
   {
     id: 'port-scan',
     label: 'Port Scan',
     description: 'A burst of probes checks several services and trips defensive rules.',
     completionEvents: 34,
-    protocols: ['TCP', 'TCP', 'TCP', 'UDP'],
+    protocols: ['TCP', 'TCP', 'UDP', 'TCP'],
     ports: [22, 23, 3389, 445, 8080, 8443],
   },
   {
@@ -69,10 +86,10 @@ const FIREWALL_PRESETS: readonly FirewallPreset[] = [
   {
     id: 'suspicious-dns',
     label: 'Suspicious DNS Activity',
-    description: 'DNS requests are inspected when they arrive in unusual bursts.',
+    description: 'DNS requests receive extra review when they arrive in unusual bursts.',
     completionEvents: 30,
-    protocols: ['DNS', 'DNS', 'HTTPS'],
-    ports: [53, 853, 443],
+    protocols: ['DNS', 'DNS', 'DoT', 'HTTPS'],
+    ports: [53, 53, 853, 443],
   },
   {
     id: 'web-burst',
@@ -82,21 +99,152 @@ const FIREWALL_PRESETS: readonly FirewallPreset[] = [
     protocols: ['HTTPS', 'HTTP', 'DNS'],
     ports: [443, 80, 53],
   },
+  {
+    id: 'remote-access',
+    label: 'Remote Access Review',
+    description: 'Remote management attempts are checked before they reach internal services.',
+    completionEvents: 32,
+    protocols: ['SSH', 'RDP', 'TCP', 'HTTPS'],
+    ports: [22, 3389, 5900, 443],
+  },
+  {
+    id: 'data-sync',
+    label: 'Data Sync Window',
+    description: 'Scheduled cloud sync traffic mixes trusted requests with reviewable bursts.',
+    completionEvents: 30,
+    protocols: ['TLS', 'HTTPS', 'NTP', 'DNS'],
+    ports: [443, 8443, 123, 53],
+  },
 ] as const
 
+const FIREWALL_PRESET_IDS = FIREWALL_PRESETS.map((preset) => preset.id)
 const INITIAL_RULES: FirewallRules = {
   blockAdminPorts: true,
   inspectDns: true,
+  reviewBursts: true,
 }
 const MAX_EVENTS = 120
-const MAX_PACKETS = 24
+const MAX_PACKETS = 28
+const ADMIN_PORTS = [22, 23, 3389, 445, 5900]
+
+const RULE_DETAILS: Record<FirewallRuleId, { label: string; description: string }> = {
+  blockAdminPorts: {
+    label: 'Block admin ports',
+    description: 'Stops traffic aimed at remote login and management services.',
+  },
+  inspectDns: {
+    label: 'Inspect DNS bursts',
+    description: 'Reviews name-lookup traffic and blocks suspicious repeated bursts.',
+  },
+  reviewBursts: {
+    label: 'Review traffic bursts',
+    description: 'Adds extra review when many similar requests arrive at once.',
+  },
+}
+
+function readCompletedPresets() {
+  if (typeof window === 'undefined') return []
+
+  try {
+    return parseStoredIds(
+      window.localStorage.getItem(FIREWALL_PRESET_COMPLETIONS_STORAGE_KEY),
+      FIREWALL_PRESET_IDS,
+    )
+  } catch {
+    return []
+  }
+}
+
+function writeCompletedPresets(ids: readonly FirewallPresetId[]) {
+  try {
+    window.localStorage.setItem(FIREWALL_PRESET_COMPLETIONS_STORAGE_KEY, JSON.stringify(ids))
+  } catch {
+    // Completion progress is local polish; simulation controls should never depend on storage.
+  }
+}
+
+function getService(port: number) {
+  const services: Record<number, { service: string; destination: string }> = {
+    22: { service: 'SSH', destination: 'ADMIN SERVICE' },
+    23: { service: 'Telnet', destination: 'LEGACY ADMIN' },
+    53: { service: 'DNS', destination: 'DNS SERVICE' },
+    80: { service: 'HTTP', destination: 'WEB SERVICE' },
+    123: { service: 'NTP', destination: 'TIME SERVICE' },
+    443: { service: 'HTTPS', destination: 'WEB SERVICE' },
+    445: { service: 'SMB', destination: 'FILE SERVICE' },
+    853: { service: 'DNS over TLS', destination: 'DNS SERVICE' },
+    3389: { service: 'RDP', destination: 'ADMIN SERVICE' },
+    5900: { service: 'VNC', destination: 'ADMIN SERVICE' },
+    8080: { service: 'Proxy', destination: 'WEB SERVICE' },
+    8443: { service: 'Cloud Sync', destination: 'CLOUD SERVICE' },
+  }
+
+  return services[port] ?? { service: `Port ${port}`, destination: 'APP SERVICE' }
+}
+
+function getPacketSource(id: number, presetId: FirewallPresetId) {
+  const sources =
+    presetId === 'normal' || presetId === 'data-sync'
+      ? ['INTERNAL', 'EXTERNAL', 'DMZ', 'INTERNAL']
+      : ['EXTERNAL', 'EXTERNAL', 'DMZ', 'EXTERNAL', 'INTERNAL']
+
+  return sources[id % sources.length]
+}
+
+function getPacketExplanation({
+  action,
+  rule,
+  service,
+  presetId,
+}: {
+  action: FirewallAction
+  rule: string
+  service: string
+  presetId: FirewallPresetId
+}) {
+  if (rule === RULE_DETAILS.blockAdminPorts.label) {
+    return 'Blocked because the firewall rule blocks administrative ports.'
+  }
+
+  if (rule === RULE_DETAILS.inspectDns.label && action === 'Blocked') {
+    return 'Blocked because repeated DNS activity matched the suspicious burst rule.'
+  }
+
+  if (rule === RULE_DETAILS.inspectDns.label) {
+    return 'Inspected because DNS traffic can reveal where a device is trying to connect.'
+  }
+
+  if (rule === RULE_DETAILS.reviewBursts.label) {
+    return 'Inspected because the preset is generating a burst of similar requests.'
+  }
+
+  if (presetId === 'port-scan' && action === 'Inspected') {
+    return 'Inspected because repeated probes can indicate service discovery.'
+  }
+
+  return `Allowed because ${service} traffic did not match a blocking rule.`
+}
+
+function getPacketRisk(action: FirewallAction, rule: string): FirewallRisk {
+  if (action === 'Blocked') return 'high'
+  if (action === 'Inspected' || rule === RULE_DETAILS.reviewBursts.label) return 'medium'
+  return 'low'
+}
+
+function formatEventTime() {
+  return new Date().toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
 
 export function NetworkFirewallContent({
   active,
   onAchievement,
 }: {
   active: boolean
-  onAchievement: (id: 'firewall-first-run') => void
+  onAchievement: (id: JackOsAchievementId) => void
 }) {
   const [presetId, setPresetId] = useState<FirewallPresetId>('normal')
   const [rules, setRules] = useState<FirewallRules>(INITIAL_RULES)
@@ -106,10 +254,18 @@ export function NetworkFirewallContent({
   const [packets, setPackets] = useState<PacketVisual[]>([])
   const [selectedPacketId, setSelectedPacketId] = useState<number | null>(null)
   const [reducedMotion, setReducedMotion] = useState(false)
+  const [completedPresetIds, setCompletedPresetIds] = useState<FirewallPresetId[]>([])
   const nextPacketId = useRef(1)
   const startedFromBeginning = useRef(false)
   const completionSent = useRef(false)
-  const preset = FIREWALL_PRESETS.find((item) => item.id === presetId) ?? FIREWALL_PRESETS[0]
+  const preset = useMemo(
+    () => FIREWALL_PRESETS.find((item) => item.id === presetId) ?? FIREWALL_PRESETS[0],
+    [presetId],
+  )
+
+  useEffect(() => {
+    setCompletedPresetIds(readCompletedPresets())
+  }, [])
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -136,6 +292,7 @@ export function NetworkFirewallContent({
 
   const counters = useMemo(
     () => ({
+      processed: events.length,
       allowed: events.filter((event) => event.action === 'Allowed').length,
       blocked: events.filter((event) => event.action === 'Blocked').length,
       inspected: events.filter((event) => event.action === 'Inspected').length,
@@ -143,53 +300,97 @@ export function NetworkFirewallContent({
     [events],
   )
 
+  const completionProgress = Math.min(100, Math.round((events.length / preset.completionEvents) * 100))
+  const certified = FIREWALL_PRESET_IDS.every((id) => completedPresetIds.includes(id))
+
+  const recordPresetCompletion = useCallback(
+    (completedPresetId: FirewallPresetId) => {
+      setCompletedPresetIds((current) => {
+        if (current.includes(completedPresetId)) {
+          return current
+        }
+
+        const next = [...current, completedPresetId]
+        writeCompletedPresets(next)
+
+        if (FIREWALL_PRESET_IDS.every((id) => next.includes(id))) {
+          onAchievement('firewall-certified')
+        }
+
+        return next
+      })
+    },
+    [onAchievement],
+  )
+
   const generatePacket = useCallback(() => {
-    const id = nextPacketId.current++
+    const id = nextPacketId.current
+    nextPacketId.current += 1
+
     const protocol = preset.protocols[id % preset.protocols.length]
-    const port = preset.ports[(id + preset.ports.length) % preset.ports.length]
-    const source = id % 5 === 0 ? 'DMZ' : id % 2 === 0 ? 'EXTERNAL' : 'INTERNAL'
-    const destination =
-      port === 53 || port === 853
-        ? 'DNS SERVICE'
-        : port === 443 || port === 80
-          ? 'WEB SERVICE'
-          : 'ADMIN SERVICE'
+    const port = preset.ports[(id * 3 + preset.ports.length) % preset.ports.length]
+    const source = getPacketSource(id, preset.id)
+    const { service, destination } = getService(port)
 
     let action: FirewallAction = 'Allowed'
-    let rule = 'default allow'
-    if (rules.blockAdminPorts && [22, 23, 3389, 445].includes(port)) {
+    let rule = 'Default allow'
+
+    if (rules.blockAdminPorts && ADMIN_PORTS.includes(port)) {
       action = 'Blocked'
-      rule = 'block admin ports'
-    } else if (rules.inspectDns && (protocol === 'DNS' || port === 53 || port === 853)) {
+      rule = RULE_DETAILS.blockAdminPorts.label
+    } else if (rules.inspectDns && (protocol === 'DNS' || protocol === 'DoT' || port === 53 || port === 853)) {
       action = preset.id === 'suspicious-dns' && id % 3 === 0 ? 'Blocked' : 'Inspected'
-      rule = action === 'Blocked' ? 'dns burst guard' : 'inspect dns'
-    } else if (preset.id === 'web-burst' && id % 8 === 0) {
+      rule = RULE_DETAILS.inspectDns.label
+    } else if (
+      rules.reviewBursts &&
+      (preset.id === 'web-burst' || preset.id === 'data-sync') &&
+      id % 5 === 0
+    ) {
       action = 'Inspected'
-      rule = 'web burst review'
+      rule = RULE_DETAILS.reviewBursts.label
+    } else if (preset.id === 'port-scan' && id % 4 === 0) {
+      action = 'Inspected'
+      rule = 'Scan pattern review'
     }
 
+    const latencyBase = action === 'Blocked' ? 6 : action === 'Inspected' ? 18 : 9
+    const explanation = getPacketExplanation({ action, rule, service, presetId: preset.id })
     const event: FirewallEvent = {
       id,
+      presetId: preset.id,
       protocol,
       source,
       destination,
+      service,
       port,
       action,
       rule,
-      latency: 8 + ((id * 7) % 42),
-      timestamp: `+${Math.max(1, events.length + 1)}s`,
+      latency: latencyBase + ((id * 7) % 38),
+      timestamp: formatEventTime(),
+      explanation,
+      risk: getPacketRisk(action, rule),
     }
+
     setEvents((current) => [event, ...current].slice(0, MAX_EVENTS))
-    setPackets((current) => [{ ...event, lane: id % 4 }, ...current].slice(0, MAX_PACKETS))
+    setPackets((current) =>
+      [
+        {
+          ...event,
+          lane: id % 5,
+          duration: action === 'Blocked' ? 1350 : action === 'Inspected' ? 1850 : 2150,
+        },
+        ...current,
+      ].slice(0, MAX_PACKETS),
+    )
     setSelectedPacketId(event.id)
-  }, [events.length, preset, rules])
+  }, [preset, rules])
 
   useEffect(() => {
     if (!active || !running || reducedMotion || document.hidden) return
 
     const interval = window.setInterval(() => {
       generatePacket()
-    }, Math.max(220, 900 / speed))
+    }, Math.max(180, 780 / speed))
 
     return () => window.clearInterval(interval)
   }, [active, generatePacket, reducedMotion, running, speed])
@@ -201,7 +402,15 @@ export function NetworkFirewallContent({
     completionSent.current = true
     setRunning(false)
     onAchievement('firewall-first-run')
-  }, [events.length, onAchievement, preset.completionEvents, running])
+    recordPresetCompletion(preset.id)
+  }, [
+    events.length,
+    onAchievement,
+    preset.completionEvents,
+    preset.id,
+    recordPresetCompletion,
+    running,
+  ])
 
   useEffect(() => {
     if (!active) {
@@ -250,17 +459,47 @@ export function NetworkFirewallContent({
               Packet Visualizer
             </h3>
           </div>
-          <span className="os-border bg-foreground px-2 py-1 font-pixel text-[8px] leading-none text-primary-foreground">
-            SIMULATION
-          </span>
+          <div className="flex flex-wrap gap-2">
+            {certified ? (
+              <span className="firewall-certified-badge os-border bg-card px-2 py-1 font-pixel text-[8px] leading-none">
+                Firewall Certified
+              </span>
+            ) : null}
+            <span className="os-border bg-foreground px-2 py-1 font-pixel text-[8px] leading-none text-primary-foreground">
+              SIMULATION
+            </span>
+          </div>
         </div>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
           This visualization uses locally generated sample traffic. It does not inspect visitor
-          devices or display real IP addresses.
+          devices, read real network activity, or display real IP addresses.
         </p>
       </header>
 
-      <section className="grid gap-3 lg:grid-cols-[230px_minmax(0,1fr)_260px]">
+      <details className="os-border bg-card p-3">
+        <summary className="cursor-pointer font-pixel text-[9px] leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          Beginner Guide
+        </summary>
+        <div className="mt-3 grid gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2 lg:grid-cols-5">
+          <GuideNote title="Packets">
+            Small pieces of data moving from one place to another.
+          </GuideNote>
+          <GuideNote title="Firewall">
+            A checkpoint that decides whether sample traffic continues, stops, or gets reviewed.
+          </GuideNote>
+          <GuideNote title="Allowed">
+            The packet matched no blocking rule and continues to the destination.
+          </GuideNote>
+          <GuideNote title="Blocked">
+            A rule stopped the packet before it reached the destination service.
+          </GuideNote>
+          <GuideNote title="Rules">
+            Simple conditions such as port, protocol, and traffic pattern decide the action.
+          </GuideNote>
+        </div>
+      </details>
+
+      <section className="grid gap-3 lg:grid-cols-[240px_minmax(0,1fr)_280px]">
         <aside className="space-y-3">
           <div className="os-border bg-card p-3">
             <label
@@ -284,22 +523,36 @@ export function NetworkFirewallContent({
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               {preset.description}
             </p>
+            <div className="mt-3">
+              <div className="flex items-center justify-between gap-2 font-pixel text-[7px] leading-relaxed text-muted-foreground">
+                <span>Preset Run</span>
+                <span>{completionProgress}%</span>
+              </div>
+              <div className="mt-1 h-3 os-border bg-secondary p-0.5">
+                <div
+                  className="h-full bg-foreground transition-[width] duration-150"
+                  style={{ width: `${completionProgress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Completed presets: {completedPresetIds.length}/{FIREWALL_PRESETS.length}
+              </p>
+            </div>
           </div>
 
-          <div className="os-border space-y-2 bg-card p-3">
+          <div className="os-border space-y-3 bg-card p-3">
             <p className="font-pixel text-[8px] leading-relaxed text-foreground">
               Sample Rules
             </p>
-            <RuleToggle
-              checked={rules.blockAdminPorts}
-              label="Block admin ports"
-              onChange={() => toggleRule('blockAdminPorts')}
-            />
-            <RuleToggle
-              checked={rules.inspectDns}
-              label="Inspect DNS bursts"
-              onChange={() => toggleRule('inspectDns')}
-            />
+            {(Object.keys(RULE_DETAILS) as FirewallRuleId[]).map((ruleId) => (
+              <RuleToggle
+                key={ruleId}
+                checked={rules[ruleId]}
+                label={RULE_DETAILS[ruleId].label}
+                description={RULE_DETAILS[ruleId].description}
+                onChange={() => toggleRule(ruleId)}
+              />
+            ))}
           </div>
 
           <div className="os-border space-y-2 bg-card p-3">
@@ -307,36 +560,14 @@ export function NetworkFirewallContent({
               Controls
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={start}
-                disabled={running || reducedMotion}
-                className="os-border bg-card px-2 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
-              >
+              <ControlButton onClick={start} disabled={running || reducedMotion}>
                 Start
-              </button>
-              <button
-                type="button"
-                onClick={pause}
-                disabled={!running}
-                className="os-border bg-card px-2 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
-              >
+              </ControlButton>
+              <ControlButton onClick={pause} disabled={!running}>
                 Pause
-              </button>
-              <button
-                type="button"
-                onClick={reset}
-                className="os-border bg-card px-2 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={generatePacket}
-                className="os-border bg-card px-2 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-              >
-                Sample
-              </button>
+              </ControlButton>
+              <ControlButton onClick={reset}>Reset</ControlButton>
+              <ControlButton onClick={generatePacket}>Sample</ControlButton>
             </div>
             {reducedMotion ? (
               <p className="text-xs leading-relaxed text-muted-foreground">
@@ -358,35 +589,50 @@ export function NetworkFirewallContent({
           </div>
         </aside>
 
-        <section className="os-border min-h-[330px] overflow-hidden bg-secondary p-3">
+        <section className="os-border min-h-[360px] overflow-hidden bg-secondary p-3">
           <div className="grid grid-cols-3 gap-3 text-center font-pixel text-[8px] leading-relaxed text-foreground">
             <span className="os-border bg-card p-2">SOURCE</span>
-            <span className="os-border bg-card p-2">FIREWALL</span>
+            <span className="firewall-zone-center os-border bg-card p-2">FIREWALL</span>
             <span className="os-border bg-card p-2">DESTINATION</span>
           </div>
-          <div className="firewall-stage relative mt-3 h-52 overflow-hidden border-2 border-border bg-paper">
+          <div className="firewall-stage relative mt-3 h-56 overflow-hidden border-2 border-border bg-paper">
             <div className="absolute left-[18%] top-4 h-[calc(100%-2rem)] border-l-2 border-dashed border-border" />
             <div className="absolute left-1/2 top-4 h-[calc(100%-2rem)] border-l-2 border-border" />
             <div className="absolute right-[18%] top-4 h-[calc(100%-2rem)] border-l-2 border-dashed border-border" />
-            {packets.map((packet) => (
-              <button
-                key={packet.id}
-                type="button"
-                onClick={() => setSelectedPacketId(packet.id)}
-                className={cn(
-                  'firewall-packet os-border absolute size-8 bg-card font-pixel text-[6px] leading-none text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  packet.action === 'Blocked' ? 'firewall-packet-blocked' : null,
-                  packet.action === 'Inspected' ? 'firewall-packet-inspected' : null,
-                )}
-                style={{ top: `${22 + packet.lane * 36}px` }}
-                aria-label={`Inspect packet ${packet.id}, ${packet.action}`}
-              >
-                {packet.protocol.slice(0, 3)}
-              </button>
-            ))}
+            <div
+              aria-hidden
+              className="absolute left-1/2 top-1/2 h-[74%] w-10 -translate-x-1/2 -translate-y-1/2 border-2 border-border bg-card/60"
+            />
+            {packets.map((packet) => {
+              const packetStyle: PacketStyle = {
+                top: `${18 + packet.lane * 38}px`,
+                '--packet-duration': `${packet.duration}ms`,
+              }
+
+              return (
+                <button
+                  key={packet.id}
+                  type="button"
+                  onClick={() => setSelectedPacketId(packet.id)}
+                  data-protocol={packet.protocol.toLowerCase()}
+                  data-action={packet.action.toLowerCase()}
+                  className={cn(
+                    'firewall-packet os-border absolute size-8 bg-card font-pixel text-[6px] leading-none text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    selectedPacketId === packet.id ? 'firewall-packet-selected' : null,
+                    packet.action === 'Blocked' ? 'firewall-packet-blocked' : null,
+                    packet.action === 'Inspected' ? 'firewall-packet-inspected' : null,
+                  )}
+                  style={packetStyle}
+                  aria-label={`Inspect packet ${packet.id}, ${packet.protocol}, ${packet.action}`}
+                >
+                  {packet.protocol.slice(0, 3).toUpperCase()}
+                </button>
+              )
+            })}
           </div>
 
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            <Counter label="Processed" value={counters.processed} />
             <Counter label="Allowed" value={counters.allowed} />
             <Counter label="Inspected" value={counters.inspected} />
             <Counter label="Blocked" value={counters.blocked} />
@@ -399,24 +645,27 @@ export function NetworkFirewallContent({
               Packet Inspector
             </h4>
             {selectedPacket ? (
-              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs leading-relaxed text-muted-foreground">
-                <dt>ID</dt>
-                <dd className="text-foreground">#{selectedPacket.id}</dd>
-                <dt>Protocol</dt>
-                <dd className="text-foreground">{selectedPacket.protocol}</dd>
-                <dt>Path</dt>
-                <dd className="text-foreground">
-                  {selectedPacket.source} to {selectedPacket.destination}
-                </dd>
-                <dt>Port</dt>
-                <dd className="text-foreground">{selectedPacket.port}</dd>
-                <dt>Action</dt>
-                <dd className="text-foreground">{selectedPacket.action}</dd>
-                <dt>Rule</dt>
-                <dd className="text-foreground">{selectedPacket.rule}</dd>
-                <dt>Latency</dt>
-                <dd className="text-foreground">{selectedPacket.latency}ms</dd>
-              </dl>
+              <div className="mt-2 space-y-3">
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs leading-relaxed text-muted-foreground">
+                  <dt>Protocol</dt>
+                  <dd className="text-foreground">{selectedPacket.protocol}</dd>
+                  <dt>Service</dt>
+                  <dd className="text-foreground">
+                    {selectedPacket.service} / port {selectedPacket.port}
+                  </dd>
+                  <dt>Destination</dt>
+                  <dd className="text-foreground">{selectedPacket.destination}</dd>
+                  <dt>Rule</dt>
+                  <dd className="text-foreground">{selectedPacket.rule}</dd>
+                  <dt>Action</dt>
+                  <dd className="text-foreground">{selectedPacket.action}</dd>
+                  <dt>Latency</dt>
+                  <dd className="text-foreground">{selectedPacket.latency}ms</dd>
+                </dl>
+                <p className="os-border bg-secondary p-2 text-xs leading-relaxed text-foreground text-pretty">
+                  {selectedPacket.explanation}
+                </p>
+              </div>
             ) : (
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 Start the simulation or process a sample packet.
@@ -426,14 +675,24 @@ export function NetworkFirewallContent({
 
           <section className="os-border bg-card p-3">
             <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
-              Help
+              Preset Status
             </h4>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground text-pretty">
-              A firewall evaluates sample traffic against ordered rules. Allowed packets continue,
-              blocked packets stop, and inspected packets receive extra review. Ports identify
-              services, protocols describe how data travels, and rule priority decides which action
-              wins first.
-            </p>
+            <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
+              {FIREWALL_PRESETS.map((item) => (
+                <li key={item.id} className="flex items-start gap-2">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'mt-1.5 size-2 shrink-0 border border-current',
+                      completedPresetIds.includes(item.id) ? 'bg-foreground' : 'bg-transparent',
+                    )}
+                  />
+                  <span className={item.id === preset.id ? 'text-foreground' : undefined}>
+                    {item.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </section>
         </aside>
       </section>
@@ -445,20 +704,23 @@ export function NetworkFirewallContent({
           </h4>
           <button
             type="button"
-            onClick={() => setEvents([])}
+            onClick={() => {
+              setEvents([])
+              setSelectedPacketId(null)
+            }}
             className="os-border bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
             Clear Log
           </button>
         </div>
         <div className="mt-2 max-h-56 overflow-auto">
-          <table className="w-full min-w-[620px] text-left text-xs leading-relaxed">
+          <table className="w-full min-w-[720px] text-left text-xs leading-relaxed">
             <thead className="font-pixel text-[7px] text-muted-foreground">
               <tr>
                 <th className="border-b-2 border-border py-1 pr-2">Time</th>
                 <th className="border-b-2 border-border py-1 pr-2">Protocol</th>
                 <th className="border-b-2 border-border py-1 pr-2">Service</th>
-                <th className="border-b-2 border-border py-1 pr-2">Port</th>
+                <th className="border-b-2 border-border py-1 pr-2">Destination</th>
                 <th className="border-b-2 border-border py-1 pr-2">Action</th>
                 <th className="border-b-2 border-border py-1 pr-2">Rule</th>
               </tr>
@@ -466,11 +728,26 @@ export function NetworkFirewallContent({
             <tbody>
               {events.length > 0 ? (
                 events.map((event) => (
-                  <tr key={event.id}>
-                    <td className="border-b border-border/40 py-1 pr-2">{event.timestamp}</td>
+                  <tr
+                    key={event.id}
+                    data-risk={event.risk}
+                    className={cn(
+                      'transition-colors hover:bg-secondary',
+                      selectedPacketId === event.id ? 'bg-secondary' : null,
+                    )}
+                  >
+                    <td className="border-b border-border/40 py-1 pr-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPacketId(event.id)}
+                        className="text-left underline decoration-dotted underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {event.timestamp}
+                      </button>
+                    </td>
                     <td className="border-b border-border/40 py-1 pr-2">{event.protocol}</td>
+                    <td className="border-b border-border/40 py-1 pr-2">{event.service}</td>
                     <td className="border-b border-border/40 py-1 pr-2">{event.destination}</td>
-                    <td className="border-b border-border/40 py-1 pr-2">{event.port}</td>
                     <td className="border-b border-border/40 py-1 pr-2">{event.action}</td>
                     <td className="border-b border-border/40 py-1 pr-2">{event.rule}</td>
                   </tr>
@@ -490,25 +767,60 @@ export function NetworkFirewallContent({
   )
 }
 
+function GuideNote({ title, children }: { title: string; children: string }) {
+  return (
+    <article className="os-border bg-secondary p-2">
+      <p className="font-pixel text-[8px] leading-relaxed text-foreground">{title}</p>
+      <p className="mt-1 text-xs leading-relaxed">{children}</p>
+    </article>
+  )
+}
+
 function RuleToggle({
   checked,
   label,
+  description,
   onChange,
 }: {
   checked: boolean
   label: string
+  description: string
   onChange: () => void
 }) {
   return (
-    <label className="flex items-center gap-2 text-xs leading-relaxed text-muted-foreground">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="size-4 accent-foreground"
-      />
-      <span>{label}</span>
+    <label className="block text-xs leading-relaxed text-muted-foreground">
+      <span className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          className="size-4 accent-foreground"
+        />
+        <span className="font-medium text-foreground">{label}</span>
+      </span>
+      <span className="mt-1 block pl-6">{description}</span>
     </label>
+  )
+}
+
+function ControlButton({
+  children,
+  onClick,
+  disabled = false,
+}: {
+  children: string
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="os-border bg-card px-2 py-1.5 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
+    >
+      {children}
+    </button>
   )
 }
 

@@ -33,6 +33,7 @@ export type WindowId =
   | 'secrets'
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
+export type AppTone = 'recruiter' | 'firewall'
 
 export type WindowApp = {
   id: WindowId
@@ -42,7 +43,7 @@ export type WindowApp = {
   width: number
   height: number
   description?: string
-  tone?: 'recruiter'
+  tone?: AppTone
 }
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
@@ -98,6 +99,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 900,
     height: 660,
     description: 'simulated traffic',
+    tone: 'firewall',
   },
   wallpapers: {
     id: 'wallpapers',
@@ -159,14 +161,11 @@ export type DesktopItem =
       label: string
       Icon: IconType
       description?: string
-      tone?: 'recruiter'
+      tone?: AppTone
     }
   | { kind: 'link'; id: string; label: string; href: string; Icon: IconType }
 
 export const DESKTOP_ITEMS: DesktopItem[] = [
-  { kind: 'window', id: 'about', label: 'About Me', Icon: JackIdIcon },
-  { kind: 'window', id: 'projects', label: 'Projects', Icon: JackProjectsIcon },
-  { kind: 'window', id: 'certifications', label: 'Credentials', Icon: JackBadgeIcon },
   {
     kind: 'window',
     id: 'recruiter',
@@ -175,14 +174,24 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     description: 'guided professional overview',
     tone: 'recruiter',
   },
-  { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
-  { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
+  {
+    kind: 'window',
+    id: 'firewall',
+    label: 'Network Firewall',
+    Icon: JackFirewallIcon,
+    description: 'simulated traffic',
+    tone: 'firewall',
+  },
   { kind: 'window', id: 'timeline', label: 'Timeline', Icon: JackTimelineIcon },
   { kind: 'window', id: 'guestbook', label: 'Guestbook', Icon: JackGuestbookIcon },
-  { kind: 'window', id: 'firewall', label: 'Network Firewall', Icon: JackFirewallIcon },
+  { kind: 'window', id: 'projects', label: 'Projects', Icon: JackProjectsIcon },
+  { kind: 'window', id: 'certifications', label: 'Credentials', Icon: JackBadgeIcon },
+  { kind: 'window', id: 'about', label: 'About Me', Icon: JackIdIcon },
+  { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
+  { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
   { kind: 'window', id: 'resume', label: 'Resume', Icon: JackDocumentIcon },
-  { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
-  { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
   { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
   { kind: 'window', id: 'secrets', label: 'Secrets', Icon: JackSecretsIcon },
+  { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
+  { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
 ]

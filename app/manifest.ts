@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Jack OS',
     short_name: 'Jack OS',
     description:
-      'An interactive retro operating-system portfolio for Jack Dennehey.',
+      'An interactive retro operating-system portfolio for Jack Dennehey, featuring a network firewall simulation, Timeline, Guestbook, Recruiter Mode, and technical projects.',
     start_url: '/',
     display: 'browser',
     background_color: '#eae7df',

@@ -32,9 +32,10 @@ export function MinimizedWindowStrip({
             className={cn(
               'grid size-4 shrink-0 place-items-center overflow-hidden',
               app.tone === 'recruiter' ? 'recruiter-inline-icon border' : null,
+              app.tone === 'firewall' ? 'firewall-inline-icon border' : null,
             )}
           >
-            <app.Icon className={app.tone === 'recruiter' ? 'size-3' : 'size-4'} />
+            <app.Icon className={app.tone ? 'size-3' : 'size-4'} />
           </span>
           <span className="truncate font-pixel text-[7px] leading-relaxed">
             {app.title}

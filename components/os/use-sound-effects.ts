@@ -26,6 +26,7 @@ export const SOUND_EFFECT_SOURCES = {
   secretTheCrossing: '/sounds/secret-the-crossing.mp3',
   guestbookSign: '/sounds/guestbook-sign.mp3',
   achievementUnlocked: '/sounds/achievement-unlocked.mp3',
+  hourlyChime: '/sounds/hourly-chime.mp3',
 } as const
 
 export type SoundEffectName = 'appOpen' | 'windowClose' | 'firstWallpaperSet' | 'startup'
@@ -33,6 +34,7 @@ export type JackOsAudioName = keyof typeof SOUND_EFFECT_SOURCES
 const JACK_OS_ACHIEVEMENT_IDS: readonly JackOsAchievementId[] = [
   'firewall-first-run',
   'interactive-update-explorer',
+  'firewall-certified',
 ] as const
 
 const SECRET_UNLOCK_AUDIO_BY_ID: Record<SecretId, JackOsAudioName> = {
@@ -56,6 +58,7 @@ const SOUND_VOLUMES: Record<JackOsAudioName, number> = {
   secretTheCrossing: 0.28,
   guestbookSign: 0.24,
   achievementUnlocked: 0.26,
+  hourlyChime: 0.15,
 }
 const AMBIENCE_FADE_MS = 900
 const AMBIENCE_LOOP_START_SECONDS = 0.048
@@ -245,7 +248,12 @@ export function useSoundEffects() {
     }
 
     ;(Object.keys(SOUND_EFFECT_SOURCES) as JackOsAudioName[]).forEach((name) => {
-      if (name === 'ambience' || name === 'guestbookSign' || name === 'achievementUnlocked') {
+      if (
+        name === 'ambience' ||
+        name === 'guestbookSign' ||
+        name === 'achievementUnlocked' ||
+        name === 'hourlyChime'
+      ) {
         return
       }
       getAudio(name)?.load()
@@ -827,6 +835,7 @@ export function useSoundEffects() {
       appOpen: () => playSound('appOpen'),
       windowClose: () => playSound('windowClose'),
       guestbookSign: () => playSound('guestbookSign'),
+      playHourlyChime: () => playSound('hourlyChime'),
       firstWallpaperSet: playFirstWallpaperSet,
       achievementUnlocked: playAchievementUnlocked,
       playSecretUnlock,

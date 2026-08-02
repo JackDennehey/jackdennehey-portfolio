@@ -115,7 +115,7 @@ export default function Image() {
                 justifyContent: 'center',
               }}
             >
-              {['Credentials', 'Projects', 'About Me'].map((label) => (
+              {['Network Firewall', 'Recruiter Mode', 'Timeline + Guestbook'].map((label) => (
                 <div
                   key={label}
                   style={{

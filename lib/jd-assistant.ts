@@ -702,7 +702,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          "The Network Firewall is a local simulation. It uses generated sample traffic to demonstrate allow, block, inspect, ports, protocols, and rule priority; it does not inspect visitor devices or show real IP addresses.",
+          "The Network Firewall is a local simulation. It uses generated sample traffic to demonstrate packets, services, ports, allow/block/inspect decisions, rule priority, and plain-English packet explanations; it does not inspect visitor devices or show real IP addresses.",
         actions: [OPEN_FIREWALL],
       }
     case 'github':
@@ -742,7 +742,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
     case 'navigation':
       return {
         intent,
-        content: `${PORTFOLIO_KNOWLEDGE.career.navigationSummary} For the 5B interactive update, Timeline shows milestones, Guestbook accepts reviewed visitor messages, and Network Firewall demonstrates sample traffic rules.`,
+        content: `${PORTFOLIO_KNOWLEDGE.career.navigationSummary} Timeline shows milestones, Guestbook accepts reviewed visitor messages, and Network Firewall demonstrates sample traffic rules with a stronger packet inspector.`,
         actions: [
           OPEN_RECRUITER,
           OPEN_TIMELINE,

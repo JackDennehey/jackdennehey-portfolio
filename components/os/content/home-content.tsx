@@ -6,12 +6,14 @@ export function HomeContent({
   onAskAssistant,
   theme,
   soundEffectsEnabled,
+  hourlyChimeEnabled,
   scanlines,
 }: {
   onOpen: (id: WindowId) => void
   onAskAssistant: () => void
   theme: InterfaceTheme
   soundEffectsEnabled: boolean
+  hourlyChimeEnabled: boolean
   scanlines: boolean
 }) {
   return (
@@ -49,11 +51,13 @@ export function HomeContent({
           <dt>Edition</dt>
           <dd className="text-foreground">Portfolio</dd>
           <dt>Version</dt>
-          <dd className="text-foreground">5B</dd>
+          <dd className="text-foreground">5C</dd>
           <dt>Theme</dt>
           <dd className="capitalize text-foreground">{theme}</dd>
           <dt>Sound</dt>
           <dd className="text-foreground">{soundEffectsEnabled ? 'On' : 'Off'}</dd>
+          <dt>Hourly Chime</dt>
+          <dd className="text-foreground">{hourlyChimeEnabled ? 'On' : 'Off'}</dd>
           <dt>CRT Lines</dt>
           <dd className="text-foreground">{scanlines ? 'On' : 'Off'}</dd>
         </dl>
@@ -64,10 +68,10 @@ export function HomeContent({
           Release Notes
         </p>
         <h3 className="mt-1 font-pixel text-[10px] leading-relaxed text-foreground">
-          Jack OS 5B / The Interactive Update
+          Jack OS 5C / The Firewall Update
         </h3>
         <ul className="mt-2 grid gap-1 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2">
-          {['Timeline', 'Guestbook', 'Network Firewall', 'Jack OS Icon Pack v1'].map(
+          {['Flagship Firewall', 'Recruiter Polish', 'Hourly Chime', 'SEO + Performance'].map(
             (item) => (
               <li key={item} className="flex gap-2">
                 <span aria-hidden className="mt-2 size-1.5 shrink-0 bg-current" />

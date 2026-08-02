@@ -49,6 +49,29 @@ const profileJsonLd = {
   },
 }
 
+const jackOsJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  '@id': `${SITE_PAGE_URL}#jack-os`,
+  name: 'Jack OS',
+  url: SITE_PAGE_URL,
+  applicationCategory: 'PortfolioApplication',
+  operatingSystem: 'Web browser',
+  author: {
+    '@type': 'Person',
+    '@id': `${SITE_PAGE_URL}#jack-dennehey`,
+    name: 'Jack Dennehey',
+  },
+  description: PAGE_DESCRIPTION,
+  featureList: [
+    'Network Firewall packet simulation',
+    'Recruiter Mode guided professional overview',
+    'Timeline of education, credentials, and projects',
+    'Reviewed public Guestbook',
+    'Interactive desktop portfolio interface',
+  ],
+}
+
 // Server-rendered, screen-reader/crawler-friendly summary of the portfolio.
 // Visually hidden, but ensures content is available without JavaScript.
 function SeoContent() {
@@ -76,6 +99,26 @@ function SeoContent() {
             <p>Technologies: {project.technologies.join(', ')}</p>
           </li>
         ))}
+      </ul>
+
+      <h2>Interactive Jack OS Applications</h2>
+      <ul>
+        <li>
+          Network Firewall: a local educational packet simulation showing protocols, services,
+          firewall rules, allowed traffic, blocked traffic, inspected traffic, and plain-English
+          explanations. It does not inspect visitor devices or display real IP addresses.
+        </li>
+        <li>
+          Recruiter Mode: a guided professional overview designed for fast access to Jack&apos;s
+          education, credentials, projects, skills, and contact information.
+        </li>
+        <li>
+          Timeline: a structured history of Jack&apos;s education, credentials, projects, and current
+          learning path.
+        </li>
+        <li>
+          Guestbook: a reviewed visitor message system with moderation before public display.
+        </li>
       </ul>
 
       <h2>Credentials</h2>
@@ -114,7 +157,7 @@ export default function Page() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(profileJsonLd).replace(/</g, '\\u003c'),
+          __html: JSON.stringify([profileJsonLd, jackOsJsonLd]).replace(/</g, '\\u003c'),
         }}
       />
       <Desktop />

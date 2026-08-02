@@ -223,9 +223,11 @@ export function JackGuestbookIcon(props: IconProps) {
 export function JackFirewallIcon(props: IconProps) {
   return (
     <JackIcon {...props}>
-      <path d="M12 3l8 3v6c0 4-3 7-8 9-5-2-8-5-8-9V6z" />
-      <path d="M8 9h8M8 12h8M9 15h6" />
-      <path d="M6 12H3M21 12h-3M12 6v12" />
+      <path d="M12 3l8 3v6c0 4.5-3.2 7.2-8 9-4.8-1.8-8-4.5-8-9V6z" />
+      <path d="M8 8h8M7 11h10M8 14h8" />
+      <path d="M12 6v11" />
+      <path d="M3 10h3M18 10h3M3 15h3M18 15h3" />
+      <rect x="10" y="10" width="4" height="4" />
     </JackIcon>
   )
 }
