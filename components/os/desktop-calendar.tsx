@@ -73,7 +73,7 @@ export function DesktopCalendar({
       type="button"
       onClick={onOpenCalendar}
       className={cn(
-        'os-border block w-full bg-paper/85 p-2 text-left text-foreground outline-none transition-colors hover:bg-paper focus-visible:ring-2 focus-visible:ring-ring',
+        'os-border block w-full bg-paper/95 p-2 text-left text-foreground outline-none transition-colors os-shadow hover:bg-paper focus-visible:ring-2 focus-visible:ring-ring',
         className,
       )}
       aria-label="Open Calendar"

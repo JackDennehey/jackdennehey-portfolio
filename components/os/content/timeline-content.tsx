@@ -104,6 +104,7 @@ function TimelineCard({
   onOpen: (id: WindowId) => void
 }) {
   const detailsId = `timeline-entry-${entry.id}`
+  const actions = entry.actions ?? (entry.action ? [entry.action] : [])
 
   return (
     <li className="grid gap-2 sm:grid-cols-[90px_minmax(0,1fr)]">
@@ -131,11 +132,18 @@ function TimelineCard({
               {entry.title}
             </h4>
           </div>
-          {entry.featured ? (
-            <span className="os-border shrink-0 bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-foreground">
-              Featured
-            </span>
-          ) : null}
+          <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+            {entry.badge ? (
+              <span className="os-border bg-foreground px-2 py-1 font-pixel text-[7px] leading-none text-primary-foreground">
+                {entry.badge}
+              </span>
+            ) : null}
+            {entry.featured ? (
+              <span className="os-border bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-foreground">
+                Featured
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
@@ -160,17 +168,44 @@ function TimelineCard({
           <p className="text-sm leading-relaxed text-foreground text-pretty">
             {entry.description}
           </p>
-          {entry.action || entry.externalLink ? (
+
+          {entry.releaseHighlights ? (
+            <section className="mt-3 os-border bg-secondary p-3">
+              <h5 className="font-pixel text-[8px] leading-relaxed text-foreground">
+                Release Highlights
+              </h5>
+              <div className="mt-2 grid gap-3 lg:grid-cols-3">
+                {entry.releaseHighlights.map((group) => (
+                  <article key={group.title} className="min-w-0">
+                    <p className="font-pixel text-[7px] leading-relaxed text-foreground">
+                      {group.title}
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs leading-relaxed text-muted-foreground">
+                      {group.items.map((item) => (
+                        <li key={item} className="flex min-w-0 gap-2">
+                          <span aria-hidden className="mt-2 size-1.5 shrink-0 bg-current" />
+                          <span className="min-w-0 break-words">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {actions.length > 0 || entry.externalLink ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              {entry.action ? (
+              {actions.map((action) => (
                 <button
+                  key={`${entry.id}-${action.target}`}
                   type="button"
-                  onClick={() => onOpen(entry.action!.target as WindowId)}
+                  onClick={() => onOpen(action.target as WindowId)}
                   className="os-border bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
                 >
-                  {entry.action.label}
+                  {action.label}
                 </button>
-              ) : null}
+              ))}
               {entry.externalLink ? (
                 <a
                   href={entry.externalLink.href}

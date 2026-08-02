@@ -17,6 +17,8 @@ export function DesktopIcon({
   const tone = item.kind === 'window' ? item.tone : undefined
   const isRecruiter = item.kind === 'window' && item.id === 'recruiter'
   const isFirewall = item.kind === 'window' && item.id === 'firewall'
+  const isFlagship = isRecruiter || isFirewall
+  const externalTone = item.kind === 'link' ? item.id : null
   const accessibleLabel = isRecruiter
     ? 'Recruiter Mode — guided professional overview'
     : isFirewall
@@ -32,6 +34,16 @@ export function DesktopIcon({
     event.preventDefault()
     openItem()
   }
+  const iconFrameClassName =
+    tone === 'recruiter'
+      ? 'recruiter-icon-frame'
+      : tone === 'firewall'
+        ? 'firewall-icon-frame'
+        : externalTone === 'github'
+          ? 'github-icon-frame'
+          : externalTone === 'linkedin'
+            ? 'linkedin-icon-frame'
+            : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground'
 
   const inner = (
     <>
@@ -39,20 +51,18 @@ export function DesktopIcon({
         aria-hidden
         className={cn(
           'os-border grid size-12 place-items-center transition-colors sm:size-14',
-          tone === 'recruiter'
-            ? 'recruiter-icon-frame'
-            : tone === 'firewall'
-              ? 'firewall-icon-frame'
-              : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground',
+          iconFrameClassName,
         )}
       >
         <Icon className="size-6 sm:size-7" />
       </span>
       <span
         className={cn(
-          'w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]',
+          'desktop-icon-label w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]',
           tone === 'recruiter' ? 'recruiter-icon-label' : null,
           tone === 'firewall' ? 'firewall-icon-label' : null,
+          externalTone === 'github' ? 'github-icon-label' : null,
+          externalTone === 'linkedin' ? 'linkedin-icon-label' : null,
         )}
       >
         {label}
@@ -83,8 +93,8 @@ export function DesktopIcon({
       type="button"
       data-desktop-icon="true"
       className={className}
-      onClick={variant === 'mobile' || isRecruiter ? openItem : undefined}
-      onDoubleClick={variant === 'desktop' && !isRecruiter ? openItem : undefined}
+      onClick={variant === 'mobile' || isFlagship ? openItem : undefined}
+      onDoubleClick={variant === 'desktop' && !isFlagship ? openItem : undefined}
       onKeyDown={variant === 'desktop' ? onKeyDown : undefined}
       aria-label={accessibleLabel}
     >

@@ -11,6 +11,7 @@ export type DesktopPreferences = {
   showClock: boolean
   showCalendar: boolean
   hourlyChime: boolean
+  hasSeenFirstVisit: boolean
 }
 
 export const DEFAULT_DESKTOP_PREFERENCES: DesktopPreferences = {
@@ -18,6 +19,7 @@ export const DEFAULT_DESKTOP_PREFERENCES: DesktopPreferences = {
   showClock: true,
   showCalendar: true,
   hourlyChime: false,
+  hasSeenFirstVisit: false,
 }
 
 export function parseDesktopPreferences(
@@ -44,6 +46,10 @@ export function parseDesktopPreferences(
         typeof parsed.hourlyChime === 'boolean'
           ? parsed.hourlyChime
           : DEFAULT_DESKTOP_PREFERENCES.hourlyChime,
+      hasSeenFirstVisit:
+        typeof parsed.hasSeenFirstVisit === 'boolean'
+          ? parsed.hasSeenFirstVisit
+          : DEFAULT_DESKTOP_PREFERENCES.hasSeenFirstVisit,
     }
   } catch {
     return DEFAULT_DESKTOP_PREFERENCES

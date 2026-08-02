@@ -142,6 +142,65 @@ const RULE_DETAILS: Record<FirewallRuleId, { label: string; description: string 
   },
 }
 
+const BEGINNER_GUIDE_TOPICS: readonly { title: string; body: string }[] = [
+  {
+    title: 'What is a packet?',
+    body: 'A packet is a small piece of network data. Bigger messages are split into packets, sent across a network, then reassembled by the receiving system.',
+  },
+  {
+    title: 'What is a firewall?',
+    body: 'A firewall is a checkpoint. It compares traffic against rules and decides whether each packet should continue, stop, or receive extra review.',
+  },
+  {
+    title: 'Stateful vs stateless firewalls',
+    body: 'A stateless firewall checks each packet by itself. A stateful firewall also remembers recent connections, which helps it understand whether traffic belongs to an expected conversation.',
+  },
+  {
+    title: 'Ports',
+    body: 'Ports identify the kind of service traffic is trying to reach. For example, web traffic often uses port 443, while remote administration commonly uses ports such as 22 or 3389.',
+  },
+  {
+    title: 'Protocols',
+    body: 'Protocols are communication rules. TCP, UDP, DNS, HTTP, and HTTPS all describe different ways systems exchange information.',
+  },
+  {
+    title: 'TCP vs UDP',
+    body: 'TCP checks that data arrives in order and can retry missing pieces. UDP is faster and simpler, but it does not provide the same delivery guarantees.',
+  },
+  {
+    title: 'DNS',
+    body: 'DNS turns names into addresses. Because nearly every web visit uses DNS, unusual DNS patterns can be useful signals for firewall review.',
+  },
+  {
+    title: 'HTTP and HTTPS',
+    body: 'HTTP and HTTPS are web protocols. HTTPS adds encryption, which protects the contents of the connection while still allowing a firewall to reason about ports and patterns.',
+  },
+  {
+    title: 'Why packets get blocked',
+    body: 'Packets are blocked when they match a deny rule, target a risky service, arrive in suspicious patterns, or violate the policy the firewall is enforcing.',
+  },
+  {
+    title: 'Firewall rules',
+    body: 'Rules are ordered checks. A rule might block an admin port, inspect DNS bursts, or allow ordinary web traffic through.',
+  },
+  {
+    title: 'Allow lists and deny lists',
+    body: 'An allow list names what is trusted. A deny list names what should be stopped. Real systems often use both, depending on the risk and environment.',
+  },
+  {
+    title: 'Why logging matters',
+    body: 'Logs explain what happened. They help people spot patterns, investigate blocked traffic, and tune rules without guessing.',
+  },
+  {
+    title: 'Home router vs enterprise firewall',
+    body: 'A home router usually offers basic filtering. Enterprise firewalls can include deeper rules, logging, segmentation, identity controls, and stronger monitoring.',
+  },
+  {
+    title: 'Common misconception',
+    body: 'A firewall is not magic protection by itself. It is one security layer, and it works best alongside updates, good authentication, monitoring, and safe configuration.',
+  },
+]
+
 function readCompletedPresets() {
   if (typeof window === 'undefined') return []
 
@@ -302,6 +361,11 @@ export function NetworkFirewallContent({
 
   const completionProgress = Math.min(100, Math.round((events.length / preset.completionEvents) * 100))
   const certified = FIREWALL_PRESET_IDS.every((id) => completedPresetIds.includes(id))
+  const simulationStatus = running
+    ? 'Simulation Active'
+    : events.length >= preset.completionEvents
+      ? 'Preset Complete'
+      : 'Simulation Paused'
 
   const recordPresetCompletion = useCallback(
     (completedPresetId: FirewallPresetId) => {
@@ -480,22 +544,12 @@ export function NetworkFirewallContent({
         <summary className="cursor-pointer font-pixel text-[9px] leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           Beginner Guide
         </summary>
-        <div className="mt-3 grid gap-3 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2 lg:grid-cols-5">
-          <GuideNote title="Packets">
-            Small pieces of data moving from one place to another.
-          </GuideNote>
-          <GuideNote title="Firewall">
-            A checkpoint that decides whether sample traffic continues, stops, or gets reviewed.
-          </GuideNote>
-          <GuideNote title="Allowed">
-            The packet matched no blocking rule and continues to the destination.
-          </GuideNote>
-          <GuideNote title="Blocked">
-            A rule stopped the packet before it reached the destination service.
-          </GuideNote>
-          <GuideNote title="Rules">
-            Simple conditions such as port, protocol, and traffic pattern decide the action.
-          </GuideNote>
+        <div className="mt-3 grid gap-2 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2 xl:grid-cols-3">
+          {BEGINNER_GUIDE_TOPICS.map((topic) => (
+            <GuideNote key={topic.title} title={topic.title}>
+              {topic.body}
+            </GuideNote>
+          ))}
         </div>
       </details>
 
@@ -590,6 +644,19 @@ export function NetworkFirewallContent({
         </aside>
 
         <section className="os-border min-h-[360px] overflow-hidden bg-secondary p-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              {simulationStatus}
+            </p>
+            <span
+              className={cn(
+                'os-border px-2 py-1 font-pixel text-[7px] leading-none',
+                running ? 'bg-foreground text-primary-foreground' : 'bg-card text-foreground',
+              )}
+            >
+              {preset.label}
+            </span>
+          </div>
           <div className="grid grid-cols-3 gap-3 text-center font-pixel text-[8px] leading-relaxed text-foreground">
             <span className="os-border bg-card p-2">SOURCE</span>
             <span className="firewall-zone-center os-border bg-card p-2">FIREWALL</span>
@@ -769,10 +836,14 @@ export function NetworkFirewallContent({
 
 function GuideNote({ title, children }: { title: string; children: string }) {
   return (
-    <article className="os-border bg-secondary p-2">
-      <p className="font-pixel text-[8px] leading-relaxed text-foreground">{title}</p>
-      <p className="mt-1 text-xs leading-relaxed">{children}</p>
-    </article>
+    <details className="min-w-0 os-border bg-secondary p-2">
+      <summary className="cursor-pointer break-words font-pixel text-[8px] leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {title}
+      </summary>
+      <p className="mt-2 break-words text-xs leading-relaxed text-muted-foreground text-pretty">
+        {children}
+      </p>
+    </details>
   )
 }
 
@@ -788,7 +859,12 @@ function RuleToggle({
   onChange: () => void
 }) {
   return (
-    <label className="block text-xs leading-relaxed text-muted-foreground">
+    <label
+      className={cn(
+        'block min-w-0 os-border p-2 text-xs leading-relaxed text-muted-foreground transition-colors',
+        checked ? 'bg-secondary text-foreground' : 'bg-card',
+      )}
+    >
       <span className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -798,7 +874,7 @@ function RuleToggle({
         />
         <span className="font-medium text-foreground">{label}</span>
       </span>
-      <span className="mt-1 block pl-6">{description}</span>
+      <span className="mt-1 block break-words pl-6">{description}</span>
     </label>
   )
 }

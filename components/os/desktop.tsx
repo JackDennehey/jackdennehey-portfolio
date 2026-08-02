@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
+import { FirstVisitWelcome } from './first-visit-welcome'
 import { OsWindow } from './os-window'
 import {
   DESKTOP_ITEMS,
@@ -98,6 +99,7 @@ const COPY_CONFIRMATION_DURATION_MS = 2200
 const ACHIEVEMENT_NOTICE_DURATION_MS = 3200
 const INITIAL_WINDOW_CASCADE_STEP = 28
 const INITIAL_WINDOW_CASCADE_SLOTS = 5
+const AUTO_MAXIMIZED_WINDOW_IDS = new Set<WindowId>(['recruiter', 'firewall'])
 
 function LazyWindowLoading({ label }: { label: string }) {
   return (
@@ -266,15 +268,14 @@ export function Desktop() {
     nonce: number
   } | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const [firstVisitVisible, setFirstVisitVisible] = useState(false)
   const [achievementNotice, setAchievementNotice] = useState<{
     title: string
     message: string
   } | null>(null)
   const secretUnlocks = useSecretUnlocks()
-  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
-    secretUnlocks.unlockedIds,
-    secretUnlocks.loaded,
-  )
+  const { preferences, preferencesLoaded, updatePreferences, resetWallpaper } =
+    useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
   const windowsRef = useRef<OpenWindow[]>([])
@@ -296,6 +297,21 @@ export function Desktop() {
     soundEffectsEnabled: soundEffects.soundEffectsEnabled,
     playHourlyChime: soundEffects.playHourlyChime,
   })
+
+  useEffect(() => {
+    if (!booted || !preferencesLoaded || preferences.hasSeenFirstVisit || firstVisitVisible) {
+      return
+    }
+
+    setFirstVisitVisible(true)
+    updatePreferences({ hasSeenFirstVisit: true })
+  }, [
+    booted,
+    firstVisitVisible,
+    preferences.hasSeenFirstVisit,
+    preferencesLoaded,
+    updatePreferences,
+  ])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -374,7 +390,7 @@ export function Desktop() {
       if (existing) {
         if (existing.status === 'minimized') {
           const restoredStatus: RestorableWindowStatus =
-            windowId === 'recruiter' && !isMobile
+            AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile
               ? 'maximized'
               : (existing.restoreStatus ?? 'open')
           const restoredGeometry =
@@ -388,7 +404,11 @@ export function Desktop() {
               : w,
           )
           setWindows(windowsRef.current)
-        } else if (windowId === 'recruiter' && !isMobile && existing.status !== 'maximized') {
+        } else if (
+          AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) &&
+          !isMobile &&
+          existing.status !== 'maximized'
+        ) {
           const normal = {
             x: existing.x,
             y: existing.y,
@@ -407,7 +427,9 @@ export function Desktop() {
 
       const normalGeometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
       const geometry =
-        windowId === 'recruiter' && !isMobile ? getMaximizedGeometry() : normalGeometry
+        AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile
+          ? getMaximizedGeometry()
+          : normalGeometry
       windowOpenSequence.current += 1
       const nextWindow: OpenWindow = {
         id: windowId,
@@ -423,13 +445,21 @@ export function Desktop() {
       openTimers.current[windowId] = setTimeout(() => {
         windowsRef.current = windowsRef.current.map((w) =>
           w.id === windowId && w.status === 'opening'
-            ? { ...w, status: windowId === 'recruiter' && !isMobile ? 'maximized' : 'open' }
+            ? {
+                ...w,
+                status:
+                  AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile ? 'maximized' : 'open',
+              }
             : w,
         )
         setWindows((prev) =>
           prev.map((w) =>
             w.id === windowId && w.status === 'opening'
-              ? { ...w, status: windowId === 'recruiter' && !isMobile ? 'maximized' : 'open' }
+              ? {
+                  ...w,
+                  status:
+                    AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile ? 'maximized' : 'open',
+                }
               : w,
           ),
         )
@@ -1217,7 +1247,7 @@ export function Desktop() {
         >
           Jack OS v1.0
           <br />
-          {isMobile ? 'Tap an icon to open' : 'Double-click an icon to open'}
+          {isMobile ? 'Tap an icon to open' : 'Double-click icons to open'}
         </p>
 
         {/* Desktop widgets */}
@@ -1236,7 +1266,7 @@ export function Desktop() {
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
-          <div className="absolute right-3 top-11 grid max-h-[calc(100dvh-4rem)] w-[168px] grid-cols-2 justify-items-center gap-x-2 gap-y-3 overflow-y-auto pr-1 sm:w-[200px]">
+          <div className="desktop-icon-grid absolute right-3 top-11 gap-x-2 gap-y-3 pr-1">
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}
@@ -1333,6 +1363,13 @@ export function Desktop() {
             onClose={closeContextMenu}
             onPersonalize={openPersonalize}
             onResetWallpaper={resetWallpaper}
+          />
+        ) : null}
+
+        {firstVisitVisible ? (
+          <FirstVisitWelcome
+            onOpen={openWindow}
+            onDismiss={() => setFirstVisitVisible(false)}
           />
         ) : null}
 

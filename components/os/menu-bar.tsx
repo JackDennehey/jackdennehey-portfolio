@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Clock } from './clock'
 import type { WindowId } from './apps'
 import type { InterfaceTheme } from '@/lib/interface-theme'
@@ -11,18 +12,6 @@ import {
   JackThemeDarkIcon,
   JackThemeLightIcon,
 } from './jack-icons'
-
-const MENU: { id: WindowId; label: string }[] = [
-  { id: 'about', label: 'About' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'certifications', label: 'Credentials' },
-  { id: 'recruiter', label: 'Recruiter' },
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'guestbook', label: 'Guestbook' },
-  { id: 'firewall', label: 'Firewall' },
-  { id: 'contact', label: 'Contact' },
-  { id: 'assistant', label: 'J.D.' },
-]
 
 export function MenuBar({
   onOpen,
@@ -46,29 +35,17 @@ export function MenuBar({
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-8 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3">
       <nav aria-label="Main" className="flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={() => onOpen('home')}
-          className="flex items-center gap-1.5 px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-        >
+        <MenuButton onClick={() => onOpen('home')} featured>
           <span
             aria-hidden
             className="grid size-4 place-items-center bg-foreground text-[8px] text-primary-foreground"
           >
             J
           </span>
-          Jack
-        </button>
-        {MENU.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onOpen(item.id)}
-            className="hidden px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none lg:block"
-          >
-            {item.label}
-          </button>
-        ))}
+          Jack OS
+        </MenuButton>
+        <MenuButton onClick={() => onOpen('wallpapers')}>System</MenuButton>
+        <MenuButton onClick={() => onOpen('about')}>About</MenuButton>
         <button
           type="button"
           onClick={onOpenCommandPalette}
@@ -76,8 +53,8 @@ export function MenuBar({
           className="px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
         >
           Search
-          <span className="hidden sm:inline"> Jack OS</span>
         </button>
+        <MenuButton onClick={() => onOpen('assistant')}>Help</MenuButton>
       </nav>
 
       <div className="flex items-center gap-2 sm:gap-3">
@@ -137,5 +114,27 @@ export function MenuBar({
         <Clock />
       </div>
     </header>
+  )
+}
+
+function MenuButton({
+  children,
+  onClick,
+  featured = false,
+}: {
+  children: ReactNode
+  onClick: () => void
+  featured?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-2 py-1 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none ${
+        featured ? '' : 'hidden sm:flex'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

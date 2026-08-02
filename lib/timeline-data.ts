@@ -12,7 +12,14 @@ export type TimelineActionTarget =
   | 'projects'
   | 'certifications'
   | 'recruiter'
+  | 'timeline'
+  | 'firewall'
   | 'contact'
+
+export type TimelineAction = {
+  label: string
+  target: TimelineActionTarget
+}
 
 export type TimelineEntry = {
   id: string
@@ -23,14 +30,17 @@ export type TimelineEntry = {
   description: string
   category: TimelineCategory
   featured?: boolean
+  badge?: string
+  releaseHighlights?: readonly {
+    title: string
+    items: readonly string[]
+  }[]
   externalLink?: {
     label: string
     href: string
   }
-  action?: {
-    label: string
-    target: TimelineActionTarget
-  }
+  action?: TimelineAction
+  actions?: readonly TimelineAction[]
 }
 
 const dcccCredential = CREDENTIALS.find(
@@ -52,6 +62,90 @@ export const TIMELINE_CATEGORIES: readonly TimelineCategory[] = [
 
 export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   {
+    id: 'jack-os-v2',
+    year: '2026',
+    month: 'August',
+    title: 'Jack OS V2 — Interactive Operating System Expansion',
+    summary:
+      'Jack OS evolved from an interactive portfolio into a broader desktop-inspired experience with professional tools, educational simulations, and deeper visitor interaction.',
+    description:
+      'Jack OS V2 represents the largest expansion of the project since its original July 2026 launch. Across the 5A, 5B, and 5C updates, the site gained Recruiter Mode, the J.D. local portfolio assistant, an interactive Timeline, a moderated Guestbook, and the flagship Network Firewall simulation. The release also improved desktop organization, accessibility, search, SEO, wallpaper performance, theme consistency, and overall usability while preserving the retro Macintosh-inspired identity.',
+    category: 'Jack OS',
+    featured: true,
+    badge: 'V2',
+    releaseHighlights: [
+      {
+        title: 'Phase 5A — The Corporate Update',
+        items: [
+          'Added Recruiter Mode',
+          'Added J.D., the local portfolio assistant',
+          'Improved professional navigation and contact access',
+          'Added recruiter-focused presentation and readability improvements',
+        ],
+      },
+      {
+        title: 'Phase 5B — The Interactive Update',
+        items: [
+          'Added the Timeline application',
+          'Added the moderated Guestbook architecture',
+          'Added the Network Firewall simulation',
+          'Expanded Search Jack OS',
+          'Introduced additional custom application icons',
+          'Added interactive achievements and new system sounds where applicable',
+        ],
+      },
+      {
+        title: 'Phase 5C — The Firewall Update',
+        items: [
+          'Elevated Network Firewall into a flagship application',
+          'Expanded firewall education and beginner guidance',
+          'Improved packet visualization and inspection',
+          'Improved flagship-app presentation',
+          'Improved desktop organization',
+          'Improved wallpaper loading and readability',
+          'Improved SEO, accessibility, and performance',
+          'Added the optional hourly desktop chime',
+        ],
+      },
+    ],
+    actions: [
+      { label: 'Open Recruiter Mode', target: 'recruiter' },
+      { label: 'Open Network Firewall', target: 'firewall' },
+      { label: 'Open Timeline', target: 'timeline' },
+    ],
+    externalLink: jackOsProject?.demo
+      ? {
+          label: 'Visit Live Project',
+          href: jackOsProject.demo,
+        }
+      : {
+          label: 'Visit Portfolio',
+          href: `https://${CONTACT.domain}`,
+        },
+  },
+  {
+    id: 'jack-os-public-launch',
+    year: '2026',
+    month: 'July',
+    title: 'Jack OS Public Portfolio',
+    summary:
+      "Jack OS launched as an interactive operating-system-inspired portfolio for Jack's public work.",
+    description:
+      'The original release introduced a retro desktop experience with draggable windows, projects, credentials, personalization, wallpapers, system sounds, and a Macintosh-inspired interface.',
+    category: 'Jack OS',
+    featured: true,
+    externalLink: jackOsProject?.demo
+      ? {
+          label: 'Visit Live Project',
+          href: jackOsProject.demo,
+        }
+      : {
+          label: 'Visit Portfolio',
+          href: `https://${CONTACT.domain}`,
+        },
+    action: { label: 'Open Projects', target: 'projects' },
+  },
+  {
     id: 'dccc-cybersecurity-honors',
     year: '2026',
     month: 'May',
@@ -70,28 +164,6 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
         }
       : undefined,
     action: { label: 'Open Credentials', target: 'certifications' },
-  },
-  {
-    id: 'jack-os-public-portfolio',
-    year: '2026',
-    title: 'Jack OS public portfolio',
-    summary:
-      "The portfolio became an interactive operating-system-inspired experience for Jack's public work.",
-    description:
-      jackOsProject?.description ??
-      'Jack OS presents public professional content as an original retro desktop with windows, personalization, sounds, search, Secrets, Recruiter Mode, and a local portfolio assistant.',
-    category: 'Jack OS',
-    featured: true,
-    externalLink: jackOsProject?.demo
-      ? {
-          label: 'Visit Live Project',
-          href: jackOsProject.demo,
-        }
-      : {
-          label: 'Visit Portfolio',
-          href: `https://${CONTACT.domain}`,
-        },
-    action: { label: 'Open Projects', target: 'projects' },
   },
   {
     id: 'penn-state-business-studies',
