@@ -6,6 +6,9 @@ export type AssistantWindowTarget =
   | 'certifications'
   | 'contact'
   | 'recruiter'
+  | 'timeline'
+  | 'guestbook'
+  | 'firewall'
 
 export type AssistantAction =
   | { type: 'open'; label: string; target: AssistantWindowTarget }
@@ -32,6 +35,9 @@ export type AssistantIntent =
   | 'jack-os'
   | 'jack-os-technologies'
   | 'jack-os-features'
+  | 'timeline'
+  | 'guestbook'
+  | 'firewall'
   | 'github'
   | 'linkedin'
   | 'contact'
@@ -97,6 +103,9 @@ export const JD_SUPPORTED_CATEGORIES: readonly AssistantIntent[] = [
   'jack-os',
   'jack-os-technologies',
   'jack-os-features',
+  'timeline',
+  'guestbook',
+  'firewall',
   'github',
   'linkedin',
   'contact',
@@ -126,6 +135,17 @@ const OPEN_CREDENTIALS: AssistantAction = {
   target: 'certifications',
 }
 const OPEN_CONTACT: AssistantAction = { type: 'open', label: 'Open Contact', target: 'contact' }
+const OPEN_TIMELINE: AssistantAction = { type: 'open', label: 'Open Timeline', target: 'timeline' }
+const OPEN_GUESTBOOK: AssistantAction = {
+  type: 'open',
+  label: 'Open Guestbook',
+  target: 'guestbook',
+}
+const OPEN_FIREWALL: AssistantAction = {
+  type: 'open',
+  label: 'Open Network Firewall',
+  target: 'firewall',
+}
 const COPY_EMAIL: AssistantAction = { type: 'copy-email', label: 'Copy Email' }
 const OPEN_GITHUB: AssistantAction = {
   type: 'external',
@@ -222,6 +242,24 @@ const INTENTS: readonly IntentDefinition[] = [
     intent: 'jack-os-technologies',
     phrases: ['built with', 'tech stack', 'technologies used', 'what was jack os built with'],
     keywords: { stack: 6, technologies: 5, technology: 4, react: 6, next: 5, typescript: 5 },
+    priority: 10,
+  },
+  {
+    intent: 'timeline',
+    phrases: ['what is the timeline', 'system history', 'milestones has jack reached'],
+    keywords: { timeline: 8, history: 4, journey: 4, milestones: 6, reached: 3 },
+    priority: 10,
+  },
+  {
+    intent: 'guestbook',
+    phrases: ['what is the guestbook', 'sign the guestbook', 'visitor log'],
+    keywords: { guestbook: 8, sign: 4, visitor: 4, log: 3, message: 3, comments: 3 },
+    priority: 10,
+  },
+  {
+    intent: 'firewall',
+    phrases: ['is the firewall real', 'what does the firewall demonstrate', 'network firewall'],
+    keywords: { firewall: 8, simulation: 5, simulated: 5, packets: 4, traffic: 4, ports: 3 },
     priority: 10,
   },
   {
@@ -581,8 +619,8 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'Jack has a growing networking foundation through Cisco Networking Basics and ongoing lab-oriented study. His public portfolio connects networking to cybersecurity, cloud infrastructure, troubleshooting, and how data actually moves between systems.',
-        actions: [OPEN_ABOUT, OPEN_CREDENTIALS],
+          'Jack has a growing networking foundation through Cisco Networking Basics and ongoing lab-oriented study. His public portfolio connects networking to cybersecurity, cloud infrastructure, troubleshooting, and how data actually moves between systems. The Network Firewall app demonstrates those ideas with generated sample traffic only.',
+        actions: [OPEN_ABOUT, OPEN_CREDENTIALS, OPEN_FIREWALL],
       }
     case 'business':
       return {
@@ -643,8 +681,29 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          `Technically, Jack OS is interesting because it includes ${PORTFOLIO_KNOWLEDGE.projects.jackOsSystems.join(', ')}. The work is also iterative: each phase adds polish while preserving the retro desktop identity.`,
-        actions: [OPEN_PROJECTS, OPEN_RECRUITER],
+          `Technically, Jack OS is interesting because it includes ${PORTFOLIO_KNOWLEDGE.projects.jackOsSystems.join(', ')}, Timeline, Guestbook, and a simulated Network Firewall. The work is also iterative: each phase adds polish while preserving the retro desktop identity.`,
+        actions: [OPEN_PROJECTS, OPEN_TIMELINE, OPEN_FIREWALL, OPEN_RECRUITER],
+      }
+    case 'timeline':
+      return {
+        intent,
+        content:
+          "Timeline is the Jack OS system-history app. It presents Jack's public education, credentials, projects, and portfolio milestones as expandable entries rather than a conventional resume timeline.",
+        actions: [OPEN_TIMELINE, OPEN_RECRUITER],
+      }
+    case 'guestbook':
+      return {
+        intent,
+        content:
+          'Guestbook lets visitors leave a short public-facing message without creating an account. Entries are reviewed before they appear, and visitors should not include private contact information, links, ads, or spam.',
+        actions: [OPEN_GUESTBOOK],
+      }
+    case 'firewall':
+      return {
+        intent,
+        content:
+          "The Network Firewall is a local simulation. It uses generated sample traffic to demonstrate allow, block, inspect, ports, protocols, and rule priority; it does not inspect visitor devices or show real IP addresses.",
+        actions: [OPEN_FIREWALL],
       }
     case 'github':
       return {
@@ -683,8 +742,17 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
     case 'navigation':
       return {
         intent,
-        content: PORTFOLIO_KNOWLEDGE.career.navigationSummary,
-        actions: [OPEN_RECRUITER, OPEN_PROJECTS, OPEN_CREDENTIALS, OPEN_CONTACT, COPY_EMAIL],
+        content: `${PORTFOLIO_KNOWLEDGE.career.navigationSummary} For the 5B interactive update, Timeline shows milestones, Guestbook accepts reviewed visitor messages, and Network Firewall demonstrates sample traffic rules.`,
+        actions: [
+          OPEN_RECRUITER,
+          OPEN_TIMELINE,
+          OPEN_PROJECTS,
+          OPEN_CREDENTIALS,
+          OPEN_GUESTBOOK,
+          OPEN_FIREWALL,
+          OPEN_CONTACT,
+          COPY_EMAIL,
+        ],
       }
     case 'unsupported':
       return {

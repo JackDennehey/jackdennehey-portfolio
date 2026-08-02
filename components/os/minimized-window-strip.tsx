@@ -32,18 +32,9 @@ export function MinimizedWindowStrip({
             className={cn(
               'grid size-4 shrink-0 place-items-center overflow-hidden',
               app.tone === 'recruiter' ? 'recruiter-inline-icon border' : null,
-              app.id === 'assistant' ? 'border border-current bg-paper' : null,
             )}
           >
-            {app.id === 'assistant' ? (
-              <img
-                src="/images/jd/jd-bot.png"
-                alt=""
-                className="h-full w-full object-contain pixelated"
-              />
-            ) : (
-              <app.Icon className={app.tone === 'recruiter' ? 'size-3' : 'size-4'} />
-            )}
+            <app.Icon className={app.tone === 'recruiter' ? 'size-3' : 'size-4'} />
           </span>
           <span className="truncate font-pixel text-[7px] leading-relaxed">
             {app.title}

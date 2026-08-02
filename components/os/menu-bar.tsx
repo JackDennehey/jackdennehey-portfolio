@@ -17,6 +17,9 @@ const MENU: { id: WindowId; label: string }[] = [
   { id: 'projects', label: 'Projects' },
   { id: 'certifications', label: 'Credentials' },
   { id: 'recruiter', label: 'Recruiter' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'guestbook', label: 'Guestbook' },
+  { id: 'firewall', label: 'Firewall' },
   { id: 'contact', label: 'Contact' },
   { id: 'assistant', label: 'J.D.' },
 ]

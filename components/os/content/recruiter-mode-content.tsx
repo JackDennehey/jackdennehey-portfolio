@@ -192,6 +192,7 @@ function OverviewSection({
       <ActionRow>
         <ActionButton onClick={() => onOpen('about')}>View About</ActionButton>
         <ActionButton onClick={() => onOpen('projects')}>View Projects</ActionButton>
+        <ActionButton onClick={() => onOpen('timeline')}>View Timeline</ActionButton>
         <ActionButton onClick={() => onOpen('contact')}>Contact Jack</ActionButton>
         <ActionButton onClick={onAskAssistant}>Ask J.D.</ActionButton>
       </ActionRow>
@@ -292,6 +293,7 @@ function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
 
       <ActionRow>
         <ActionButton onClick={() => onOpen('projects')}>Open Projects</ActionButton>
+        <ActionButton onClick={() => onOpen('firewall')}>Open Firewall Simulation</ActionButton>
         {featuredProject.github ? (
           <ActionLink href={featuredProject.github} Icon={GithubIcon}>
             View Jack OS Source

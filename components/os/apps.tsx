@@ -5,12 +5,15 @@ import {
   JackBadgeIcon,
   JackAssistantIcon,
   JackDocumentIcon,
+  JackFirewallIcon,
+  JackGuestbookIcon,
   JackIdIcon,
   JackMailIcon,
   JackProjectsIcon,
   JackRecruiterIcon,
   JackSecretsIcon,
   JackSystemIcon,
+  JackTimelineIcon,
   JackWallpapersIcon,
 } from './jack-icons'
 
@@ -23,6 +26,9 @@ export type WindowId =
   | 'resume'
   | 'contact'
   | 'assistant'
+  | 'timeline'
+  | 'guestbook'
+  | 'firewall'
   | 'wallpapers'
   | 'secrets'
 
@@ -69,6 +75,30 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 600,
     description: 'portfolio assistant',
   },
+  timeline: {
+    id: 'timeline',
+    title: 'Timeline',
+    Icon: JackTimelineIcon,
+    width: 760,
+    height: 620,
+    description: 'system history',
+  },
+  guestbook: {
+    id: 'guestbook',
+    title: 'Guestbook',
+    Icon: JackGuestbookIcon,
+    width: 760,
+    height: 640,
+    description: 'visitor log',
+  },
+  firewall: {
+    id: 'firewall',
+    title: 'Network Firewall',
+    Icon: JackFirewallIcon,
+    width: 900,
+    height: 660,
+    description: 'simulated traffic',
+  },
   wallpapers: {
     id: 'wallpapers',
     title: 'Wallpapers',
@@ -94,6 +124,9 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   resume: 'resume',
   contact: 'contact',
   assistant: 'jd',
+  timeline: 'timeline',
+  guestbook: 'guestbook',
+  firewall: 'firewall',
   wallpapers: 'wallpapers',
   secrets: 'secrets',
 }
@@ -108,6 +141,7 @@ const WINDOW_IDS_BY_HASH = Object.entries(WINDOW_HASH_SLUGS).reduce(
 
 WINDOW_IDS_BY_HASH.assistant = 'assistant'
 WINDOW_IDS_BY_HASH['recruiter-mode'] = 'recruiter'
+WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
 
 export function getWindowHash(id: WindowId) {
   return WINDOW_HASH_SLUGS[id]
@@ -143,6 +177,9 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
   },
   { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
   { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
+  { kind: 'window', id: 'timeline', label: 'Timeline', Icon: JackTimelineIcon },
+  { kind: 'window', id: 'guestbook', label: 'Guestbook', Icon: JackGuestbookIcon },
+  { kind: 'window', id: 'firewall', label: 'Network Firewall', Icon: JackFirewallIcon },
   { kind: 'window', id: 'resume', label: 'Resume', Icon: JackDocumentIcon },
   { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },

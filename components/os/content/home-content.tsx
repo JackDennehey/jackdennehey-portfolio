@@ -49,7 +49,7 @@ export function HomeContent({
           <dt>Edition</dt>
           <dd className="text-foreground">Portfolio</dd>
           <dt>Version</dt>
-          <dd className="text-foreground">3.3</dd>
+          <dd className="text-foreground">5B</dd>
           <dt>Theme</dt>
           <dd className="capitalize text-foreground">{theme}</dd>
           <dt>Sound</dt>
@@ -57,6 +57,25 @@ export function HomeContent({
           <dt>CRT Lines</dt>
           <dd className="text-foreground">{scanlines ? 'On' : 'Off'}</dd>
         </dl>
+      </section>
+
+      <section className="os-border bg-card p-3">
+        <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+          Release Notes
+        </p>
+        <h3 className="mt-1 font-pixel text-[10px] leading-relaxed text-foreground">
+          Jack OS 5B / The Interactive Update
+        </h3>
+        <ul className="mt-2 grid gap-1 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2">
+          {['Timeline', 'Guestbook', 'Network Firewall', 'Jack OS Icon Pack v1'].map(
+            (item) => (
+              <li key={item} className="flex gap-2">
+                <span aria-hidden className="mt-2 size-1.5 shrink-0 bg-current" />
+                <span>{item}</span>
+              </li>
+            ),
+          )}
+        </ul>
       </section>
 
       <div className="flex flex-wrap gap-2 pt-1">
@@ -77,6 +96,9 @@ export function HomeContent({
         {[
           ['about', 'About Me'],
           ['projects', 'Projects'],
+          ['timeline', 'Timeline'],
+          ['guestbook', 'Guestbook'],
+          ['firewall', 'Firewall'],
           ['resume', 'Resume'],
         ].map(([id, label]) => (
           <button

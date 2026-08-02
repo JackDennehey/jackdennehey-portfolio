@@ -186,10 +186,46 @@ export function JackRecruiterIcon(props: IconProps) {
 export function JackAssistantIcon(props: IconProps) {
   return (
     <JackIcon {...props}>
-      <rect x="4" y="5" width="16" height="12" />
-      <path d="M7 9h3M12 9h5M7 12h5M14 12h3" />
-      <path d="M8 21l3-4h5" />
-      <path d="M7 15h1M10 15h1M13 15h1" />
+      <image
+        href="/images/jd/jd-icon.png"
+        x="2"
+        y="2"
+        width="20"
+        height="20"
+        preserveAspectRatio="xMidYMid meet"
+      />
+    </JackIcon>
+  )
+}
+
+export function JackTimelineIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M7 4v16" />
+      <rect x="10" y="4" width="9" height="4" />
+      <rect x="10" y="10" width="9" height="4" />
+      <rect x="10" y="16" width="9" height="4" />
+      <path d="M5 6h4M5 12h4M5 18h4" />
+    </JackIcon>
+  )
+}
+
+export function JackGuestbookIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M5 5h7v15H5zM12 5h7v15h-7" />
+      <path d="M8 9h2M8 13h2M14 9h3M14 13h3" />
+      <path d="M14 17l3-2 1 1-3 2z" />
+    </JackIcon>
+  )
+}
+
+export function JackFirewallIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M12 3l8 3v6c0 4-3 7-8 9-5-2-8-5-8-9V6z" />
+      <path d="M8 9h8M8 12h8M9 15h6" />
+      <path d="M6 12H3M21 12h-3M12 6v12" />
     </JackIcon>
   )
 }

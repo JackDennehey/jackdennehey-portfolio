@@ -8,6 +8,11 @@ import {
   parseSoundEffectsPreference,
 } from '@/lib/sound-preferences'
 import type { SecretId } from '@/lib/secrets'
+import {
+  ACHIEVEMENTS_STORAGE_KEY,
+  parseStoredIds,
+  type JackOsAchievementId,
+} from '@/lib/achievements'
 
 export const SOUND_EFFECT_SOURCES = {
   appOpen: '/sounds/app-open.mp3',
@@ -19,10 +24,16 @@ export const SOUND_EFFECT_SOURCES = {
   secretOrangeHorizon: '/sounds/secret-orange-horizon.mp3',
   secretMoonstep: '/sounds/secret-moonstep.mp3',
   secretTheCrossing: '/sounds/secret-the-crossing.mp3',
+  guestbookSign: '/sounds/guestbook-sign.mp3',
+  achievementUnlocked: '/sounds/achievement-unlocked.mp3',
 } as const
 
 export type SoundEffectName = 'appOpen' | 'windowClose' | 'firstWallpaperSet' | 'startup'
 export type JackOsAudioName = keyof typeof SOUND_EFFECT_SOURCES
+const JACK_OS_ACHIEVEMENT_IDS: readonly JackOsAchievementId[] = [
+  'firewall-first-run',
+  'interactive-update-explorer',
+] as const
 
 const SECRET_UNLOCK_AUDIO_BY_ID: Record<SecretId, JackOsAudioName> = {
   'signal-loss': 'secretSignalLoss',
@@ -43,6 +54,8 @@ const SOUND_VOLUMES: Record<JackOsAudioName, number> = {
   secretOrangeHorizon: 0.28,
   secretMoonstep: 0.28,
   secretTheCrossing: 0.28,
+  guestbookSign: 0.24,
+  achievementUnlocked: 0.26,
 }
 const AMBIENCE_FADE_MS = 900
 const AMBIENCE_LOOP_START_SECONDS = 0.048
@@ -189,6 +202,8 @@ export function useSoundEffects() {
   const ambienceOffsetAtStart = useRef(AMBIENCE_LOOP_START_SECONDS)
   const ambienceStartedAt = useRef(0)
   const firstWallpaperFallbackPlayed = useRef(false)
+  const achievementFallbackIds = useRef<Set<JackOsAchievementId>>(new Set())
+  const achievementGuard = useRef<Set<JackOsAchievementId>>(new Set())
   const ambienceWanted = useRef(false)
   const ambienceFadeFrame = useRef<number | null>(null)
   const startupAttempted = useRef(false)
@@ -229,8 +244,10 @@ export function useSoundEffects() {
       return
     }
 
-    (Object.keys(SOUND_EFFECT_SOURCES) as JackOsAudioName[]).forEach((name) => {
-      if (name === 'ambience') return
+    ;(Object.keys(SOUND_EFFECT_SOURCES) as JackOsAudioName[]).forEach((name) => {
+      if (name === 'ambience' || name === 'guestbookSign' || name === 'achievementUnlocked') {
+        return
+      }
       getAudio(name)?.load()
     })
   }, [getAudio, soundEffectsEnabled])
@@ -667,6 +684,57 @@ export function useSoundEffects() {
     playSound('firstWallpaperSet')
   }, [playSound])
 
+  const markAchievementUnlocked = useCallback((achievementId: JackOsAchievementId) => {
+    if (!JACK_OS_ACHIEVEMENT_IDS.includes(achievementId)) {
+      return false
+    }
+
+    if (canUseBrowserStorage()) {
+      try {
+        const current = parseStoredIds(
+          window.localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY),
+          JACK_OS_ACHIEVEMENT_IDS,
+        )
+        if (current.includes(achievementId)) {
+          return false
+        }
+        window.localStorage.setItem(
+          ACHIEVEMENTS_STORAGE_KEY,
+          JSON.stringify([...current, achievementId]),
+        )
+        return true
+      } catch {
+        // Fall through to in-memory protection for locked-down browsers.
+      }
+    }
+
+    if (achievementFallbackIds.current.has(achievementId)) {
+      return false
+    }
+    achievementFallbackIds.current.add(achievementId)
+    return true
+  }, [])
+
+  const playAchievementUnlocked = useCallback(
+    (achievementId: JackOsAchievementId) => {
+      const newlyUnlocked = markAchievementUnlocked(achievementId)
+      if (!newlyUnlocked) {
+        return false
+      }
+
+      if (!achievementGuard.current.has(achievementId)) {
+        achievementGuard.current.add(achievementId)
+        window.setTimeout(() => {
+          achievementGuard.current.delete(achievementId)
+        }, 1800)
+        playSound('achievementUnlocked')
+      }
+
+      return true
+    },
+    [markAchievementUnlocked, playSound],
+  )
+
   const playStartup = useCallback(() => {
     if (startupAttempted.current) {
       return
@@ -758,7 +826,9 @@ export function useSoundEffects() {
       setSoundEffectsEnabled,
       appOpen: () => playSound('appOpen'),
       windowClose: () => playSound('windowClose'),
+      guestbookSign: () => playSound('guestbookSign'),
       firstWallpaperSet: playFirstWallpaperSet,
+      achievementUnlocked: playAchievementUnlocked,
       playSecretUnlock,
       playStartup,
       startAmbience,
@@ -768,6 +838,7 @@ export function useSoundEffects() {
     }),
     [
       playFirstWallpaperSet,
+      playAchievementUnlocked,
       playSecretUnlock,
       playStartup,
       playSound,

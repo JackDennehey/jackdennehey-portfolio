@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import dynamic from 'next/dynamic'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
@@ -38,11 +39,37 @@ import {
   type SecretId,
 } from '@/lib/secrets'
 import { DEFAULT_WALLPAPER_ID, getWallpaperAsset, isHiddenWallpaper } from '@/lib/wallpapers'
-import { CONTACT } from '@/lib/portfolio-data'
+import { CONTACT, CREDENTIALS, PROJECTS } from '@/lib/portfolio-data'
 import {
+  RECRUITER_SECTIONS,
   isRecruiterSectionId,
   type RecruiterSectionId,
 } from '@/lib/portfolio-knowledge'
+import {
+  ACHIEVEMENT_MESSAGES,
+  INTERACTIVE_APPS_OPENED_STORAGE_KEY,
+  JACK_OS_5B_APP_IDS,
+  parseStoredIds,
+  type JackOsAchievementId,
+  type JackOsInteractiveAppId,
+} from '@/lib/achievements'
+import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
+
+const TimelineContent = dynamic(
+  () => import('./content/timeline-content').then((module) => module.TimelineContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Timeline..." /> },
+)
+const GuestbookContent = dynamic(
+  () => import('./content/guestbook-content').then((module) => module.GuestbookContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Guestbook..." /> },
+)
+const NetworkFirewallContent = dynamic(
+  () =>
+    import('./content/network-firewall-content').then(
+      (module) => module.NetworkFirewallContent,
+    ),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Firewall..." /> },
+)
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -67,8 +94,17 @@ const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
 const DESKTOP_BOTTOM_SAFE_AREA = 72
 const MAXIMIZED_MARGIN = 8
 const COPY_CONFIRMATION_DURATION_MS = 2200
+const ACHIEVEMENT_NOTICE_DURATION_MS = 3200
 const INITIAL_WINDOW_CASCADE_STEP = 28
 const INITIAL_WINDOW_CASCADE_SLOTS = 5
+
+function LazyWindowLoading({ label }: { label: string }) {
+  return (
+    <div className="grid min-h-48 place-items-center os-border bg-secondary p-4">
+      <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">{label}</p>
+    </div>
+  )
+}
 
 function getUsableDesktopBounds() {
   if (typeof window === 'undefined') {
@@ -211,6 +247,10 @@ function getRecruiterHash(section: RecruiterSectionId) {
   return section === 'overview' ? 'recruiter' : `recruiter/${section}`
 }
 
+function isInteractiveAppId(id: WindowId): id is JackOsInteractiveAppId {
+  return (JACK_OS_5B_APP_IDS as readonly string[]).includes(id)
+}
+
 export function Desktop() {
   const [booted, setBooted] = useState(false)
   const [scanlines, setScanlines] = useState(true)
@@ -225,6 +265,10 @@ export function Desktop() {
     nonce: number
   } | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const [achievementNotice, setAchievementNotice] = useState<{
+    title: string
+    message: string
+  } | null>(null)
   const secretUnlocks = useSecretUnlocks()
   const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
     secretUnlocks.unlockedIds,
@@ -237,6 +281,7 @@ export function Desktop() {
   const windowOpenSequence = useRef(0)
   const assistantPromptSequence = useRef(0)
   const copyStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const achievementNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
 
@@ -261,6 +306,47 @@ export function Desktop() {
       document.getElementById('jack-os-desktop')?.focus()
     }, 0)
   }, [])
+
+  const showAchievement = useCallback(
+    (achievementId: JackOsAchievementId) => {
+      const newlyUnlocked = soundEffects.achievementUnlocked(achievementId)
+      if (!newlyUnlocked) return
+
+      if (achievementNoticeTimer.current) {
+        clearTimeout(achievementNoticeTimer.current)
+      }
+      setAchievementNotice(ACHIEVEMENT_MESSAGES[achievementId])
+      achievementNoticeTimer.current = setTimeout(() => {
+        setAchievementNotice(null)
+        achievementNoticeTimer.current = null
+      }, ACHIEVEMENT_NOTICE_DURATION_MS)
+    },
+    [soundEffects],
+  )
+
+  const recordInteractiveAppOpen = useCallback(
+    (id: WindowId) => {
+      if (!isInteractiveAppId(id) || typeof window === 'undefined') return
+
+      try {
+        const current = parseStoredIds(
+          window.localStorage.getItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY),
+          JACK_OS_5B_APP_IDS,
+        )
+        const next = current.includes(id) ? current : [...current, id]
+        window.localStorage.setItem(
+          INTERACTIVE_APPS_OPENED_STORAGE_KEY,
+          JSON.stringify(next),
+        )
+        if (JACK_OS_5B_APP_IDS.every((appId) => next.includes(appId))) {
+          showAchievement('interactive-update-explorer')
+        }
+      } catch {
+        // Achievement progress is nice-to-have and must never block app opening.
+      }
+    },
+    [showAchievement],
+  )
 
   const openWindow = useCallback(
     (id: string, options: OpenWindowOptions = {}) => {
@@ -322,9 +408,10 @@ export function Desktop() {
       }, WINDOW_OPEN_DURATION_MS)
       if (options.playSound !== false) {
         soundEffects.appOpen()
+        recordInteractiveAppOpen(windowId)
       }
     },
-    [focusWindow, recruiterSection, soundEffects],
+    [focusWindow, recruiterSection, recordInteractiveAppOpen, soundEffects],
   )
 
   const closeWindow = useCallback((id: WindowId) => {
@@ -689,6 +776,9 @@ export function Desktop() {
       if (copyStatusTimer.current) {
         clearTimeout(copyStatusTimer.current)
       }
+      if (achievementNoticeTimer.current) {
+        clearTimeout(achievementNoticeTimer.current)
+      }
     }
   }, [])
 
@@ -737,6 +827,9 @@ export function Desktop() {
       'resume',
       'contact',
       'assistant',
+      'timeline',
+      'guestbook',
+      'firewall',
       'wallpapers',
       'secrets',
     ]
@@ -746,6 +839,9 @@ export function Desktop() {
       certifications: ['credentials', 'certifications', 'certificates'],
       recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
       assistant: ['jd', 'portfolio assistant', 'ask'],
+      timeline: ['history', 'journey', 'milestones', 'education history', 'system history'],
+      guestbook: ['visitor log', 'sign', 'message', 'comments'],
+      firewall: ['network', 'packets', 'security', 'ports', 'traffic', 'simulation'],
       wallpapers: ['personalize', 'background', 'desktop'],
       secrets: ['hidden', 'files', 'manual'],
     }
@@ -767,6 +863,71 @@ export function Desktop() {
       }
     })
 
+    const timelineEntryCommands = TIMELINE_ENTRIES.map((entry) => ({
+      id: `timeline-${entry.id}`,
+      title: entry.title,
+      subtitle: `Timeline / ${entry.category}`,
+      keywords: [entry.title, entry.summary, entry.category, 'timeline', 'history', 'milestone'],
+      Icon: WINDOW_APPS.timeline.Icon,
+      action: () => openWindow('timeline'),
+    }))
+
+    const projectCommands = PROJECTS.map((project) => ({
+      id: `project-${project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      title: project.title,
+      subtitle: project.status ? `Project / ${project.status}` : 'Project',
+      keywords: [
+        project.title,
+        project.description,
+        project.status ?? '',
+        ...project.technologies,
+        'projects',
+      ],
+      Icon: WINDOW_APPS.projects.Icon,
+      action: () => openWindow('projects'),
+    }))
+
+    const credentialCommands = CREDENTIALS.map((credential) => ({
+      id: `credential-${credential.id}`,
+      title: credential.title,
+      subtitle: `${credential.issuer} / ${credential.status}`,
+      keywords: [
+        credential.title,
+        credential.issuer,
+        credential.status,
+        credential.summary,
+        'credentials',
+        'certifications',
+      ],
+      Icon: WINDOW_APPS.certifications.Icon,
+      action: () => openWindow('certifications'),
+    }))
+
+    const recruiterSectionCommands = RECRUITER_SECTIONS.map((section) => ({
+      id: `recruiter-section-${section.id}`,
+      title: `Recruiter: ${section.label}`,
+      subtitle: 'Guided overview section',
+      keywords: ['recruiter', 'overview', section.label, section.id],
+      Icon: WINDOW_APPS.recruiter.Icon,
+      tone: WINDOW_APPS.recruiter.tone,
+      action: () => selectRecruiterSection(section.id),
+    }))
+
+    const firewallHelpCommands = [
+      'allow vs block',
+      'inbound and outbound',
+      'ports and protocols',
+      'rule priority',
+      'sample network traffic',
+    ].map((topic) => ({
+      id: `firewall-help-${topic.replace(/\s+/g, '-')}`,
+      title: `Firewall Help: ${topic}`,
+      subtitle: 'Network Firewall',
+      keywords: [topic, 'firewall', 'network', 'security', 'traffic'],
+      Icon: WINDOW_APPS.firewall.Icon,
+      action: () => openWindow('firewall'),
+    }))
+
     const unlockedSecretCommands = secretUnlocks.unlockedIds
       .map((secretId) => getSecretDefinition(secretId))
       .filter((secret): secret is NonNullable<typeof secret> => Boolean(secret))
@@ -781,6 +942,11 @@ export function Desktop() {
 
     return [
       ...appCommands,
+      ...projectCommands,
+      ...credentialCommands,
+      ...recruiterSectionCommands,
+      ...timelineEntryCommands,
+      ...firewallHelpCommands,
       {
         id: 'ask-jd',
         title: 'Ask J.D.',
@@ -873,6 +1039,7 @@ export function Desktop() {
     openWindow,
     restoreAllMinimized,
     scanlines,
+    selectRecruiterSection,
     secretUnlocks.unlockedIds,
     soundEffects,
     theme,
@@ -880,7 +1047,7 @@ export function Desktop() {
     topId,
   ])
 
-  const renderContent = (id: WindowId) => {
+  const renderContent = (id: WindowId, active = true) => {
     switch (id) {
       case 'home':
         return (
@@ -918,6 +1085,17 @@ export function Desktop() {
             seedPrompt={assistantSeedPrompt}
             onOpen={openWindow}
             onCopyEmail={copyEmailToClipboard}
+          />
+        )
+      case 'timeline':
+        return <TimelineContent onOpen={openWindow} />
+      case 'guestbook':
+        return <GuestbookContent onSigned={soundEffects.guestbookSign} />
+      case 'firewall':
+        return (
+          <NetworkFirewallContent
+            active={active}
+            onAchievement={showAchievement}
           />
         )
       case 'wallpapers':
@@ -1073,7 +1251,7 @@ export function Desktop() {
               onMaximize={() => maximizeWindow(w.id)}
               onMove={(x, y) => moveWindow(w.id, x, y)}
             >
-              {renderContent(w.id)}
+              {renderContent(w.id, w.status !== 'minimized' && w.status !== 'closing')}
             </OsWindow>
           )
         })}
@@ -1120,6 +1298,22 @@ export function Desktop() {
             className="fixed bottom-16 right-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground os-shadow"
           >
             {copyStatus}
+          </div>
+        ) : null}
+
+        {achievementNotice ? (
+          <div
+            role="status"
+            aria-live="polite"
+            data-desktop-interactive="true"
+            className="achievement-notice fixed bottom-16 left-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 text-foreground os-shadow"
+          >
+            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              {achievementNotice.title}
+            </p>
+            <p className="font-pixel text-[10px] leading-relaxed text-foreground">
+              {achievementNotice.message}
+            </p>
           </div>
         ) : null}
       </WallpaperManager>

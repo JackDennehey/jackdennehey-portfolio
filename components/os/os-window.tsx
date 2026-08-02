@@ -200,17 +200,6 @@ export function OsWindow({
               >
                 <app.Icon className="size-3" />
               </span>
-            ) : app.id === 'assistant' ? (
-              <span
-                aria-hidden
-                className="grid size-4 shrink-0 place-items-center overflow-hidden border border-current bg-paper"
-              >
-                <img
-                  src="/images/jd/jd-bot.png"
-                  alt=""
-                  className="h-full w-full object-contain pixelated"
-                />
-              </span>
             ) : (
               <app.Icon aria-hidden className="size-3.5 shrink-0" />
             )}
