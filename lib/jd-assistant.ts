@@ -504,7 +504,7 @@ function listNames(items: readonly { title: string }[]) {
 function uniqueTechnologies() {
   return Array.from(
     new Set(PORTFOLIO_KNOWLEDGE.projects.all.flatMap((project) => project.technologies)),
-  ).filter((technology) => technology !== 'TBD')
+  )
 }
 
 function getResponse(intent: AssistantIntent): AssistantResponse {

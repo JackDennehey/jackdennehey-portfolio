@@ -4,6 +4,7 @@ import {
   JackAboutImageIcon,
   JackCredentialsImageIcon,
   JackGuestbookImageIcon,
+  JackRoadmapImageIcon,
   JackResumeImageIcon,
   JackSecretsImageIcon,
 } from './app-image-icons'
@@ -31,6 +32,7 @@ export type WindowId =
   | 'timeline'
   | 'guestbook'
   | 'firewall'
+  | 'roadmap'
   | 'wallpapers'
   | 'secrets'
 
@@ -139,6 +141,14 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     description: 'simulated traffic',
     tone: 'firewall',
   },
+  roadmap: {
+    id: 'roadmap',
+    title: 'ROADMAP.EXE — System Deployment Track',
+    Icon: JackRoadmapImageIcon,
+    width: 780,
+    height: 620,
+    description: 'professional goals',
+  },
   wallpapers: {
     id: 'wallpapers',
     title: 'Wallpapers',
@@ -169,6 +179,7 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   timeline: 'timeline',
   guestbook: 'guestbook',
   firewall: 'firewall',
+  roadmap: 'roadmap',
   wallpapers: 'wallpapers',
   secrets: 'secrets',
 }
@@ -229,6 +240,7 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
   { kind: 'window', id: 'about', label: 'About Me', Icon: JackAboutImageIcon },
   { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
   { kind: 'window', id: 'resume', label: 'Resume', Icon: JackResumeImageIcon },
+  { kind: 'window', id: 'roadmap', label: 'Road Map', Icon: JackRoadmapImageIcon },
   { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
   { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
   { kind: 'window', id: 'secrets', label: 'Secrets', Icon: JackSecretsImageIcon },

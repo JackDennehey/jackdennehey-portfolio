@@ -14,16 +14,6 @@ import { cn } from '@/lib/utils'
 type TimelineFilter = 'All' | TimelineCategory
 type TimelineSortOrder = 'oldest' | 'newest'
 
-const TIMELINE_CHRONOLOGY: Record<string, number> = {
-  'dccc-cybersecurity-education': 10,
-  'cisco-networking-basics': 20,
-  'dccc-cybersecurity-honors': 30,
-  'jack-os-public-launch': 40,
-  'jack-os-v2': 50,
-  'azure-ai-study': 60,
-  'penn-state-business-studies': 70,
-}
-
 export function TimelineContent({ onOpen }: { onOpen: (id: WindowId) => void }) {
   const [filter, setFilter] = useState<TimelineFilter>('All')
   const [sortOrder, setSortOrder] = useState<TimelineSortOrder>('oldest')
@@ -39,9 +29,7 @@ export function TimelineContent({ onOpen }: { onOpen: (id: WindowId) => void }) 
     const direction = sortOrder === 'oldest' ? 1 : -1
 
     return [...filteredEntries].sort((a, b) => {
-      const aOrder = TIMELINE_CHRONOLOGY[a.id] ?? Number.MAX_SAFE_INTEGER
-      const bOrder = TIMELINE_CHRONOLOGY[b.id] ?? Number.MAX_SAFE_INTEGER
-      return (aOrder - bOrder) * direction
+      return (a.order - b.order) * direction
     })
   }, [filter, sortOrder])
 

@@ -14,6 +14,7 @@ export type TimelineActionTarget =
   | 'recruiter'
   | 'timeline'
   | 'firewall'
+  | 'roadmap'
   | 'contact'
 
 export type TimelineAction = {
@@ -23,6 +24,7 @@ export type TimelineAction = {
 
 export type TimelineEntry = {
   id: string
+  order: number
   year: string
   month?: string
   title: string
@@ -63,6 +65,7 @@ export const TIMELINE_CATEGORIES: readonly TimelineCategory[] = [
 export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   {
     id: 'jack-os-v2',
+    order: 50,
     year: '2026',
     month: 'August',
     title: 'Jack OS V2 — Interactive Operating System Expansion',
@@ -124,7 +127,51 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
         },
   },
   {
+    id: 'jack-os-v3a',
+    order: 55,
+    year: '2026',
+    month: 'August',
+    title: 'Jack OS V3A — The Identity Update',
+    summary:
+      'Jack OS established a stronger visual and professional identity through custom application artwork, a centralized Road Map, achievement tracking, live system details, new wallpapers, and recruiter-focused Simple Mode.',
+    description:
+      'Jack OS V3A focused on identity, consistency, and recruiter accessibility. The release introduced custom application icons, three new wallpapers, a Road Map application for current and future professional goals, an expanded achievement interface, lightweight system-status details, updated browser branding, and a Simple Mode that presents Jack’s professional information in a conventional, easy-to-scan format.',
+    category: 'Jack OS',
+    featured: true,
+    badge: 'V3A',
+    releaseHighlights: [
+      {
+        title: 'Identity Update',
+        items: [
+          'Added custom Jack OS application icons',
+          'Added Icons, Rain Forest, and Coral Reef wallpapers',
+          'Added the Road Map application',
+          'Consolidated future plans and removed placeholder sections',
+          'Added the Achievements interface',
+          'Added lightweight live system details',
+          'Added recruiter-focused Simple Mode',
+          'Updated Jack OS browser and application branding',
+        ],
+      },
+    ],
+    actions: [
+      { label: 'Open Road Map', target: 'roadmap' },
+      { label: 'Open Recruiter Mode', target: 'recruiter' },
+      { label: 'Open Timeline', target: 'timeline' },
+    ],
+    externalLink: jackOsProject?.demo
+      ? {
+          label: 'Visit Live Project',
+          href: jackOsProject.demo,
+        }
+      : {
+          label: 'Visit Portfolio',
+          href: `https://${CONTACT.domain}`,
+        },
+  },
+  {
     id: 'jack-os-public-launch',
+    order: 40,
     year: '2026',
     month: 'July',
     title: 'Jack OS Public Portfolio',
@@ -147,6 +194,7 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   },
   {
     id: 'dccc-cybersecurity-honors',
+    order: 30,
     year: '2026',
     month: 'May',
     title: dcccCredential?.title ?? 'Cyber Security Certificate of Competency',
@@ -167,6 +215,7 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   },
   {
     id: 'penn-state-business-studies',
+    order: 70,
     year: 'Current',
     title: 'Business studies at Penn State Brandywine',
     summary:
@@ -178,6 +227,7 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   },
   {
     id: 'cisco-networking-basics',
+    order: 20,
     year: 'Verified',
     title: ciscoCredential?.title ?? 'Cisco Networking Basics',
     summary:
@@ -196,6 +246,7 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   },
   {
     id: 'azure-ai-study',
+    order: 60,
     year: 'Current',
     title: azureCredential?.title ?? 'Microsoft Azure AI Fundamentals',
     summary:
@@ -208,6 +259,7 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
   },
   {
     id: 'dccc-cybersecurity-education',
+    order: 10,
     year: 'Completed',
     title: 'Cybersecurity education at DCCC',
     summary:

@@ -71,6 +71,10 @@ const NetworkFirewallContent = dynamic(
     ),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading Firewall..." /> },
 )
+const RoadmapContent = dynamic(
+  () => import('./content/roadmap-content').then((module) => module.RoadmapContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Road Map..." /> },
+)
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -880,6 +884,7 @@ export function Desktop() {
       'timeline',
       'guestbook',
       'firewall',
+      'roadmap',
       'wallpapers',
       'secrets',
     ]
@@ -902,6 +907,7 @@ export function Desktop() {
         'beginner guide',
         'firewall certified',
       ],
+      roadmap: ['plans', 'goals', 'future direction', 'next steps', 'deployment track'],
       wallpapers: ['personalize', 'background', 'desktop'],
       secrets: ['hidden', 'files', 'manual'],
     }
@@ -1169,6 +1175,13 @@ export function Desktop() {
           <NetworkFirewallContent
             active={active}
             onAchievement={showAchievement}
+          />
+        )
+      case 'roadmap':
+        return (
+          <RoadmapContent
+            onOpen={openWindow}
+            onAskAssistant={(question) => openAssistant(question)}
           />
         )
       case 'wallpapers':
