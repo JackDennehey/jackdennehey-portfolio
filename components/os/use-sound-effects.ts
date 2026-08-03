@@ -10,6 +10,7 @@ import {
 import type { SecretId } from '@/lib/secrets'
 import {
   ACHIEVEMENTS_STORAGE_KEY,
+  JACK_OS_ACHIEVEMENT_IDS,
   parseStoredIds,
   type JackOsAchievementId,
 } from '@/lib/achievements'
@@ -31,12 +32,6 @@ export const SOUND_EFFECT_SOURCES = {
 
 export type SoundEffectName = 'appOpen' | 'windowClose' | 'firstWallpaperSet' | 'startup'
 export type JackOsAudioName = keyof typeof SOUND_EFFECT_SOURCES
-const JACK_OS_ACHIEVEMENT_IDS: readonly JackOsAchievementId[] = [
-  'firewall-first-run',
-  'interactive-update-explorer',
-  'firewall-certified',
-] as const
-
 const SECRET_UNLOCK_AUDIO_BY_ID: Record<SecretId, JackOsAudioName> = {
   'signal-loss': 'secretSignalLoss',
   'orange-horizon': 'secretOrangeHorizon',

@@ -39,13 +39,6 @@ export const PROJECTS: Project[] = [
       'Hands-on labs configuring routers, switches, subnets, and secure topologies while studying for Cisco networking fundamentals.',
     technologies: ['Cisco', 'Packet Tracer', 'TCP/IP', 'Subnetting'],
   },
-  {
-    title: 'Future Penn State Projects',
-    status: 'Planned',
-    description:
-      'Coursework and independent builds coming out of the Penn State Brandywine business program — a space reserved for what comes next.',
-    technologies: ['TBD'],
-  },
 ]
 
 export type CredentialStatus = 'Earned' | 'Earned with Honors' | 'In Progress' | 'Planned'

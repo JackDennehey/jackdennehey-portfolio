@@ -22,6 +22,13 @@ export function MenuBar({
   soundEffectsEnabled,
   onToggleSoundEffects,
   onOpenCommandPalette,
+  onOpenSimpleMode,
+  achievementCount,
+  achievementTotal,
+  onOpenAchievements,
+  uptimeLabel,
+  openWindowCount,
+  uiActivity,
 }: {
   onOpen: (id: WindowId) => void
   scanlines: boolean
@@ -31,6 +38,13 @@ export function MenuBar({
   soundEffectsEnabled: boolean
   onToggleSoundEffects: () => void
   onOpenCommandPalette: () => void
+  onOpenSimpleMode: () => void
+  achievementCount: number
+  achievementTotal: number
+  onOpenAchievements: () => void
+  uptimeLabel: string
+  openWindowCount: number
+  uiActivity: number
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-8 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3">
@@ -46,6 +60,7 @@ export function MenuBar({
         </MenuButton>
         <MenuButton onClick={() => onOpen('wallpapers')}>System</MenuButton>
         <MenuButton onClick={() => onOpen('about')}>About</MenuButton>
+        <MenuButton onClick={onOpenSimpleMode}>Simple</MenuButton>
         <button
           type="button"
           onClick={onOpenCommandPalette}
@@ -57,7 +72,25 @@ export function MenuBar({
         <MenuButton onClick={() => onOpen('assistant')}>Help</MenuButton>
       </nav>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+        <button
+          type="button"
+          onClick={onOpenAchievements}
+          className="hidden os-border bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none sm:block"
+          aria-label={`Achievements ${achievementCount} of ${achievementTotal} unlocked`}
+        >
+          ACH {achievementCount}/{achievementTotal}
+        </button>
+        <div
+          aria-label={`Jack OS status nominal. Uptime ${uptimeLabel}. ${openWindowCount} windows open. UI activity ${uiActivity} percent.`}
+          className="hidden os-border bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-foreground lg:block"
+        >
+          <span className="xl:hidden">NOMINAL</span>
+          <span className="hidden xl:inline">
+            SYS_STATUS: NOMINAL · UPTIME: {uptimeLabel} · WINDOWS:{' '}
+            {String(openWindowCount).padStart(2, '0')} · UI ACTIVITY: {uiActivity}%
+          </span>
+        </div>
         <div
           aria-label="System controls"
           className="flex items-center gap-0.5 os-border bg-secondary p-0.5"

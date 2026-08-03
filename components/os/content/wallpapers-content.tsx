@@ -25,6 +25,7 @@ type WallpapersContentProps = {
   onResetWallpaper: () => void
   onSetSoundEffectsEnabled: (enabled: boolean) => void
   onFirstCustomWallpaperSet: () => void
+  onPublicWallpaperChanged: () => void
   unlockedSecretIds: readonly SecretId[]
   onOpenSecrets: () => void
 }
@@ -36,6 +37,7 @@ export function WallpapersContent({
   onResetWallpaper,
   onSetSoundEffectsEnabled,
   onFirstCustomWallpaperSet,
+  onPublicWallpaperChanged,
   unlockedSecretIds,
   onOpenSecrets,
 }: WallpapersContentProps) {
@@ -70,6 +72,9 @@ export function WallpapersContent({
     onUpdatePreferences({ wallpaperId: wallpaper.id })
     if (wallpaper.id !== DEFAULT_WALLPAPER_ID) {
       onFirstCustomWallpaperSet()
+    }
+    if (wallpaper.collection === 'current' && wallpaper.id !== DEFAULT_WALLPAPER_ID) {
+      onPublicWallpaperChanged()
     }
   }
 

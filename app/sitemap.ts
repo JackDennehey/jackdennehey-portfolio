@@ -11,5 +11,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    {
+      url: `${SITE_URL}/simple`,
+      lastModified: LAST_UPDATED,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
   ]
 }
