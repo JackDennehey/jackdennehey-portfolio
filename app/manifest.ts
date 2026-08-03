@@ -4,8 +4,8 @@ import { SITE_AUTHOR, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site-metadata'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: `${SITE_NAME} - ${SITE_AUTHOR} Portfolio`,
-    short_name: SITE_NAME,
+    name: `${SITE_AUTHOR} - ${SITE_NAME} Portfolio`,
+    short_name: SITE_AUTHOR,
     description: SITE_DESCRIPTION,
     start_url: '/',
     scope: '/',
@@ -30,6 +30,18 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/apple-icon.png',
         sizes: '180x180',
         type: 'image/png',
+      },
+      {
+        src: '/icon-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: '/icon-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
       },
     ],
   }

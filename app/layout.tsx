@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,
-  applicationName: SITE_NAME,
+  applicationName: `${SITE_AUTHOR} - ${SITE_NAME}`,
   authors: [{ name: SITE_AUTHOR, url: SITE_URL }],
   creator: SITE_AUTHOR,
   publisher: SITE_AUTHOR,
@@ -78,22 +78,17 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' },
-      {
-        url: '/icon-dark-32x32.png',
-        sizes: '32x32',
-        type: 'image/png',
-        media: '(prefers-color-scheme: dark)',
-      },
     ],
-    shortcut: [{ url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' }],
+    shortcut: [{ url: '/favicon.ico', sizes: 'any' }],
     apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: SITE_NAME,
+    title: SITE_AUTHOR,
     statusBarStyle: 'default',
   },
   formatDetection: {

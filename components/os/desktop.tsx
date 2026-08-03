@@ -1236,7 +1236,7 @@ export function Desktop() {
           aria-hidden
           className="pointer-events-none absolute bottom-4 left-4 max-w-xs font-pixel text-[9px] leading-relaxed text-muted-foreground/60"
         >
-          Jack OS v1.0
+          Jack OS V2.2
           <br />
           {isMobile ? 'Tap an icon to open' : 'Double-click icons to open'}
         </p>
@@ -1245,7 +1245,7 @@ export function Desktop() {
         {!isMobile && booted ? (
           <div
             data-desktop-interactive="true"
-            className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
+            className="absolute right-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
           >
             {preferences.showClock ? <DesktopClock /> : null}
             {preferences.showCalendar ? (
@@ -1255,9 +1255,9 @@ export function Desktop() {
           </div>
         ) : null}
 
-        {/* Desktop icons (right rail) */}
+        {/* Desktop icons */}
         {!isMobile ? (
-          <div className="desktop-icon-grid absolute right-3 top-11 gap-x-2 gap-y-2 pr-1">
+          <div className="desktop-icon-grid absolute left-3 top-11 gap-x-2 gap-y-2 pl-1">
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}

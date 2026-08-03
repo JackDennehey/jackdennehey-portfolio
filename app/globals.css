@@ -336,7 +336,7 @@
     grid-template-rows: repeat(10, minmax(72px, max-content));
     justify-items: center;
     align-items: start;
-    justify-content: end;
+    justify-content: start;
   }
 
   @media (max-height: 980px) {
