@@ -58,11 +58,11 @@ export default function Image() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 17,
+                fontSize: 15,
                 fontWeight: 700,
               }}
             >
-              J
+              JD
             </div>
             <div style={{ display: 'flex', flex: 1 }}>Jack OS</div>
             <div style={{ display: 'flex', fontSize: 18 }}>Interactive Portfolio</div>
