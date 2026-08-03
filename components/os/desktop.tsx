@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
-import { FirstVisitWelcome } from './first-visit-welcome'
 import { OsWindow } from './os-window'
 import {
   DESKTOP_ITEMS,
@@ -268,7 +267,6 @@ export function Desktop() {
     nonce: number
   } | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
-  const [firstVisitVisible, setFirstVisitVisible] = useState(false)
   const [achievementNotice, setAchievementNotice] = useState<{
     title: string
     message: string
@@ -297,21 +295,6 @@ export function Desktop() {
     soundEffectsEnabled: soundEffects.soundEffectsEnabled,
     playHourlyChime: soundEffects.playHourlyChime,
   })
-
-  useEffect(() => {
-    if (!booted || !preferencesLoaded || preferences.hasSeenFirstVisit || firstVisitVisible) {
-      return
-    }
-
-    setFirstVisitVisible(true)
-    updatePreferences({ hasSeenFirstVisit: true })
-  }, [
-    booted,
-    firstVisitVisible,
-    preferences.hasSeenFirstVisit,
-    preferencesLoaded,
-    updatePreferences,
-  ])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -729,7 +712,7 @@ export function Desktop() {
   }, [booted, openCommandPalette])
 
   useEffect(() => {
-    if (!booted || handledInitialHash.current) return
+    if (!booted || !preferencesLoaded || handledInitialHash.current) return
 
     handledInitialHash.current = true
     const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
@@ -745,10 +728,18 @@ export function Desktop() {
       return
     }
 
-    if (!isMobile && windowsRef.current.length === 0) {
+    if (!isMobile && windowsRef.current.length === 0 && !preferences.hasSeenFirstVisit) {
       openWindow('home', { playSound: false, updateHash: false })
+      updatePreferences({ hasSeenFirstVisit: true })
     }
-  }, [booted, isMobile, openWindow])
+  }, [
+    booted,
+    isMobile,
+    openWindow,
+    preferences.hasSeenFirstVisit,
+    preferencesLoaded,
+    updatePreferences,
+  ])
 
   useEffect(() => {
     const onHashChange = () => {
@@ -1266,7 +1257,7 @@ export function Desktop() {
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
-          <div className="desktop-icon-grid absolute right-3 top-11 gap-x-2 gap-y-3 pr-1">
+          <div className="desktop-icon-grid absolute right-3 top-11 gap-x-2 gap-y-2 pr-1">
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}
@@ -1363,13 +1354,6 @@ export function Desktop() {
             onClose={closeContextMenu}
             onPersonalize={openPersonalize}
             onResetWallpaper={resetWallpaper}
-          />
-        ) : null}
-
-        {firstVisitVisible ? (
-          <FirstVisitWelcome
-            onOpen={openWindow}
-            onDismiss={() => setFirstVisitVisible(false)}
           />
         ) : null}
 

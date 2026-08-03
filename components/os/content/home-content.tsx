@@ -51,7 +51,7 @@ export function HomeContent({
           <dt>Edition</dt>
           <dd className="text-foreground">Portfolio</dd>
           <dt>Version</dt>
-          <dd className="text-foreground">5C</dd>
+          <dd className="text-foreground">V2</dd>
           <dt>Theme</dt>
           <dd className="capitalize text-foreground">{theme}</dd>
           <dt>Sound</dt>
@@ -64,57 +64,46 @@ export function HomeContent({
       </section>
 
       <section className="os-border bg-card p-3">
-        <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-          Release Notes
-        </p>
-        <h3 className="mt-1 font-pixel text-[10px] leading-relaxed text-foreground">
-          Jack OS 5C / The Firewall Update
+        <h3 className="font-pixel text-[9px] leading-relaxed text-foreground">
+          Quick Start
         </h3>
-        <ul className="mt-2 grid gap-1 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2">
-          {['Flagship Firewall', 'Recruiter Polish', 'Hourly Chime', 'SEO + Performance'].map(
-            (item) => (
-              <li key={item} className="flex gap-2">
-                <span aria-hidden className="mt-2 size-1.5 shrink-0 bg-current" />
-                <span>{item}</span>
-              </li>
-            ),
-          )}
-        </ul>
-      </section>
-
-      <div className="flex flex-wrap gap-2 pt-1">
-        <button
-          type="button"
-          onClick={() => onOpen('recruiter')}
-          className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Enter Recruiter Mode
-        </button>
-        <button
-          type="button"
-          onClick={onAskAssistant}
-          className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-        >
-          Ask J.D.
-        </button>
-        {[
-          ['about', 'About Me'],
-          ['projects', 'Projects'],
-          ['timeline', 'Timeline'],
-          ['guestbook', 'Guestbook'],
-          ['firewall', 'Firewall'],
-          ['resume', 'Resume'],
-        ].map(([id, label]) => (
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
-            key={id}
             type="button"
-            onClick={() => onOpen(id as WindowId)}
+            onClick={() => onOpen('recruiter')}
+            className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Enter Recruiter Mode
+          </button>
+          {[
+            ['firewall', 'Open Network Firewall'],
+            ['timeline', 'Open Timeline'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onOpen(id as WindowId)}
+              className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={onAskAssistant}
             className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
-            {`Open ${label}`}
+            Ask J.D.
           </button>
-        ))}
-      </div>
+          <button
+            type="button"
+            onClick={() => onOpen('projects')}
+            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            Open Projects
+          </button>
+        </div>
+      </section>
     </div>
   )
 }
