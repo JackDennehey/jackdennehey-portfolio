@@ -18,6 +18,7 @@ type Props = {
   onOpen: (id: WindowId) => void
   onCopyEmail: () => void
   onAskAssistant: () => void
+  onOpenSimpleMode: () => void
 }
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
@@ -28,6 +29,7 @@ export function RecruiterModeContent({
   onOpen,
   onCopyEmail,
   onAskAssistant,
+  onOpenSimpleMode,
 }: Props) {
   const activeIndex = RECRUITER_SECTIONS.findIndex((section) => section.id === activeSection)
   const safeIndex = activeIndex >= 0 ? activeIndex : 0
@@ -119,6 +121,7 @@ export function RecruiterModeContent({
           onOpen={onOpen}
           onCopyEmail={onCopyEmail}
           onAskAssistant={onAskAssistant}
+          onOpenSimpleMode={onOpenSimpleMode}
         />
 
         <footer className="sticky bottom-0 flex flex-wrap justify-between gap-2 border-t-2 border-border bg-paper/95 pt-3">
@@ -149,15 +152,23 @@ function RecruiterSection({
   onOpen,
   onCopyEmail,
   onAskAssistant,
+  onOpenSimpleMode,
 }: {
   section: RecruiterSectionId
   onOpen: (id: WindowId) => void
   onCopyEmail: () => void
   onAskAssistant: () => void
+  onOpenSimpleMode: () => void
 }) {
   switch (section) {
     case 'overview':
-      return <OverviewSection onOpen={onOpen} onAskAssistant={onAskAssistant} />
+      return (
+        <OverviewSection
+          onOpen={onOpen}
+          onAskAssistant={onAskAssistant}
+          onOpenSimpleMode={onOpenSimpleMode}
+        />
+      )
     case 'education':
       return <EducationSection />
     case 'credentials':
@@ -174,9 +185,11 @@ function RecruiterSection({
 function OverviewSection({
   onOpen,
   onAskAssistant,
+  onOpenSimpleMode,
 }: {
   onOpen: (id: WindowId) => void
   onAskAssistant: () => void
+  onOpenSimpleMode: () => void
 }) {
   return (
     <div className="space-y-4">
@@ -194,6 +207,7 @@ function OverviewSection({
         <ActionButton onClick={() => onOpen('projects')}>View Projects</ActionButton>
         <ActionButton onClick={() => onOpen('timeline')}>View Timeline</ActionButton>
         <ActionButton onClick={() => onOpen('contact')}>Contact Jack</ActionButton>
+        <ActionButton onClick={onOpenSimpleMode}>View Simple Mode</ActionButton>
         <ActionButton onClick={onAskAssistant}>Ask J.D.</ActionButton>
       </ActionRow>
     </div>

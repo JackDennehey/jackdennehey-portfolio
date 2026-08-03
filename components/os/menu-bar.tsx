@@ -22,6 +22,7 @@ export function MenuBar({
   soundEffectsEnabled,
   onToggleSoundEffects,
   onOpenCommandPalette,
+  onOpenSimpleMode,
   achievementCount,
   achievementTotal,
   onOpenAchievements,
@@ -37,6 +38,7 @@ export function MenuBar({
   soundEffectsEnabled: boolean
   onToggleSoundEffects: () => void
   onOpenCommandPalette: () => void
+  onOpenSimpleMode: () => void
   achievementCount: number
   achievementTotal: number
   onOpenAchievements: () => void
@@ -58,6 +60,7 @@ export function MenuBar({
         </MenuButton>
         <MenuButton onClick={() => onOpen('wallpapers')}>System</MenuButton>
         <MenuButton onClick={() => onOpen('about')}>About</MenuButton>
+        <MenuButton onClick={onOpenSimpleMode}>Simple</MenuButton>
         <button
           type="button"
           onClick={onOpenCommandPalette}

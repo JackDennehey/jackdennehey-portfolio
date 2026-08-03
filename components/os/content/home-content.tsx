@@ -4,6 +4,7 @@ import type { WindowId } from '../apps'
 export function HomeContent({
   onOpen,
   onAskAssistant,
+  onOpenSimpleMode,
   theme,
   soundEffectsEnabled,
   hourlyChimeEnabled,
@@ -11,6 +12,7 @@ export function HomeContent({
 }: {
   onOpen: (id: WindowId) => void
   onAskAssistant: () => void
+  onOpenSimpleMode: () => void
   theme: InterfaceTheme
   soundEffectsEnabled: boolean
   hourlyChimeEnabled: boolean
@@ -74,6 +76,13 @@ export function HomeContent({
             className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Enter Recruiter Mode
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSimpleMode}
+            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            View Simple Mode
           </button>
           {[
             ['firewall', 'Open Network Firewall'],

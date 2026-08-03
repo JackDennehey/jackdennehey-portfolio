@@ -715,6 +715,11 @@ export function Desktop() {
     openWindow('secrets')
   }, [openWindow])
 
+  const openSimpleMode = useCallback(() => {
+    showAchievement('simple-mode-opened')
+    window.location.assign('/simple')
+  }, [showAchievement])
+
   const selectRecruiterSection = useCallback(
     (section: RecruiterSectionId) => {
       setRecruiterSection(section)
@@ -1130,6 +1135,15 @@ export function Desktop() {
       ...timelineEntryCommands,
       ...firewallHelpCommands,
       {
+        id: 'open-simple-mode',
+        title: 'Open Simple Mode',
+        subtitle: 'Professional portfolio view',
+        keywords: ['simple', 'plain portfolio', 'professional view', 'resume view', 'recruiter'],
+        Icon: WINDOW_APPS.recruiter.Icon,
+        tone: WINDOW_APPS.recruiter.tone,
+        action: openSimpleMode,
+      },
+      {
         id: 'ask-jd',
         title: 'Ask J.D.',
         subtitle: 'Portfolio Assistant',
@@ -1225,6 +1239,7 @@ export function Desktop() {
     minimizedWindows.length,
     minimizeActiveWindow,
     openAssistant,
+    openSimpleMode,
     openWindow,
     preferences.hourlyChime,
     restoreAllMinimized,
@@ -1245,6 +1260,7 @@ export function Desktop() {
           <HomeContent
             onOpen={openWindow}
             onAskAssistant={() => openAssistant()}
+            onOpenSimpleMode={openSimpleMode}
             theme={theme}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
             hourlyChimeEnabled={preferences.hourlyChime}
@@ -1265,6 +1281,7 @@ export function Desktop() {
             onOpen={openWindow}
             onCopyEmail={copyEmailToClipboard}
             onAskAssistant={() => openAssistant()}
+            onOpenSimpleMode={openSimpleMode}
           />
         )
       case 'resume':
@@ -1347,6 +1364,7 @@ export function Desktop() {
           soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
         }
         onOpenCommandPalette={openCommandPalette}
+        onOpenSimpleMode={openSimpleMode}
         achievementCount={earnedAchievementIds.length}
         achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
         onOpenAchievements={() => setAchievementsPanelOpen(true)}
@@ -1413,6 +1431,13 @@ export function Desktop() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Tap an app to explore Jack Dennehey&apos;s work.
               </p>
+              <button
+                type="button"
+                onClick={openSimpleMode}
+                className="os-border mt-3 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+              >
+                View Simple Mode
+              </button>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-4">
               <DesktopIcon
