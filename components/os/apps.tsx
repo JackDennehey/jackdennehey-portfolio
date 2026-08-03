@@ -1,17 +1,19 @@
 import type { ComponentType, SVGProps } from 'react'
 import { CONTACT } from '@/lib/portfolio-data'
+import {
+  JackAboutImageIcon,
+  JackCredentialsImageIcon,
+  JackGuestbookImageIcon,
+  JackResumeImageIcon,
+  JackSecretsImageIcon,
+} from './app-image-icons'
 import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
-  JackBadgeIcon,
   JackAssistantIcon,
-  JackDocumentIcon,
   JackFirewallIcon,
-  JackGuestbookIcon,
-  JackIdIcon,
   JackMailIcon,
   JackProjectsIcon,
   JackRecruiterIcon,
-  JackSecretsIcon,
   JackSystemIcon,
   JackTimelineIcon,
   JackWallpapersIcon,
@@ -58,7 +60,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   about: {
     id: 'about',
     title: 'About Me',
-    Icon: JackIdIcon,
+    Icon: JackAboutImageIcon,
     width: 560,
     height: 540,
     description: 'background and interests',
@@ -74,7 +76,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   certifications: {
     id: 'certifications',
     title: 'Credentials',
-    Icon: JackBadgeIcon,
+    Icon: JackCredentialsImageIcon,
     width: 520,
     height: 480,
     description: 'verified learning',
@@ -91,7 +93,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   resume: {
     id: 'resume',
     title: 'Resume',
-    Icon: JackDocumentIcon,
+    Icon: JackResumeImageIcon,
     width: 560,
     height: 560,
     description: 'downloadable overview',
@@ -123,7 +125,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   guestbook: {
     id: 'guestbook',
     title: 'Guestbook',
-    Icon: JackGuestbookIcon,
+    Icon: JackGuestbookImageIcon,
     width: 760,
     height: 640,
     description: 'visitor log',
@@ -148,7 +150,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   secrets: {
     id: 'secrets',
     title: 'Secrets',
-    Icon: JackSecretsIcon,
+    Icon: JackSecretsImageIcon,
     width: 500,
     height: 500,
     description: 'hidden files',
@@ -221,15 +223,15 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     tone: 'firewall',
   },
   { kind: 'window', id: 'timeline', label: 'Timeline', Icon: JackTimelineIcon },
-  { kind: 'window', id: 'guestbook', label: 'Guestbook', Icon: JackGuestbookIcon },
+  { kind: 'window', id: 'guestbook', label: 'Guestbook', Icon: JackGuestbookImageIcon },
   { kind: 'window', id: 'projects', label: 'Projects', Icon: JackProjectsIcon },
-  { kind: 'window', id: 'certifications', label: 'Credentials', Icon: JackBadgeIcon },
-  { kind: 'window', id: 'about', label: 'About Me', Icon: JackIdIcon },
+  { kind: 'window', id: 'certifications', label: 'Credentials', Icon: JackCredentialsImageIcon },
+  { kind: 'window', id: 'about', label: 'About Me', Icon: JackAboutImageIcon },
   { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
-  { kind: 'window', id: 'resume', label: 'Resume', Icon: JackDocumentIcon },
+  { kind: 'window', id: 'resume', label: 'Resume', Icon: JackResumeImageIcon },
   { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
   { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
-  { kind: 'window', id: 'secrets', label: 'Secrets', Icon: JackSecretsIcon },
+  { kind: 'window', id: 'secrets', label: 'Secrets', Icon: JackSecretsImageIcon },
   { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
 ]

@@ -10,21 +10,14 @@ import {
 import { cn } from '@/lib/utils'
 import {
   DEFAULT_WALLPAPER_ID,
-  PUBLIC_SELECTABLE_WALLPAPERS,
   getWallpaper,
   getWallpaperAsset,
   type WallpaperAsset,
   type WallpaperId,
 } from '@/lib/wallpapers'
 
-const IDLE_WALLPAPER_PREFETCH_LIMIT = 5
 const preloadedWallpaperPaths = new Set<string>()
 const wallpaperPreloadPromises = new Map<string, Promise<void>>()
-
-type WindowWithIdleCallback = Window & {
-  requestIdleCallback?: (callback: () => void) => number
-  cancelIdleCallback?: (handle: number) => void
-}
 
 type WallpaperManagerProps = ComponentPropsWithoutRef<'main'> & {
   wallpaperId: WallpaperId
@@ -76,14 +69,6 @@ function preloadWallpaperImage(path: string) {
   return preloadPromise
 }
 
-function primeWallpaper(path: string) {
-  void preloadWallpaperImage(path).catch(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`Jack OS wallpaper failed to preload: ${path}`)
-    }
-  })
-}
-
 export function WallpaperManager({
   wallpaperId,
   unlockedSecretIds = [],
@@ -125,27 +110,6 @@ export function WallpaperManager({
       cancelled = true
     }
   }, [targetWallpaper])
-
-  useEffect(() => {
-    const paths = PUBLIC_SELECTABLE_WALLPAPERS
-      .flatMap((item) => (item.imagePath ? [item.imagePath] : []))
-      .slice(0, IDLE_WALLPAPER_PREFETCH_LIMIT)
-
-    if (paths.length === 0) return
-
-    const idleWindow = window as WindowWithIdleCallback
-    if (typeof idleWindow.requestIdleCallback === 'function') {
-      const idleId = idleWindow.requestIdleCallback(() => {
-        paths.forEach(primeWallpaper)
-      })
-      return () => idleWindow.cancelIdleCallback?.(idleId)
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      paths.forEach(primeWallpaper)
-    }, 1200)
-    return () => window.clearTimeout(timeoutId)
-  }, [])
 
   return (
     <main
