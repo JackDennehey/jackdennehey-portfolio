@@ -1245,7 +1245,7 @@ export function Desktop() {
         {!isMobile && booted ? (
           <div
             data-desktop-interactive="true"
-            className="absolute right-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
+            className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
           >
             {preferences.showClock ? <DesktopClock /> : null}
             {preferences.showCalendar ? (
@@ -1257,7 +1257,7 @@ export function Desktop() {
 
         {/* Desktop icons */}
         {!isMobile ? (
-          <div className="desktop-icon-grid absolute left-3 top-11 gap-x-2 gap-y-2 pl-1">
+          <div className="desktop-icon-grid absolute right-7 top-11 gap-y-2 pr-1">
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}
