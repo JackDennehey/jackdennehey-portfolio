@@ -1044,6 +1044,7 @@ export function Desktop() {
         keywords: [app.title, id, ...(appAliases[id] ?? [])],
         Icon: app.Icon,
         tone: app.tone,
+        iconVisual: app.iconVisual,
         ariaLabel:
           id === 'recruiter'
             ? 'Open Recruiter Mode — guided professional overview'
@@ -1089,6 +1090,7 @@ export function Desktop() {
         'certifications',
       ],
       Icon: WINDOW_APPS.certifications.Icon,
+      iconVisual: WINDOW_APPS.certifications.iconVisual,
       action: () => openWindow('certifications'),
     }))
 
@@ -1449,7 +1451,7 @@ export function Desktop() {
 
         {/* Desktop icons */}
         {!isMobile ? (
-          <div className="desktop-icon-grid absolute right-7 top-11 gap-y-2 pr-1">
+          <div className="desktop-icon-grid absolute right-7 top-11">
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}

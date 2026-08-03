@@ -38,11 +38,13 @@ export type WindowId =
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
 export type AppTone = 'recruiter' | 'firewall'
+export type IconVisual = 'image'
 
 export type WindowApp = {
   id: WindowId
   title: string
   Icon: IconType
+  iconVisual?: IconVisual
   /** preferred window size on desktop */
   width: number
   height: number
@@ -63,6 +65,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'about',
     title: 'About Me',
     Icon: JackAboutImageIcon,
+    iconVisual: 'image',
     width: 560,
     height: 540,
     description: 'background and interests',
@@ -79,6 +82,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'certifications',
     title: 'Credentials',
     Icon: JackCredentialsImageIcon,
+    iconVisual: 'image',
     width: 520,
     height: 480,
     description: 'verified learning',
@@ -96,6 +100,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'resume',
     title: 'Resume',
     Icon: JackResumeImageIcon,
+    iconVisual: 'image',
     width: 560,
     height: 560,
     description: 'downloadable overview',
@@ -128,6 +133,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'guestbook',
     title: 'Guestbook',
     Icon: JackGuestbookImageIcon,
+    iconVisual: 'image',
     width: 760,
     height: 640,
     description: 'visitor log',
@@ -145,6 +151,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'roadmap',
     title: 'ROADMAP.EXE — System Deployment Track',
     Icon: JackRoadmapImageIcon,
+    iconVisual: 'image',
     width: 780,
     height: 620,
     description: 'professional goals',
@@ -161,6 +168,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     id: 'secrets',
     title: 'Secrets',
     Icon: JackSecretsImageIcon,
+    iconVisual: 'image',
     width: 500,
     height: 500,
     description: 'hidden files',
@@ -211,6 +219,7 @@ export type DesktopItem =
       id: WindowId
       label: string
       Icon: IconType
+      iconVisual?: IconVisual
       description?: string
       tone?: AppTone
     }
@@ -234,16 +243,52 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     tone: 'firewall',
   },
   { kind: 'window', id: 'timeline', label: 'Timeline', Icon: JackTimelineIcon },
-  { kind: 'window', id: 'guestbook', label: 'Guestbook', Icon: JackGuestbookImageIcon },
+  {
+    kind: 'window',
+    id: 'guestbook',
+    label: 'Guestbook',
+    Icon: JackGuestbookImageIcon,
+    iconVisual: 'image',
+  },
   { kind: 'window', id: 'projects', label: 'Projects', Icon: JackProjectsIcon },
-  { kind: 'window', id: 'certifications', label: 'Credentials', Icon: JackCredentialsImageIcon },
-  { kind: 'window', id: 'about', label: 'About Me', Icon: JackAboutImageIcon },
+  {
+    kind: 'window',
+    id: 'certifications',
+    label: 'Credentials',
+    Icon: JackCredentialsImageIcon,
+    iconVisual: 'image',
+  },
+  {
+    kind: 'window',
+    id: 'about',
+    label: 'About Me',
+    Icon: JackAboutImageIcon,
+    iconVisual: 'image',
+  },
   { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
-  { kind: 'window', id: 'resume', label: 'Resume', Icon: JackResumeImageIcon },
-  { kind: 'window', id: 'roadmap', label: 'Road Map', Icon: JackRoadmapImageIcon },
+  {
+    kind: 'window',
+    id: 'resume',
+    label: 'Resume',
+    Icon: JackResumeImageIcon,
+    iconVisual: 'image',
+  },
+  {
+    kind: 'window',
+    id: 'roadmap',
+    label: 'Road Map',
+    Icon: JackRoadmapImageIcon,
+    iconVisual: 'image',
+  },
   { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
   { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
-  { kind: 'window', id: 'secrets', label: 'Secrets', Icon: JackSecretsImageIcon },
+  {
+    kind: 'window',
+    id: 'secrets',
+    label: 'Secrets',
+    Icon: JackSecretsImageIcon,
+    iconVisual: 'image',
+  },
   { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
 ]

@@ -10,7 +10,7 @@ import {
   type SVGProps,
 } from 'react'
 import { cn } from '@/lib/utils'
-import type { AppTone } from './apps'
+import type { AppTone, IconVisual } from './apps'
 
 export type JackOsCommand = {
   id: string
@@ -20,6 +20,7 @@ export type JackOsCommand = {
   shortcut?: string
   disabled?: boolean
   tone?: AppTone
+  iconVisual?: IconVisual
   ariaLabel?: string
   Icon?: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
   action: () => void
@@ -234,7 +235,15 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                             : 'border-current bg-paper text-foreground',
                       )}
                     >
-                      {Icon ? <Icon className="size-4" /> : <span className="font-pixel text-[8px]">J</span>}
+                      {Icon ? (
+                        <Icon
+                          className={
+                            command.iconVisual === 'image' ? 'size-[22px]' : 'size-4'
+                          }
+                        />
+                      ) : (
+                        <span className="font-pixel text-[8px]">J</span>
+                      )}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-pixel text-[8px] leading-relaxed">

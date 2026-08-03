@@ -39,6 +39,32 @@ export function HomeContent({
         </p>
       </div>
 
+      <section className="os-border bg-card p-3">
+        <h3 className="font-pixel text-[9px] leading-relaxed text-foreground">
+          Recruiter Access
+        </h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onOpenSimpleMode}
+            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            View Simple Mode
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpen('recruiter')}
+            className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:bg-card focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Enter Recruiter Mode
+          </button>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
+          View a clean, conventional professional portfolio, or continue through the guided
+          recruiter experience.
+        </p>
+      </section>
+
       <p className="text-sm leading-relaxed text-foreground text-pretty">
         {
           "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, and building meaningful projects."
@@ -80,20 +106,6 @@ export function HomeContent({
           Quick Start
         </h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => onOpen('recruiter')}
-            className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Enter Recruiter Mode
-          </button>
-          <button
-            type="button"
-            onClick={onOpenSimpleMode}
-            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-          >
-            View Simple Mode
-          </button>
           {[
             ['firewall', 'Open Network Firewall'],
             ['timeline', 'Open Timeline'],

@@ -27,6 +27,7 @@ function createAppImageIcon(id: AppIconImageId, title: string) {
         width="24"
         height="24"
         preserveAspectRatio="xMidYMid meet"
+        style={{ imageRendering: 'pixelated' }}
       />
     </svg>
   )

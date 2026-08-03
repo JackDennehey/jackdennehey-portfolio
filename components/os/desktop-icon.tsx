@@ -18,6 +18,7 @@ export function DesktopIcon({
   const isRecruiter = item.kind === 'window' && item.id === 'recruiter'
   const isFirewall = item.kind === 'window' && item.id === 'firewall'
   const isFlagship = isRecruiter || isFirewall
+  const isImageIcon = item.kind === 'window' && item.iconVisual === 'image'
   const externalTone = item.kind === 'link' ? item.id : null
   const accessibleLabel = isRecruiter
     ? 'Recruiter Mode — guided professional overview'
@@ -54,11 +55,11 @@ export function DesktopIcon({
           iconFrameClassName,
         )}
       >
-        <Icon className="size-6" />
+        <Icon className={isImageIcon ? 'size-[42px]' : 'size-6'} />
       </span>
       <span
         className={cn(
-          'desktop-icon-label w-full text-center font-pixel text-[8px] leading-relaxed text-foreground [overflow-wrap:anywhere]',
+          'desktop-icon-label w-full text-center font-pixel text-[8px] leading-relaxed text-foreground',
           tone === 'recruiter' ? 'recruiter-icon-label' : null,
           tone === 'firewall' ? 'firewall-icon-label' : null,
           externalTone === 'github' ? 'github-icon-label' : null,
