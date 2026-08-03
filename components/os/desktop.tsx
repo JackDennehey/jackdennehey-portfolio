@@ -1,6 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react'
 import dynamic from 'next/dynamic'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
@@ -84,6 +92,10 @@ const RoadmapContent = dynamic(
   () => import('./content/roadmap-content').then((module) => module.RoadmapContent),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading Road Map..." /> },
 )
+const BlueOceanContent = dynamic(
+  () => import('./content/blue-ocean-content').then((module) => module.BlueOceanContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Keynote..." /> },
+)
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -112,6 +124,11 @@ const ACHIEVEMENT_NOTICE_DURATION_MS = 3200
 const INITIAL_WINDOW_CASCADE_STEP = 28
 const INITIAL_WINDOW_CASCADE_SLOTS = 5
 const AUTO_MAXIMIZED_WINDOW_IDS = new Set<WindowId>(['recruiter', 'firewall'])
+const DESKTOP_ICON_DEFAULT_ROWS = 7
+const DESKTOP_ICON_TOP_OFFSET = 44
+const DESKTOP_ICON_BOTTOM_PADDING = 28
+const DESKTOP_ICON_ROW_HEIGHT = 78
+const DESKTOP_ICON_ROW_GAP = 10
 
 function formatUptime(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600)
@@ -286,10 +303,26 @@ function isInteractiveAppId(id: WindowId): id is JackOsInteractiveAppId {
   return (JACK_OS_5B_APP_IDS as readonly string[]).includes(id)
 }
 
+function getDesktopIconRows(viewportHeight: number) {
+  const availableHeight = Math.max(
+    DESKTOP_ICON_ROW_HEIGHT,
+    viewportHeight - DESKTOP_ICON_TOP_OFFSET - DESKTOP_ICON_BOTTOM_PADDING,
+  )
+
+  return Math.max(
+    1,
+    Math.floor(
+      (availableHeight + DESKTOP_ICON_ROW_GAP) /
+        (DESKTOP_ICON_ROW_HEIGHT + DESKTOP_ICON_ROW_GAP),
+    ),
+  )
+}
+
 export function Desktop() {
   const [booted, setBooted] = useState(false)
   const [scanlines, setScanlines] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
+  const [desktopIconRows, setDesktopIconRows] = useState(DESKTOP_ICON_DEFAULT_ROWS)
   const [windows, setWindows] = useState<OpenWindow[]>([])
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
@@ -364,6 +397,23 @@ export function Desktop() {
     update()
     mq.addEventListener('change', update)
     return () => mq.removeEventListener('change', update)
+  }, [])
+
+  useEffect(() => {
+    const updateDesktopIconRows = () => {
+      setDesktopIconRows(
+        getDesktopIconRows(window.visualViewport?.height ?? window.innerHeight),
+      )
+    }
+
+    updateDesktopIconRows()
+    window.addEventListener('resize', updateDesktopIconRows)
+    window.visualViewport?.addEventListener('resize', updateDesktopIconRows)
+
+    return () => {
+      window.removeEventListener('resize', updateDesktopIconRows)
+      window.visualViewport?.removeEventListener('resize', updateDesktopIconRows)
+    }
   }, [])
 
   const focusWindow = useCallback((id: WindowId) => {
@@ -980,6 +1030,13 @@ export function Desktop() {
     () => desktopItems.filter((item) => !(item.kind === 'window' && item.id === 'assistant')),
     [desktopItems],
   )
+  const desktopIconGridStyle = useMemo(
+    () =>
+      ({
+        '--desktop-icon-rows': desktopIconRows,
+      }) as CSSProperties,
+    [desktopIconRows],
+  )
   const minimizedWindows = windows.filter((w) => w.status === 'minimized')
   const visibleWindows = windows.filter((w) => w.status !== 'minimized')
   const uptimeLabel = formatUptime(uptimeSeconds)
@@ -997,6 +1054,7 @@ export function Desktop() {
   const commandRegistry = useMemo<JackOsCommand[]>(() => {
     const appIds: WindowId[] = [
       'home',
+      'blue-ocean',
       'about',
       'projects',
       'certifications',
@@ -1013,6 +1071,7 @@ export function Desktop() {
     ]
     const appAliases: Partial<Record<WindowId, readonly string[]>> = {
       home: ['welcome', 'system', 'start'],
+      'blue-ocean': ['1984', 'blue ocean', 'keynote', 'presentation', 'retro computing'],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
       recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
@@ -1309,6 +1368,8 @@ export function Desktop() {
             achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
           />
         )
+      case 'blue-ocean':
+        return <BlueOceanContent active={active} />
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':
@@ -1451,7 +1512,10 @@ export function Desktop() {
 
         {/* Desktop icons */}
         {!isMobile ? (
-          <div className="desktop-icon-grid absolute right-7 top-11">
+          <div
+            className="desktop-icon-grid absolute right-7 top-11"
+            style={desktopIconGridStyle}
+          >
             {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}

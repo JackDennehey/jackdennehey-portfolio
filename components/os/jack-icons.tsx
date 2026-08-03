@@ -210,6 +210,18 @@ export function JackTimelineIcon(props: IconProps) {
   )
 }
 
+export function JackBlueOceanIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="4" y="5" width="16" height="12" />
+      <path d="M7 13c1.5-2 3-2 4.5 0s3 2 5.5 0" />
+      <path d="M7 9h3M13 9h4" />
+      <path d="M9 20h6M12 17v3" />
+      <path d="M6 4h12M6 18h12" />
+    </JackIcon>
+  )
+}
+
 export function JackGuestbookIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

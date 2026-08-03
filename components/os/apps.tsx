@@ -11,6 +11,7 @@ import {
 import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
   JackAssistantIcon,
+  JackBlueOceanIcon,
   JackFirewallIcon,
   JackMailIcon,
   JackProjectsIcon,
@@ -22,6 +23,7 @@ import {
 
 export type WindowId =
   | 'home'
+  | 'blue-ocean'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -60,6 +62,14 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 460,
     height: 480,
     description: 'first stops',
+  },
+  'blue-ocean': {
+    id: 'blue-ocean',
+    title: '1984 Blue Ocean',
+    Icon: JackBlueOceanIcon,
+    width: 920,
+    height: 660,
+    description: 'Jack OS keynote',
   },
   about: {
     id: 'about',
@@ -177,6 +187,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
 
 export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   home: 'home',
+  'blue-ocean': '1984-blue-ocean',
   about: 'about',
   projects: 'projects',
   certifications: 'credentials',
@@ -203,6 +214,8 @@ const WINDOW_IDS_BY_HASH = Object.entries(WINDOW_HASH_SLUGS).reduce(
 WINDOW_IDS_BY_HASH.assistant = 'assistant'
 WINDOW_IDS_BY_HASH['recruiter-mode'] = 'recruiter'
 WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
+WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
+WINDOW_IDS_BY_HASH['blue-ocean'] = 'blue-ocean'
 
 export function getWindowHash(id: WindowId) {
   return WINDOW_HASH_SLUGS[id]
@@ -226,6 +239,13 @@ export type DesktopItem =
   | { kind: 'link'; id: string; label: string; href: string; Icon: IconType }
 
 export const DESKTOP_ITEMS: DesktopItem[] = [
+  {
+    kind: 'window',
+    id: 'blue-ocean',
+    label: '1984 Blue Ocean',
+    Icon: JackBlueOceanIcon,
+    description: 'Jack OS keynote',
+  },
   {
     kind: 'window',
     id: 'recruiter',

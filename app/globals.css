@@ -328,15 +328,22 @@
   }
 
   .desktop-icon-grid {
+    --desktop-icon-row-height: 78px;
+    --desktop-icon-row-gap: 10px;
+    --desktop-icon-column-gap: 12px;
+
     width: max-content;
     max-width: calc(100vw - 15rem);
     display: grid;
     direction: rtl;
     grid-auto-columns: 96px;
     grid-auto-flow: column;
-    grid-template-rows: repeat(7, 76px);
-    column-gap: 0.75rem;
-    row-gap: 0.625rem;
+    grid-template-rows: repeat(
+      var(--desktop-icon-rows, 7),
+      var(--desktop-icon-row-height)
+    );
+    column-gap: var(--desktop-icon-column-gap);
+    row-gap: var(--desktop-icon-row-gap);
     justify-items: center;
     align-items: start;
     align-content: start;
@@ -345,19 +352,6 @@
 
   .desktop-icon-grid > * {
     direction: ltr;
-  }
-
-  @media (max-height: 700px) {
-    .desktop-icon-grid {
-      grid-template-rows: repeat(6, 72px);
-      row-gap: 0.5rem;
-    }
-  }
-
-  @media (min-height: 900px) {
-    .desktop-icon-grid {
-      grid-template-rows: repeat(8, 76px);
-    }
   }
 
   .desktop-icon-label {
@@ -781,6 +775,22 @@
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
+@keyframes keynote-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes keynote-slide {
+  0% { opacity: 0; transform: translateX(8px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes keynote-reveal {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes keynote-image {
+  0% { opacity: 0; filter: contrast(0.92); }
+  100% { opacity: 1; filter: contrast(1); }
+}
 
 .animate-boot-flicker { animation: boot-flicker 1.1s ease-out both; }
 .animate-crt-off { animation: crt-off 0.5s cubic-bezier(0.4, 0, 1, 1) forwards; }
@@ -796,6 +806,65 @@
 .animate-credential-reveal { animation: credential-reveal 0.18s ease-out both; }
 .animate-fade-in { animation: fade-in 0.5s ease-out both; }
 .blink { animation: blink 1s step-end infinite; }
+
+.keynote-canvas {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--secondary) 54%, transparent) 0,
+      transparent 38%
+    ),
+    var(--paper);
+}
+
+.keynote-cover,
+.keynote-stage {
+  min-height: 100%;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.keynote-cover {
+  display: grid;
+  place-items: center;
+}
+
+.keynote-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.keynote-stage-frame {
+  display: grid;
+  min-height: min(42vh, 360px);
+  align-content: center;
+  gap: 0.75rem;
+  border: 2px solid color-mix(in oklch, var(--border) 28%, transparent);
+  background: color-mix(in oklch, var(--card) 78%, transparent);
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.keynote-media-frame {
+  aspect-ratio: 16 / 9;
+  max-height: 38vh;
+  overflow: hidden;
+}
+
+.keynote-transition-fade {
+  animation: keynote-fade 0.18s ease-out both;
+}
+
+.keynote-transition-slide {
+  animation: keynote-slide 0.2s ease-out both;
+}
+
+.keynote-transition-reveal {
+  animation: keynote-reveal 0.2s ease-out both;
+}
+
+.keynote-transition-image {
+  animation: keynote-image 0.22s ease-out both;
+}
 
 button:not(:disabled):active,
 a:active {
@@ -956,6 +1025,10 @@ a:active {
   .animate-window-minimize,
   .animate-credential-reveal,
   .animate-fade-in,
+  .keynote-transition-fade,
+  .keynote-transition-slide,
+  .keynote-transition-reveal,
+  .keynote-transition-image,
   .achievement-notice,
   .first-visit-window,
   .firewall-packet,
