@@ -28,9 +28,15 @@ type Props = {
   seedPrompt: SeedPrompt
   onOpen: (id: WindowId) => void
   onCopyEmail: () => void
+  onQuestionAnswered: () => void
 }
 
-export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
+export function JdAssistantContent({
+  seedPrompt,
+  onOpen,
+  onCopyEmail,
+  onQuestionAnswered,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: 1,
@@ -72,6 +78,7 @@ export function JdAssistantContent({ seedPrompt, onOpen, onCopyEmail }: Props) {
     setLastIntent(response.intent)
     setInput('')
     setInputNotice('')
+    onQuestionAnswered()
     window.setTimeout(() => {
       submittingRef.current = false
     }, 0)
