@@ -13,7 +13,9 @@ const simpleDescription =
   'Professional overview of Jack Dennehey, a Penn State Brandywine Business student with a background in cybersecurity and networking and interests in cloud computing, artificial intelligence, and front-end development.'
 
 export const metadata: Metadata = {
-  title: 'Jack Dennehey | Business, Cybersecurity and Technology Portfolio',
+  title: {
+    absolute: 'Jack Dennehey | Business, Cybersecurity and Technology Portfolio',
+  },
   description: simpleDescription,
   alternates: {
     canonical: `${SITE_URL}/simple`,

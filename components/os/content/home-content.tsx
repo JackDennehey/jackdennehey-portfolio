@@ -9,6 +9,8 @@ export function HomeContent({
   soundEffectsEnabled,
   hourlyChimeEnabled,
   scanlines,
+  achievementCount,
+  achievementTotal,
 }: {
   onOpen: (id: WindowId) => void
   onAskAssistant: () => void
@@ -17,6 +19,8 @@ export function HomeContent({
   soundEffectsEnabled: boolean
   hourlyChimeEnabled: boolean
   scanlines: boolean
+  achievementCount: number
+  achievementTotal: number
 }) {
   return (
     <div className="space-y-5">
@@ -53,7 +57,13 @@ export function HomeContent({
           <dt>Edition</dt>
           <dd className="text-foreground">Portfolio</dd>
           <dt>Version</dt>
-          <dd className="text-foreground">V2</dd>
+          <dd className="text-foreground">V3A</dd>
+          <dt>Release</dt>
+          <dd className="text-foreground">Identity Update</dd>
+          <dt>Achievements</dt>
+          <dd className="text-foreground">
+            {achievementCount}/{achievementTotal}
+          </dd>
           <dt>Theme</dt>
           <dd className="capitalize text-foreground">{theme}</dd>
           <dt>Sound</dt>

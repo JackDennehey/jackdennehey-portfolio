@@ -40,7 +40,12 @@ import {
   getSecretDefinition,
   type SecretId,
 } from '@/lib/secrets'
-import { DEFAULT_WALLPAPER_ID, getWallpaperAsset, isHiddenWallpaper } from '@/lib/wallpapers'
+import {
+  CURRENT_WALLPAPERS,
+  DEFAULT_WALLPAPER_ID,
+  getWallpaperAsset,
+  isHiddenWallpaper,
+} from '@/lib/wallpapers'
 import { CONTACT, CREDENTIALS, PROJECTS } from '@/lib/portfolio-data'
 import {
   RECRUITER_SECTIONS,
@@ -1097,6 +1102,22 @@ export function Desktop() {
       action: () => selectRecruiterSection(section.id),
     }))
 
+    const wallpaperCommands = CURRENT_WALLPAPERS.map((wallpaper) => ({
+      id: `wallpaper-${wallpaper.id}`,
+      title: wallpaper.displayName,
+      subtitle: 'Wallpaper / open gallery',
+      keywords: [
+        wallpaper.displayName,
+        wallpaper.description,
+        wallpaper.id,
+        'wallpaper',
+        'personalize',
+        'background',
+      ],
+      Icon: WINDOW_APPS.wallpapers.Icon,
+      action: () => openWindow('wallpapers'),
+    }))
+
     const firewallHelpCommands = [
       'allow vs block',
       'inbound and outbound',
@@ -1133,7 +1154,22 @@ export function Desktop() {
       ...credentialCommands,
       ...recruiterSectionCommands,
       ...timelineEntryCommands,
+      ...wallpaperCommands,
       ...firewallHelpCommands,
+      {
+        id: 'return-to-jack-os',
+        title: 'Return to Jack OS Desktop',
+        subtitle: 'Focus desktop workspace',
+        keywords: ['return to jack os', 'desktop', 'home', 'workspace', 'back'],
+        action: focusDesktop,
+      },
+      {
+        id: 'view-achievements',
+        title: 'View Achievements',
+        subtitle: `${earnedAchievementIds.length}/${JACK_OS_ACHIEVEMENT_REGISTRY.length} unlocked`,
+        keywords: ['achievements', 'progress', 'trophies', 'completed', 'milestones'],
+        action: () => setAchievementsPanelOpen(true),
+      },
       {
         id: 'open-simple-mode',
         title: 'Open Simple Mode',
@@ -1235,6 +1271,8 @@ export function Desktop() {
     ]
   }, [
     copyEmailToClipboard,
+    earnedAchievementIds.length,
+    focusDesktop,
     isMobile,
     minimizedWindows.length,
     minimizeActiveWindow,
@@ -1265,6 +1303,8 @@ export function Desktop() {
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
             hourlyChimeEnabled={preferences.hourlyChime}
             scanlines={scanlines}
+            achievementCount={earnedAchievementIds.length}
+            achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
           />
         )
       case 'about':
@@ -1388,7 +1428,7 @@ export function Desktop() {
           aria-hidden
           className="pointer-events-none absolute bottom-4 left-4 max-w-xs font-pixel text-[9px] leading-relaxed text-muted-foreground/60"
         >
-          Jack OS V2.2
+          Jack OS V3A
           <br />
           {isMobile ? 'Tap an icon to open' : 'Double-click icons to open'}
         </p>

@@ -1,4 +1,6 @@
 import { PORTFOLIO_KNOWLEDGE } from './portfolio-knowledge'
+import { JACK_OS_ACHIEVEMENT_REGISTRY } from './achievements'
+import { ROADMAP_SECTIONS } from './roadmap-data'
 
 export type AssistantWindowTarget =
   | 'about'
@@ -9,6 +11,7 @@ export type AssistantWindowTarget =
   | 'timeline'
   | 'guestbook'
   | 'firewall'
+  | 'roadmap'
 
 export type AssistantAction =
   | { type: 'open'; label: string; target: AssistantWindowTarget }
@@ -38,6 +41,11 @@ export type AssistantIntent =
   | 'timeline'
   | 'guestbook'
   | 'firewall'
+  | 'roadmap'
+  | 'achievements'
+  | 'simple-mode'
+  | 'v3a'
+  | 'return-to-jack-os'
   | 'github'
   | 'linkedin'
   | 'contact'
@@ -79,6 +87,7 @@ export const JD_SUGGESTED_PROMPTS = [
   'What has Jack built?',
   'What credentials has Jack earned?',
   'What is Jack studying?',
+  'What is on the Road Map?',
   'Tell me about Jack OS.',
   'How can I contact Jack?',
 ] as const
@@ -106,6 +115,11 @@ export const JD_SUPPORTED_CATEGORIES: readonly AssistantIntent[] = [
   'timeline',
   'guestbook',
   'firewall',
+  'roadmap',
+  'achievements',
+  'simple-mode',
+  'v3a',
+  'return-to-jack-os',
   'github',
   'linkedin',
   'contact',
@@ -145,6 +159,11 @@ const OPEN_FIREWALL: AssistantAction = {
   type: 'open',
   label: 'Open Network Firewall',
   target: 'firewall',
+}
+const OPEN_ROADMAP: AssistantAction = {
+  type: 'open',
+  label: 'Open Road Map',
+  target: 'roadmap',
 }
 const COPY_EMAIL: AssistantAction = { type: 'copy-email', label: 'Copy Email' }
 const OPEN_GITHUB: AssistantAction = {
@@ -249,6 +268,42 @@ const INTENTS: readonly IntentDefinition[] = [
     phrases: ['what is the timeline', 'system history', 'milestones has jack reached'],
     keywords: { timeline: 8, history: 4, journey: 4, milestones: 6, reached: 3 },
     priority: 10,
+  },
+  {
+    intent: 'roadmap',
+    phrases: [
+      'what is on the road map',
+      'what is jack working toward',
+      'current goals',
+      'future direction',
+      'next steps',
+    ],
+    keywords: { roadmap: 8, road: 4, map: 4, goals: 5, plans: 5, direction: 4, working: 3 },
+    priority: 11,
+  },
+  {
+    intent: 'achievements',
+    phrases: ['what achievements can i earn', 'achievement list', 'progress milestones'],
+    keywords: { achievements: 8, achievement: 8, progress: 4, trophies: 5, unlocked: 4 },
+    priority: 10,
+  },
+  {
+    intent: 'simple-mode',
+    phrases: ['what is simple mode', 'simple portfolio', 'plain portfolio', 'professional view'],
+    keywords: { simple: 8, mode: 4, plain: 5, professional: 4, recruiter: 2 },
+    priority: 10,
+  },
+  {
+    intent: 'v3a',
+    phrases: ['what changed in jack os v3a', 'identity update', 'v3a update'],
+    keywords: { v3a: 9, identity: 6, update: 4, changed: 4, release: 4 },
+    priority: 12,
+  },
+  {
+    intent: 'return-to-jack-os',
+    phrases: ['return to jack os', 'go back to jack os', 'leave simple mode'],
+    keywords: { return: 7, back: 5, leave: 4, simple: 3, desktop: 3 },
+    priority: 11,
   },
   {
     intent: 'guestbook',
@@ -507,6 +562,19 @@ function uniqueTechnologies() {
   )
 }
 
+function roadmapSummary() {
+  return ROADMAP_SECTIONS.flatMap((section) =>
+    section.items.map((item) => `${item.title} (${item.status})`),
+  ).join('; ')
+}
+
+function publicAchievementTitles() {
+  return JACK_OS_ACHIEVEMENT_REGISTRY
+    .filter((achievement) => !achievement.secret)
+    .map((achievement) => achievement.title)
+    .join(', ')
+}
+
 function getResponse(intent: AssistantIntent): AssistantResponse {
   switch (intent) {
     case 'private-phone':
@@ -606,7 +674,14 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
         intent,
         content:
           'Next in the credential path, Azure AI Fundamentals is the active in-progress item and AWS Cloud Practitioner is planned. That sequence keeps Jack moving from cybersecurity and networking foundations toward cloud and AI literacy.',
-        actions: [OPEN_CREDENTIALS, OPEN_RECRUITER],
+        actions: [OPEN_ROADMAP, OPEN_CREDENTIALS, OPEN_RECRUITER],
+      }
+    case 'roadmap':
+      return {
+        intent,
+        content:
+          `The Road Map is Jack OS's central source for confirmed professional direction. It lists status labels rather than fabricated dates or percentages: ${roadmapSummary()}.`,
+        actions: [OPEN_ROADMAP, OPEN_CREDENTIALS, OPEN_PROJECTS, OPEN_TIMELINE],
       }
     case 'cybersecurity':
       return {
@@ -660,7 +735,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          `The primary project is Jack OS, this operating-system-inspired portfolio. Other listed work includes Azure AI Projects, Networking Labs, and planned Penn State Brandywine business projects.`,
+          'The primary project is Jack OS, this operating-system-inspired portfolio. Other listed work includes Azure AI Projects and Networking Labs. Longer-term goals now live in the Road Map rather than placeholder project cards.',
         actions: [OPEN_PROJECTS, OPEN_GITHUB],
       }
     case 'jack-os':
@@ -704,6 +779,34 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
         content:
           "The Network Firewall is a local simulation. It uses generated sample traffic to demonstrate packets, services, ports, allow/block/inspect decisions, rule priority, and plain-English packet explanations; it does not inspect visitor devices or show real IP addresses.",
         actions: [OPEN_FIREWALL],
+      }
+    case 'achievements':
+      return {
+        intent,
+        content:
+          `Achievements are local Jack OS milestones saved in this browser. Public milestones include ${publicAchievementTitles()}. Secret-related requirements stay hidden, and achievements do not affect app access or portfolio content.`,
+        actions: [OPEN_RECRUITER, OPEN_FIREWALL, OPEN_TIMELINE, OPEN_ROADMAP],
+      }
+    case 'simple-mode':
+      return {
+        intent,
+        content:
+          'Simple Mode is a conventional professional portfolio view for visitors who want a fast, readable overview without the retro desktop. It uses the same verified Jack OS portfolio data and is not a separate website.',
+        actions: [OPEN_RECRUITER, OPEN_PROJECTS, OPEN_CREDENTIALS, OPEN_CONTACT],
+      }
+    case 'v3a':
+      return {
+        intent,
+        content:
+          'Jack OS V3A is The Identity Update. It strengthens the product identity with custom application icons, Icons/Rain Forest/Coral Reef wallpapers, the Road Map app, visible Achievements, live Jack OS status details, updated browser branding, and Simple Mode.',
+        actions: [OPEN_ROADMAP, OPEN_TIMELINE, OPEN_RECRUITER],
+      }
+    case 'return-to-jack-os':
+      return {
+        intent,
+        content:
+          'From Simple Mode, use the persistent “Return to Jack OS V3A” control at the top right. Returning preserves local Jack OS preferences such as wallpaper, theme, achievements, and sound settings.',
+        actions: [OPEN_RECRUITER],
       }
     case 'github':
       return {

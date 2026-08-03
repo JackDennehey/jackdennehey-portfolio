@@ -106,6 +106,9 @@ const jackOsJsonLd = {
     'Network Firewall packet simulation',
     'Recruiter Mode guided professional overview',
     'Timeline of education, credentials, and projects',
+    'Road Map of confirmed professional goals',
+    'Local Jack OS achievement milestones',
+    'Simple Mode professional portfolio view',
     'Reviewed public Guestbook',
     'Interactive desktop portfolio interface',
   ],
@@ -159,6 +162,17 @@ function SeoContent() {
         <li>
           Timeline: a structured history of Jack&apos;s education, credentials, projects, and current
           learning path.
+        </li>
+        <li>
+          Road Map: a centralized view of confirmed current studies, planned cloud learning, and
+          professional direction without unsupported percentages or dates.
+        </li>
+        <li>
+          Achievements: local browser milestones for meaningful Jack OS interactions.
+        </li>
+        <li>
+          Simple Mode: a conventional professional portfolio view using the same verified content
+          as Jack OS.
         </li>
         <li>
           Guestbook: a reviewed visitor message system with moderation before public display.
