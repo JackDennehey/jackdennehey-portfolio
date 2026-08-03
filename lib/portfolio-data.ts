@@ -1,5 +1,5 @@
 export const CONTACT = {
-  email: 'jack@jackdennehey.com',
+  email: 'jackdennehey@gmail.com',
   github: 'https://github.com/JackDennehey',
   linkedin: 'https://www.linkedin.com/in/jackdennehey',
   domain: 'jackdennehey.com',
@@ -43,7 +43,7 @@ export const PROJECTS: Project[] = [
     title: 'Future Penn State Projects',
     status: 'Planned',
     description:
-      'Coursework and independent builds coming out of the Penn State business program — a space reserved for what comes next.',
+      'Coursework and independent builds coming out of the Penn State Brandywine business program — a space reserved for what comes next.',
     technologies: ['TBD'],
   },
 ]
@@ -111,7 +111,7 @@ export const CREDENTIALS: Credential[] = [
       {
         heading: 'Personal Context',
         body:
-          'This credential marks the transition from an early interest in technology into a structured academic and professional path. Jack is now continuing his education at Penn State while building broader knowledge across business and emerging technology.',
+          'This credential marks the transition from an early interest in technology into a structured academic and professional path. Jack is now continuing his education at Penn State Brandywine while building broader knowledge across business and emerging technology.',
       },
     ],
   },
@@ -226,16 +226,24 @@ export const SKILLS: { group: string; items: string[] }[] = [
   { group: 'Networking', items: ['TCP/IP', 'Subnetting', 'Cisco Packet Tracer'] },
   { group: 'Security', items: ['Cybersecurity Fundamentals', 'Network Security'] },
   { group: 'Technical', items: ['Python', 'TypeScript', 'Git', 'AI / ML Concepts'] },
+  { group: 'Interface', items: ['React', 'Front-end Development', 'Product Thinking'] },
   { group: 'Business', items: ['Analysis', 'Communication', 'Project Management'] },
 ]
 
 export const EDUCATION = [
   {
-    school: 'The Pennsylvania State University',
-    degree: 'B.S. in Business',
+    school: 'Penn State Brandywine',
+    degree: 'Business studies',
     period: 'Current',
     detail:
       'Studying business with a strong focus on technology, cloud computing, and cybersecurity.',
+  },
+  {
+    school: 'Delaware County Community College',
+    degree: 'Cyber Security Certificate of Competency',
+    period: 'Completed with Honors',
+    detail:
+      'Completed prior cybersecurity education that became the foundation for continued work in networking, cloud, and business technology.',
   },
 ]
 
@@ -254,6 +262,8 @@ export const INTERESTS = [
   'Networking',
   'Cloud Computing',
   'Artificial Intelligence',
+  'Front-end Development',
+  'Product and Interface Thinking',
   'Business',
   'Continuous Learning',
 ]

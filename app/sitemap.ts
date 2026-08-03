@@ -1,13 +1,14 @@
 import type { MetadataRoute } from 'next'
+import { SITE_LAST_UPDATED, SITE_URL } from '@/lib/site-metadata'
 
-const SITE_URL = 'https://jackdennehey.com'
+const LAST_UPDATED = new Date(SITE_LAST_UPDATED)
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: `${SITE_URL}/`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
+      lastModified: LAST_UPDATED,
+      changeFrequency: 'weekly',
       priority: 1,
     },
   ]

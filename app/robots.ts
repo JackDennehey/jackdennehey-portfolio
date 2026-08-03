@@ -1,13 +1,15 @@
 import type { MetadataRoute } from 'next'
-
-const SITE_URL = 'https://jackdennehey.com'
+import { SITE_URL } from '@/lib/site-metadata'
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/admin/', '/api/'],
+      },
+    ],
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   }

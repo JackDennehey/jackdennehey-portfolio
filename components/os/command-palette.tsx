@@ -10,6 +10,7 @@ import {
   type SVGProps,
 } from 'react'
 import { cn } from '@/lib/utils'
+import type { AppTone } from './apps'
 
 export type JackOsCommand = {
   id: string
@@ -18,6 +19,8 @@ export type JackOsCommand = {
   keywords?: readonly string[]
   shortcut?: string
   disabled?: boolean
+  tone?: AppTone
+  ariaLabel?: string
   Icon?: ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
   action: () => void
 }
@@ -211,6 +214,7 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                     disabled={command.disabled}
                     onMouseEnter={() => setSelectedIndex(index)}
                     onClick={() => activateCommand(command)}
+                    aria-label={command.ariaLabel ?? command.title}
                     className={cn(
                       'flex w-full min-w-0 items-center gap-2 px-2 py-2 text-left transition-colors focus-visible:outline-none',
                       selected
@@ -221,7 +225,14 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                   >
                     <span
                       aria-hidden
-                      className="grid size-7 shrink-0 place-items-center border-2 border-current bg-paper text-foreground"
+                      className={cn(
+                        'grid size-7 shrink-0 place-items-center border-2',
+                        command.tone === 'recruiter'
+                          ? 'recruiter-inline-icon'
+                          : command.tone === 'firewall'
+                            ? 'firewall-inline-icon'
+                            : 'border-current bg-paper text-foreground',
+                      )}
                     >
                       {Icon ? <Icon className="size-4" /> : <span className="font-pixel text-[8px]">J</span>}
                     </span>

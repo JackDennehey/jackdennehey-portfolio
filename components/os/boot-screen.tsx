@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { STARTUP_AUDIO_DURATION_MS } from './use-sound-effects'
 
 const STARTUP_COMPLETE_BUFFER_MS = 120
@@ -46,11 +46,11 @@ export function BootScreen({
     return () => cancelAnimationFrame(frame)
   }, [onDone, started])
 
-  const start = () => {
+  const start = useCallback(() => {
     if (started) return
     setStarted(true)
     onPowerOn()
-  }
+  }, [onPowerOn, started])
 
   const progress = Math.min(1, elapsed / STARTUP_AUDIO_DURATION_MS)
   const message = started ? getStartupMessage(progress) : 'Jack OS'
@@ -69,7 +69,7 @@ export function BootScreen({
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  })
+  }, [start, started])
 
   return (
     <div

@@ -119,7 +119,7 @@ const ABOUT_AREAS: AboutArea[] = [
       'Connecting technical capabilities to business needs',
     ],
     context:
-      "At Penn State, I'm building a broader business foundation while continuing to develop my technical interests. That combination reflects the direction I want my career to take: understanding both how technology works and why an organization should use it.",
+      "At Penn State Brandywine, I'm building a broader business foundation while continuing to develop my technical interests. That combination reflects the direction I want my career to take: understanding both how technology works and why an organization should use it.",
     action: {
       label: 'View Projects',
       target: 'projects',
@@ -171,11 +171,19 @@ export function AboutContent({ onOpen }: { onOpen: (id: WindowId) => void }) {
           {'// currently'}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-foreground text-pretty">
-          I&apos;m currently studying <strong className="font-semibold">Business at Penn State</strong>,
-          building on a cybersecurity education and a growing foundation in networking, cloud
-          computing, and artificial intelligence. I&apos;m most interested in the point where
-          technology stops being theoretical and starts solving real problems.
+          I&apos;m currently studying{' '}
+          <strong className="font-semibold">Business at Penn State Brandywine</strong>, building on
+          a cybersecurity education and a growing foundation in networking, cloud computing, and
+          artificial intelligence. I&apos;m most interested in the point where technology stops being
+          theoretical and starts solving real problems.
         </p>
+        <button
+          type="button"
+          onClick={() => onOpen('recruiter')}
+          className="os-border mt-3 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        >
+          Open Recruiter Mode
+        </button>
       </section>
 
       <section>

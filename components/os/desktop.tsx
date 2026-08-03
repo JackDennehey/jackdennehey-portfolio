@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import dynamic from 'next/dynamic'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { DesktopIcon } from './desktop-icon'
@@ -15,7 +16,9 @@ import {
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
+import { JdWidget } from './jd-widget'
 import { useDesktopPreferences } from './use-desktop-preferences'
+import { useHourlyChime } from './use-hourly-chime'
 import { WallpaperManager } from './wallpaper-manager'
 import { CommandPalette, type JackOsCommand } from './command-palette'
 import { HomeContent } from './content/home-content'
@@ -26,6 +29,8 @@ import { ResumeContent } from './content/resume-content'
 import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
+import { RecruiterModeContent } from './content/recruiter-mode-content'
+import { JdAssistantContent } from './content/jd-assistant-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
 import { MinimizedWindowStrip } from './minimized-window-strip'
@@ -35,6 +40,37 @@ import {
   type SecretId,
 } from '@/lib/secrets'
 import { DEFAULT_WALLPAPER_ID, getWallpaperAsset, isHiddenWallpaper } from '@/lib/wallpapers'
+import { CONTACT, CREDENTIALS, PROJECTS } from '@/lib/portfolio-data'
+import {
+  RECRUITER_SECTIONS,
+  isRecruiterSectionId,
+  type RecruiterSectionId,
+} from '@/lib/portfolio-knowledge'
+import {
+  ACHIEVEMENT_MESSAGES,
+  INTERACTIVE_APPS_OPENED_STORAGE_KEY,
+  JACK_OS_5B_APP_IDS,
+  parseStoredIds,
+  type JackOsAchievementId,
+  type JackOsInteractiveAppId,
+} from '@/lib/achievements'
+import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
+
+const TimelineContent = dynamic(
+  () => import('./content/timeline-content').then((module) => module.TimelineContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Timeline..." /> },
+)
+const GuestbookContent = dynamic(
+  () => import('./content/guestbook-content').then((module) => module.GuestbookContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Guestbook..." /> },
+)
+const NetworkFirewallContent = dynamic(
+  () =>
+    import('./content/network-firewall-content').then(
+      (module) => module.NetworkFirewallContent,
+    ),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Firewall..." /> },
+)
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -56,18 +92,68 @@ const DESKTOP_EDGE_PADDING = 8
 const MENU_BAR_HEIGHT = 32
 const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
+const DESKTOP_BOTTOM_SAFE_AREA = 72
 const MAXIMIZED_MARGIN = 8
+const COPY_CONFIRMATION_DURATION_MS = 2200
+const ACHIEVEMENT_NOTICE_DURATION_MS = 3200
+const INITIAL_WINDOW_CASCADE_STEP = 28
+const INITIAL_WINDOW_CASCADE_SLOTS = 5
+const AUTO_MAXIMIZED_WINDOW_IDS = new Set<WindowId>(['recruiter', 'firewall'])
 
-function clampWindowPosition(id: WindowId, x: number, y: number) {
+function LazyWindowLoading({ label }: { label: string }) {
+  return (
+    <div className="grid min-h-48 place-items-center os-border bg-secondary p-4">
+      <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+function getUsableDesktopBounds() {
+  if (typeof window === 'undefined') {
+    return { left: 8, top: 40, right: 720, bottom: 600, width: 712, height: 560 }
+  }
+
+  const left = DESKTOP_EDGE_PADDING
+  const top = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
+  const right = Math.max(left + 320, window.innerWidth - DESKTOP_EDGE_PADDING)
+  const bottom = Math.max(top + 260, window.innerHeight - DESKTOP_BOTTOM_SAFE_AREA)
+
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+  }
+}
+
+function clampWindowPosition(
+  id: WindowId,
+  x: number,
+  y: number,
+  options: {
+    width?: number
+    height?: number
+    fullyVisible?: boolean
+  } = {},
+) {
   if (typeof window === 'undefined') {
     return { x, y }
   }
 
   const app = WINDOW_APPS[id]
-  const minX = DESKTOP_EDGE_PADDING
-  const minY = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
-  const maxX = Math.max(minX, window.innerWidth - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, app.width))
-  const maxY = Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
+  const bounds = getUsableDesktopBounds()
+  const width = options.width ?? app.width
+  const height = options.height ?? app.height
+  const minX = bounds.left
+  const minY = bounds.top
+  const maxX = options.fullyVisible
+    ? Math.max(minX, bounds.right - width)
+    : Math.max(minX, bounds.right - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, width))
+  const maxY = options.fullyVisible
+    ? Math.max(minY, bounds.bottom - height)
+    : Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
 
   return {
     x: Math.min(Math.max(x, minX), maxX),
@@ -80,11 +166,16 @@ function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): WindowGeom
     return geometry
   }
 
-  const maxWidth = Math.max(280, window.innerWidth - DESKTOP_EDGE_PADDING * 2)
-  const maxHeight = Math.max(220, window.innerHeight - MENU_BAR_HEIGHT - 24)
+  const bounds = getUsableDesktopBounds()
+  const maxWidth = Math.max(280, bounds.width)
+  const maxHeight = Math.max(220, bounds.height)
   const width = Math.min(geometry.width, maxWidth)
   const height = Math.min(geometry.height, maxHeight)
-  const position = clampWindowPosition(id, geometry.x, geometry.y)
+  const position = clampWindowPosition(id, geometry.x, geometry.y, {
+    width,
+    height,
+    fullyVisible: true,
+  })
 
   return { ...position, width, height }
 }
@@ -109,25 +200,57 @@ function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
   }
 
   const app = WINDOW_APPS[id]
-  const baseX = Math.max(24, (window.innerWidth - app.width) / 2 - 80)
+  const bounds = getUsableDesktopBounds()
+  const width = Math.min(app.width, bounds.width)
+  const height = Math.min(app.height, bounds.height)
+  const cascadeIndex = count % INITIAL_WINDOW_CASCADE_SLOTS
+  const baseX = bounds.left + Math.max(0, (bounds.width - width) / 2)
+  const baseY = bounds.top + Math.max(0, (bounds.height - height) / 2)
+
   return clampWindowGeometry(id, {
-    x: baseX + count * 30,
-    y: 60 + count * 30,
-    width: app.width,
-    height: app.height,
+    x: baseX + cascadeIndex * INITIAL_WINDOW_CASCADE_STEP,
+    y: baseY + cascadeIndex * INITIAL_WINDOW_CASCADE_STEP,
+    width,
+    height,
   })
 }
 
-function syncWindowHash(id: WindowId) {
+function writeHashSlug(slug: string, mode: 'push' | 'replace' = 'push') {
   if (typeof window === 'undefined') return
 
-  const slug = getWindowHash(id)
   const nextUrl = `${window.location.pathname}${window.location.search}#${slug}`
   if (`${window.location.pathname}${window.location.search}${window.location.hash}` === nextUrl) {
     return
   }
 
-  window.history.replaceState(null, '', nextUrl)
+  if (mode === 'replace') {
+    window.history.replaceState(null, '', nextUrl)
+    return
+  }
+
+  window.history.pushState(null, '', nextUrl)
+}
+
+function syncWindowHash(id: WindowId, mode: 'push' | 'replace' = 'push') {
+  writeHashSlug(getWindowHash(id), mode)
+}
+
+function getRecruiterSectionFromHash(hash: string): RecruiterSectionId | null {
+  const slug = hash.replace(/^#/, '').trim().toLowerCase()
+  if (slug === 'recruiter') return 'overview'
+  if (!slug.startsWith('recruiter/')) return null
+
+  const sectionSlug = slug.replace(/^recruiter\//, '')
+  if (sectionSlug === 'skills-and-direction') return 'skills'
+  return isRecruiterSectionId(sectionSlug) ? sectionSlug : 'overview'
+}
+
+function getRecruiterHash(section: RecruiterSectionId) {
+  return section === 'overview' ? 'recruiter' : `recruiter/${section}`
+}
+
+function isInteractiveAppId(id: WindowId): id is JackOsInteractiveAppId {
+  return (JACK_OS_5B_APP_IDS as readonly string[]).includes(id)
 }
 
 export function Desktop() {
@@ -138,22 +261,40 @@ export function Desktop() {
   const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [recruiterSection, setRecruiterSection] = useState<RecruiterSectionId>('overview')
+  const [assistantSeedPrompt, setAssistantSeedPrompt] = useState<{
+    question: string
+    nonce: number
+  } | null>(null)
+  const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const [achievementNotice, setAchievementNotice] = useState<{
+    title: string
+    message: string
+  } | null>(null)
   const secretUnlocks = useSecretUnlocks()
-  const { preferences, updatePreferences, resetWallpaper } = useDesktopPreferences(
-    secretUnlocks.unlockedIds,
-    secretUnlocks.loaded,
-  )
+  const { preferences, preferencesLoaded, updatePreferences, resetWallpaper } =
+    useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
   const windowsRef = useRef<OpenWindow[]>([])
   const handledInitialHash = useRef(false)
   const windowOpenSequence = useRef(0)
+  const assistantPromptSequence = useRef(0)
+  const copyStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const achievementNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
 
   useEffect(() => {
     windowsRef.current = windows
   }, [windows])
+
+  useHourlyChime({
+    booted,
+    enabled: preferences.hourlyChime,
+    soundEffectsEnabled: soundEffects.soundEffectsEnabled,
+    playHourlyChime: soundEffects.playHourlyChime,
+  })
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -173,19 +314,68 @@ export function Desktop() {
     }, 0)
   }, [])
 
+  const showAchievement = useCallback(
+    (achievementId: JackOsAchievementId) => {
+      const newlyUnlocked = soundEffects.achievementUnlocked(achievementId)
+      if (!newlyUnlocked) return
+
+      if (achievementNoticeTimer.current) {
+        clearTimeout(achievementNoticeTimer.current)
+      }
+      setAchievementNotice(ACHIEVEMENT_MESSAGES[achievementId])
+      achievementNoticeTimer.current = setTimeout(() => {
+        setAchievementNotice(null)
+        achievementNoticeTimer.current = null
+      }, ACHIEVEMENT_NOTICE_DURATION_MS)
+    },
+    [soundEffects],
+  )
+
+  const recordInteractiveAppOpen = useCallback(
+    (id: WindowId) => {
+      if (!isInteractiveAppId(id) || typeof window === 'undefined') return
+
+      try {
+        const current = parseStoredIds(
+          window.localStorage.getItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY),
+          JACK_OS_5B_APP_IDS,
+        )
+        const next = current.includes(id) ? current : [...current, id]
+        window.localStorage.setItem(
+          INTERACTIVE_APPS_OPENED_STORAGE_KEY,
+          JSON.stringify(next),
+        )
+        if (JACK_OS_5B_APP_IDS.every((appId) => next.includes(appId))) {
+          showAchievement('interactive-update-explorer')
+        }
+      } catch {
+        // Achievement progress is nice-to-have and must never block app opening.
+      }
+    },
+    [showAchievement],
+  )
+
   const openWindow = useCallback(
     (id: string, options: OpenWindowOptions = {}) => {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
 
-      if (options.updateHash !== false) {
+      const existing = windowsRef.current.find((w) => w.id === windowId)
+      if (windowId === 'recruiter' && options.updateHash !== false) {
+        if (!existing) {
+          setRecruiterSection('overview')
+        }
+        writeHashSlug(getRecruiterHash(existing ? recruiterSection : 'overview'))
+      } else if (options.updateHash !== false) {
         syncWindowHash(windowId)
       }
 
-      const existing = windowsRef.current.find((w) => w.id === windowId)
       if (existing) {
         if (existing.status === 'minimized') {
-          const restoredStatus = existing.restoreStatus ?? 'open'
+          const restoredStatus: RestorableWindowStatus =
+            AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile
+              ? 'maximized'
+              : (existing.restoreStatus ?? 'open')
           const restoredGeometry =
             restoredStatus === 'maximized'
               ? getMaximizedGeometry()
@@ -197,17 +387,37 @@ export function Desktop() {
               : w,
           )
           setWindows(windowsRef.current)
+        } else if (
+          AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) &&
+          !isMobile &&
+          existing.status !== 'maximized'
+        ) {
+          const normal = {
+            x: existing.x,
+            y: existing.y,
+            width: existing.width,
+            height: existing.height,
+          }
+          const maximized = getMaximizedGeometry()
+          windowsRef.current = windowsRef.current.map((w) =>
+            w.id === windowId ? { ...w, ...maximized, normal, status: 'maximized' } : w,
+          )
+          setWindows(windowsRef.current)
         }
         focusWindow(windowId)
         return
       }
 
-      const geometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
+      const normalGeometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
+      const geometry =
+        AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile
+          ? getMaximizedGeometry()
+          : normalGeometry
       windowOpenSequence.current += 1
       const nextWindow: OpenWindow = {
         id: windowId,
         ...geometry,
-        normal: geometry,
+        normal: normalGeometry,
         status: 'opening',
       }
       windowsRef.current = [...windowsRef.current, nextWindow]
@@ -217,20 +427,33 @@ export function Desktop() {
       focusWindow(windowId)
       openTimers.current[windowId] = setTimeout(() => {
         windowsRef.current = windowsRef.current.map((w) =>
-          w.id === windowId && w.status === 'opening' ? { ...w, status: 'open' } : w,
+          w.id === windowId && w.status === 'opening'
+            ? {
+                ...w,
+                status:
+                  AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile ? 'maximized' : 'open',
+              }
+            : w,
         )
         setWindows((prev) =>
           prev.map((w) =>
-            w.id === windowId && w.status === 'opening' ? { ...w, status: 'open' } : w,
+            w.id === windowId && w.status === 'opening'
+              ? {
+                  ...w,
+                  status:
+                    AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile ? 'maximized' : 'open',
+                }
+              : w,
           ),
         )
         delete openTimers.current[windowId]
       }, WINDOW_OPEN_DURATION_MS)
       if (options.playSound !== false) {
         soundEffects.appOpen()
+        recordInteractiveAppOpen(windowId)
       }
     },
-    [focusWindow, soundEffects],
+    [focusWindow, isMobile, recruiterSection, recordInteractiveAppOpen, soundEffects],
   )
 
   const closeWindow = useCallback((id: WindowId) => {
@@ -266,7 +489,10 @@ export function Desktop() {
       return
     }
 
-    const position = clampWindowPosition(id, x, y)
+    const position = clampWindowPosition(id, x, y, {
+      width: target.width,
+      height: target.height,
+    })
     windowsRef.current = windowsRef.current.map((w) =>
       w.id === id ? { ...w, ...position, normal: { ...w.normal, ...position } } : w,
     )
@@ -380,6 +606,52 @@ export function Desktop() {
     openWindow('secrets')
   }, [openWindow])
 
+  const selectRecruiterSection = useCallback(
+    (section: RecruiterSectionId) => {
+      setRecruiterSection(section)
+      writeHashSlug(getRecruiterHash(section))
+      openWindow('recruiter', { playSound: false, updateHash: false })
+    },
+    [openWindow],
+  )
+
+  const openAssistant = useCallback(
+    (question?: string) => {
+      if (question) {
+        assistantPromptSequence.current += 1
+        setAssistantSeedPrompt({
+          question,
+          nonce: assistantPromptSequence.current,
+        })
+      }
+      openWindow('assistant')
+    },
+    [openWindow],
+  )
+
+  const showCopyStatus = useCallback((message: string) => {
+    if (copyStatusTimer.current) {
+      clearTimeout(copyStatusTimer.current)
+    }
+    setCopyStatus(message)
+    copyStatusTimer.current = setTimeout(() => {
+      setCopyStatus(null)
+      copyStatusTimer.current = null
+    }, COPY_CONFIRMATION_DURATION_MS)
+  }, [])
+
+  const copyEmailToClipboard = useCallback(async () => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard unavailable')
+      }
+      await navigator.clipboard.writeText(CONTACT.email)
+      showCopyStatus('Email copied')
+    } catch {
+      showCopyStatus(`Email: ${CONTACT.email}`)
+    }
+  }, [showCopyStatus])
+
   const unlockSecret = useCallback(
     (id: SecretId) => {
       const result = secretUnlocks.unlock(id)
@@ -440,23 +712,45 @@ export function Desktop() {
   }, [booted, openCommandPalette])
 
   useEffect(() => {
-    if (!booted || handledInitialHash.current) return
+    if (!booted || !preferencesLoaded || handledInitialHash.current) return
 
     handledInitialHash.current = true
+    const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
+    if (recruiterHashSection) {
+      setRecruiterSection(recruiterHashSection)
+      openWindow('recruiter', { playSound: false, updateHash: false })
+      return
+    }
+
     const hashWindow = getWindowIdFromHash(window.location.hash)
     if (hashWindow) {
       openWindow(hashWindow, { playSound: false, updateHash: false })
       return
     }
 
-    if (!isMobile && windowsRef.current.length === 0) {
+    if (!isMobile && windowsRef.current.length === 0 && !preferences.hasSeenFirstVisit) {
       openWindow('home', { playSound: false, updateHash: false })
+      updatePreferences({ hasSeenFirstVisit: true })
     }
-  }, [booted, isMobile, openWindow])
+  }, [
+    booted,
+    isMobile,
+    openWindow,
+    preferences.hasSeenFirstVisit,
+    preferencesLoaded,
+    updatePreferences,
+  ])
 
   useEffect(() => {
     const onHashChange = () => {
       if (!booted) return
+
+      const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
+      if (recruiterHashSection) {
+        setRecruiterSection(recruiterHashSection)
+        openWindow('recruiter', { playSound: false, updateHash: false })
+        return
+      }
 
       const hashWindow = getWindowIdFromHash(window.location.hash)
       if (hashWindow) {
@@ -465,7 +759,11 @@ export function Desktop() {
     }
 
     window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
+    window.addEventListener('popstate', onHashChange)
+    return () => {
+      window.removeEventListener('hashchange', onHashChange)
+      window.removeEventListener('popstate', onHashChange)
+    }
   }, [booted, openWindow])
 
   useEffect(() => {
@@ -525,6 +823,12 @@ export function Desktop() {
           clearTimeout(timer)
         }
       })
+      if (copyStatusTimer.current) {
+        clearTimeout(copyStatusTimer.current)
+      }
+      if (achievementNoticeTimer.current) {
+        clearTimeout(achievementNoticeTimer.current)
+      }
     }
   }, [])
 
@@ -546,8 +850,16 @@ export function Desktop() {
 
   const topId = order[order.length - 1]
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
+  const desktopIconItems = useMemo(
+    () => desktopItems.filter((item) => !(item.kind === 'window' && item.id === 'assistant')),
+    [desktopItems],
+  )
   const minimizedWindows = windows.filter((w) => w.status === 'minimized')
   const visibleWindows = windows.filter((w) => w.status !== 'minimized')
+  const recruiterVisible = windows.some(
+    (w) => w.id === 'recruiter' && w.status !== 'minimized',
+  )
+  const effectiveScanlines = scanlines && !recruiterVisible
 
   const minimizeActiveWindow = useCallback(() => {
     if (topId) {
@@ -561,8 +873,13 @@ export function Desktop() {
       'about',
       'projects',
       'certifications',
+      'recruiter',
       'resume',
       'contact',
+      'assistant',
+      'timeline',
+      'guestbook',
+      'firewall',
       'wallpapers',
       'secrets',
     ]
@@ -570,6 +887,21 @@ export function Desktop() {
       home: ['welcome', 'system', 'start'],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
+      recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
+      assistant: ['jd', 'portfolio assistant', 'ask'],
+      timeline: ['history', 'journey', 'milestones', 'education history', 'system history'],
+      guestbook: ['visitor log', 'sign', 'message', 'comments'],
+      firewall: [
+        'network',
+        'packets',
+        'security',
+        'ports',
+        'traffic',
+        'simulation',
+        'packet inspector',
+        'beginner guide',
+        'firewall certified',
+      ],
       wallpapers: ['personalize', 'background', 'desktop'],
       secrets: ['hidden', 'files', 'manual'],
     }
@@ -579,12 +911,85 @@ export function Desktop() {
       return {
         id: `open-${id}`,
         title: id === 'home' ? 'Open Welcome' : `Open ${app.title}`,
-        subtitle: 'Application',
+        subtitle: app.description ? `Application / ${app.description}` : 'Application',
         keywords: [app.title, id, ...(appAliases[id] ?? [])],
         Icon: app.Icon,
+        tone: app.tone,
+        ariaLabel:
+          id === 'recruiter'
+            ? 'Open Recruiter Mode — guided professional overview'
+            : undefined,
         action: () => openWindow(id),
       }
     })
+
+    const timelineEntryCommands = TIMELINE_ENTRIES.map((entry) => ({
+      id: `timeline-${entry.id}`,
+      title: entry.title,
+      subtitle: `Timeline / ${entry.category}`,
+      keywords: [entry.title, entry.summary, entry.category, 'timeline', 'history', 'milestone'],
+      Icon: WINDOW_APPS.timeline.Icon,
+      action: () => openWindow('timeline'),
+    }))
+
+    const projectCommands = PROJECTS.map((project) => ({
+      id: `project-${project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      title: project.title,
+      subtitle: project.status ? `Project / ${project.status}` : 'Project',
+      keywords: [
+        project.title,
+        project.description,
+        project.status ?? '',
+        ...project.technologies,
+        'projects',
+      ],
+      Icon: WINDOW_APPS.projects.Icon,
+      action: () => openWindow('projects'),
+    }))
+
+    const credentialCommands = CREDENTIALS.map((credential) => ({
+      id: `credential-${credential.id}`,
+      title: credential.title,
+      subtitle: `${credential.issuer} / ${credential.status}`,
+      keywords: [
+        credential.title,
+        credential.issuer,
+        credential.status,
+        credential.summary,
+        'credentials',
+        'certifications',
+      ],
+      Icon: WINDOW_APPS.certifications.Icon,
+      action: () => openWindow('certifications'),
+    }))
+
+    const recruiterSectionCommands = RECRUITER_SECTIONS.map((section) => ({
+      id: `recruiter-section-${section.id}`,
+      title: `Recruiter: ${section.label}`,
+      subtitle: 'Guided overview section',
+      keywords: ['recruiter', 'overview', section.label, section.id],
+      Icon: WINDOW_APPS.recruiter.Icon,
+      tone: WINDOW_APPS.recruiter.tone,
+      action: () => selectRecruiterSection(section.id),
+    }))
+
+    const firewallHelpCommands = [
+      'allow vs block',
+      'inbound and outbound',
+      'ports and protocols',
+      'rule priority',
+      'sample network traffic',
+      'beginner guide',
+      'packet inspector',
+      'firewall certified',
+    ].map((topic) => ({
+      id: `firewall-help-${topic.replace(/\s+/g, '-')}`,
+      title: `Firewall Help: ${topic}`,
+      subtitle: 'Network Firewall',
+      keywords: [topic, 'firewall', 'network', 'security', 'traffic'],
+      Icon: WINDOW_APPS.firewall.Icon,
+      action: () => openWindow('firewall'),
+    }))
 
     const unlockedSecretCommands = secretUnlocks.unlockedIds
       .map((secretId) => getSecretDefinition(secretId))
@@ -600,6 +1005,43 @@ export function Desktop() {
 
     return [
       ...appCommands,
+      ...projectCommands,
+      ...credentialCommands,
+      ...recruiterSectionCommands,
+      ...timelineEntryCommands,
+      ...firewallHelpCommands,
+      {
+        id: 'ask-jd',
+        title: 'Ask J.D.',
+        subtitle: 'Portfolio Assistant',
+        keywords: ['assistant', 'jd', 'question', 'ask'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant(),
+      },
+      {
+        id: 'ask-jd-projects',
+        title: 'Ask about projects',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['projects', 'jack os', 'built', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What has Jack built?'),
+      },
+      {
+        id: 'ask-jd-credentials',
+        title: 'Ask about credentials',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['credentials', 'certifications', 'earned', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What credentials has Jack earned?'),
+      },
+      {
+        id: 'copy-email',
+        title: 'Copy Email',
+        subtitle: CONTACT.email,
+        keywords: ['email', 'contact', 'copy', 'gmail'],
+        Icon: WINDOW_APPS.contact.Icon,
+        action: copyEmailToClipboard,
+      },
       {
         id: 'toggle-theme',
         title: 'Toggle Light/Dark Theme',
@@ -621,6 +1063,13 @@ export function Desktop() {
         keywords: ['sound', 'audio', 'effects'],
         action: () =>
           soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled),
+      },
+      {
+        id: 'toggle-hourly-chime',
+        title: 'Toggle Hourly Chime',
+        subtitle: preferences.hourlyChime ? 'Currently On' : 'Currently Off',
+        keywords: ['hourly', 'chime', 'clock', 'ambience'],
+        action: () => updatePreferences({ hourlyChime: !preferences.hourlyChime }),
       },
       {
         id: 'open-wallpapers-system',
@@ -652,27 +1101,34 @@ export function Desktop() {
       ...unlockedSecretCommands,
     ]
   }, [
+    copyEmailToClipboard,
     isMobile,
     minimizedWindows.length,
     minimizeActiveWindow,
+    openAssistant,
     openWindow,
+    preferences.hourlyChime,
     restoreAllMinimized,
     scanlines,
+    selectRecruiterSection,
     secretUnlocks.unlockedIds,
     soundEffects,
     theme,
     toggleTheme,
     topId,
+    updatePreferences,
   ])
 
-  const renderContent = (id: WindowId) => {
+  const renderContent = (id: WindowId, active = true) => {
     switch (id) {
       case 'home':
         return (
           <HomeContent
             onOpen={openWindow}
+            onAskAssistant={() => openAssistant()}
             theme={theme}
             soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+            hourlyChimeEnabled={preferences.hourlyChime}
             scanlines={scanlines}
           />
         )
@@ -682,10 +1138,39 @@ export function Desktop() {
         return <ProjectsContent />
       case 'certifications':
         return <CertificationsContent />
+      case 'recruiter':
+        return (
+          <RecruiterModeContent
+            activeSection={recruiterSection}
+            onSectionChange={selectRecruiterSection}
+            onOpen={openWindow}
+            onCopyEmail={copyEmailToClipboard}
+            onAskAssistant={() => openAssistant()}
+          />
+        )
       case 'resume':
         return <ResumeContent />
       case 'contact':
-        return <ContactContent />
+        return <ContactContent onCopyEmail={copyEmailToClipboard} />
+      case 'assistant':
+        return (
+          <JdAssistantContent
+            seedPrompt={assistantSeedPrompt}
+            onOpen={openWindow}
+            onCopyEmail={copyEmailToClipboard}
+          />
+        )
+      case 'timeline':
+        return <TimelineContent onOpen={openWindow} />
+      case 'guestbook':
+        return <GuestbookContent onSigned={soundEffects.guestbookSign} />
+      case 'firewall':
+        return (
+          <NetworkFirewallContent
+            active={active}
+            onAchievement={showAchievement}
+          />
+        )
       case 'wallpapers':
         return (
           <WallpapersContent
@@ -712,7 +1197,7 @@ export function Desktop() {
   }
 
   return (
-    <div className={scanlines ? 'scanlines' : undefined}>
+    <div className={effectiveScanlines ? 'scanlines' : undefined}>
       {!booted ? (
         <BootScreen
           onPowerOn={soundEffects.playStartup}
@@ -753,11 +1238,11 @@ export function Desktop() {
         >
           Jack OS v1.0
           <br />
-          {isMobile ? 'Tap an icon to open' : 'Double-click an icon to open'}
+          {isMobile ? 'Tap an icon to open' : 'Double-click icons to open'}
         </p>
 
         {/* Desktop widgets */}
-        {!isMobile && booted && (preferences.showClock || preferences.showCalendar) ? (
+        {!isMobile && booted ? (
           <div
             data-desktop-interactive="true"
             className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
@@ -766,13 +1251,14 @@ export function Desktop() {
             {preferences.showCalendar ? (
               <DesktopCalendar onOpenCalendar={() => undefined} />
             ) : null}
+            <JdWidget onOpen={() => openAssistant()} />
           </div>
         ) : null}
 
         {/* Desktop icons (right rail) */}
         {!isMobile ? (
-          <div className="absolute right-3 top-11 flex flex-col items-end gap-3">
-            {desktopItems.map((item) => (
+          <div className="desktop-icon-grid absolute right-3 top-11 gap-x-2 gap-y-2 pr-1">
+            {desktopIconItems.map((item) => (
               <DesktopIcon
                 key={item.id}
                 item={item}
@@ -838,7 +1324,7 @@ export function Desktop() {
               onMaximize={() => maximizeWindow(w.id)}
               onMove={(x, y) => moveWindow(w.id, x, y)}
             >
-              {renderContent(w.id)}
+              {renderContent(w.id, w.status !== 'minimized' && w.status !== 'closing')}
             </OsWindow>
           )
         })}
@@ -876,6 +1362,33 @@ export function Desktop() {
           commands={commandRegistry}
           onClose={closeCommandPalette}
         />
+
+        {copyStatus ? (
+          <div
+            role="status"
+            aria-live="polite"
+            data-desktop-interactive="true"
+            className="fixed bottom-16 right-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground os-shadow"
+          >
+            {copyStatus}
+          </div>
+        ) : null}
+
+        {achievementNotice ? (
+          <div
+            role="status"
+            aria-live="polite"
+            data-desktop-interactive="true"
+            className="achievement-notice fixed bottom-16 left-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 text-foreground os-shadow"
+          >
+            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              {achievementNotice.title}
+            </p>
+            <p className="font-pixel text-[10px] leading-relaxed text-foreground">
+              {achievementNotice.message}
+            </p>
+          </div>
+        ) : null}
       </WallpaperManager>
     </div>
   )

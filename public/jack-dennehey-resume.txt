@@ -1,6 +1,6 @@
 JACK DENNEHEY
-Business Student — The Pennsylvania State University
-jack@jackdennehey.com  |  github.com/jackdennehey  |  linkedin.com/in/jackdennehey
+Business Student — Penn State Brandywine
+jackdennehey@gmail.com  |  github.com/jackdennehey  |  linkedin.com/in/jackdennehey
 jackdennehey.com
 
 ------------------------------------------------------------
@@ -13,9 +13,12 @@ meaningful projects and earning industry certifications.
 ------------------------------------------------------------
 EDUCATION
 ------------------------------------------------------------
-The Pennsylvania State University — B.S. in Business (Current)
+Penn State Brandywine — Business studies (Current)
 Studying business with a strong focus on technology, cloud computing,
 and cybersecurity.
+
+Delaware County Community College — Cyber Security Certificate of Competency
+Completed with Honors.
 
 ------------------------------------------------------------
 SKILLS
@@ -24,11 +27,13 @@ Cloud:      Microsoft Azure, AWS (learning), Cloud Fundamentals
 Networking: TCP/IP, Subnetting, Cisco Packet Tracer
 Security:   Cybersecurity Fundamentals, Network Security
 Technical:  Python, TypeScript, Git, AI / ML Concepts
+Interface:  React, Front-end Development, Product Thinking
 Business:   Analysis, Communication, Project Management
 
 ------------------------------------------------------------
 CERTIFICATIONS
 ------------------------------------------------------------
+- Cyber Security Certificate of Competency with Honors (Completed)
 - Cisco Networking Basics (Completed)
 - Microsoft Azure AI Fundamentals (In Progress)
 - AWS Cloud Practitioner (Planned)

@@ -2,8 +2,12 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Press_Start_2P } from 'next/font/google'
 import {
+  SITE_AUTHOR,
   SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_NAME,
   SITE_OG_ALT,
+  SITE_OG_TITLE,
   SITE_TITLE,
   SITE_URL,
 } from '@/lib/site-metadata'
@@ -36,25 +40,15 @@ export const metadata: Metadata = {
     template: '%s | Jack Dennehey',
   },
   description: SITE_DESCRIPTION,
-  keywords: [
-    'Jack Dennehey',
-    'cybersecurity portfolio',
-    'Penn State business student',
-    'networking',
-    'Cisco Networking Academy',
-    'cloud computing',
-    'Microsoft Azure AI',
-    'artificial intelligence',
-    'technology portfolio',
-    'Jack OS',
-    'Delaware County Community College',
-    'cybersecurity certificate',
-  ],
-  authors: [{ name: 'Jack Dennehey' }],
-  creator: 'Jack Dennehey',
-  publisher: 'Jack Dennehey',
+  keywords: SITE_KEYWORDS,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_AUTHOR, url: SITE_URL }],
+  creator: SITE_AUTHOR,
+  publisher: SITE_AUTHOR,
+  category: 'technology',
+  classification: 'Portfolio',
   alternates: {
-    canonical: 'https://jackdennehey.com/',
+    canonical: `${SITE_URL}/`,
   },
   robots: {
     index: true,
@@ -69,16 +63,16 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    url: 'https://jackdennehey.com/',
-    title: SITE_TITLE,
+    url: `${SITE_URL}/`,
+    title: SITE_OG_TITLE,
     description: SITE_DESCRIPTION,
-    siteName: 'Jack OS',
+    siteName: SITE_NAME,
     locale: 'en_US',
     images: [socialImage],
   },
   twitter: {
     card: 'summary_large_image',
-    title: SITE_TITLE,
+    title: SITE_OG_TITLE,
     description: SITE_DESCRIPTION,
     images: [socialImage],
   },
@@ -86,12 +80,29 @@ export const metadata: Metadata = {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' },
+      {
+        url: '/icon-dark-32x32.png',
+        sizes: '32x32',
+        type: 'image/png',
+        media: '(prefers-color-scheme: dark)',
+      },
     ],
     shortcut: [{ url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png' }],
     apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   manifest: '/manifest.webmanifest',
-  generator: 'v0.app',
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: 'default',
+  },
+  formatDetection: {
+    address: false,
+    email: false,
+    telephone: false,
+  },
+  referrer: 'strict-origin-when-cross-origin',
+  generator: 'Next.js',
 }
 
 export const viewport: Viewport = {

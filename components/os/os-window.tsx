@@ -142,6 +142,7 @@ export function OsWindow({
       aria-label={app.title}
       aria-modal={isMobile}
       aria-hidden={!isMobile && status === 'minimized'}
+      data-window-id={app.id}
       data-window-status={status}
       data-window-focused={focused ? 'true' : 'false'}
       style={isMobile ? mobileStyle : desktopStyle}
@@ -192,7 +193,23 @@ export function OsWindow({
             />
           ) : null}
           <div className="flex min-w-0 max-w-full items-center gap-1.5 px-2">
-            <app.Icon aria-hidden className="size-3.5 shrink-0" />
+            {app.tone === 'recruiter' ? (
+              <span
+                aria-hidden
+                className="recruiter-inline-icon grid size-4 shrink-0 place-items-center border"
+              >
+                <app.Icon className="size-3" />
+              </span>
+            ) : app.tone === 'firewall' ? (
+              <span
+                aria-hidden
+                className="firewall-inline-icon grid size-4 shrink-0 place-items-center border"
+              >
+                <app.Icon className="size-3" />
+              </span>
+            ) : (
+              <app.Icon aria-hidden className="size-3.5 shrink-0" />
+            )}
             <h2 className="truncate font-pixel text-[9px] leading-none sm:text-[10px]">
               {app.title}
             </h2>
@@ -244,7 +261,10 @@ export function OsWindow({
       </header>
 
       {/* Body */}
-      <div className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5">
+      <div
+        data-window-body-id={app.id}
+        className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5"
+      >
         {children}
       </div>
     </section>

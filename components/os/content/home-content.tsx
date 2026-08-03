@@ -1,14 +1,19 @@
 import type { InterfaceTheme } from '@/lib/interface-theme'
+import type { WindowId } from '../apps'
 
 export function HomeContent({
   onOpen,
+  onAskAssistant,
   theme,
   soundEffectsEnabled,
+  hourlyChimeEnabled,
   scanlines,
 }: {
-  onOpen: (id: string) => void
+  onOpen: (id: WindowId) => void
+  onAskAssistant: () => void
   theme: InterfaceTheme
   soundEffectsEnabled: boolean
+  hourlyChimeEnabled: boolean
   scanlines: boolean
 }) {
   return (
@@ -24,7 +29,7 @@ export function HomeContent({
           Jack Dennehey
         </p>
         <p className="mt-1 text-sm font-medium text-muted-foreground">
-          Business Student at Penn State
+          Business Student at Penn State Brandywine
         </p>
       </div>
 
@@ -46,32 +51,59 @@ export function HomeContent({
           <dt>Edition</dt>
           <dd className="text-foreground">Portfolio</dd>
           <dt>Version</dt>
-          <dd className="text-foreground">3.3</dd>
+          <dd className="text-foreground">V2</dd>
           <dt>Theme</dt>
           <dd className="capitalize text-foreground">{theme}</dd>
           <dt>Sound</dt>
           <dd className="text-foreground">{soundEffectsEnabled ? 'On' : 'Off'}</dd>
+          <dt>Hourly Chime</dt>
+          <dd className="text-foreground">{hourlyChimeEnabled ? 'On' : 'Off'}</dd>
           <dt>CRT Lines</dt>
           <dd className="text-foreground">{scanlines ? 'On' : 'Off'}</dd>
         </dl>
       </section>
 
-      <div className="flex flex-wrap gap-2 pt-1">
-        {[
-          ['about', 'About Me'],
-          ['projects', 'Projects'],
-          ['resume', 'Resume'],
-        ].map(([id, label]) => (
+      <section className="os-border bg-card p-3">
+        <h3 className="font-pixel text-[9px] leading-relaxed text-foreground">
+          Quick Start
+        </h3>
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
-            key={id}
             type="button"
-            onClick={() => onOpen(id)}
+            onClick={() => onOpen('recruiter')}
+            className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Enter Recruiter Mode
+          </button>
+          {[
+            ['firewall', 'Open Network Firewall'],
+            ['timeline', 'Open Timeline'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onOpen(id as WindowId)}
+              className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={onAskAssistant}
             className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
-            {`Open ${label}`}
+            Ask J.D.
           </button>
-        ))}
-      </div>
+          <button
+            type="button"
+            onClick={() => onOpen('projects')}
+            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            Open Projects
+          </button>
+        </div>
+      </section>
     </div>
   )
 }

@@ -35,6 +35,7 @@ export function useDesktopPreferences(
   const [preferences, setPreferencesState] = useState<DesktopPreferences>(
     DEFAULT_DESKTOP_PREFERENCES,
   )
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false)
   const preferencesRef = useRef(preferences)
   const loadedStoredPreferences = useRef(false)
 
@@ -49,6 +50,7 @@ export function useDesktopPreferences(
     loadedStoredPreferences.current = true
     preferencesRef.current = storedPreferences
     setPreferencesState(storedPreferences)
+    setPreferencesLoaded(true)
   }, [unlockedSecretIds, unlocksLoaded])
 
   const updatePreferences = useCallback((patch: Partial<DesktopPreferences>) => {
@@ -72,9 +74,16 @@ export function useDesktopPreferences(
 
   const resetPreferences = useCallback(() => {
     setPreferencesState(DEFAULT_DESKTOP_PREFERENCES)
+    setPreferencesLoaded(true)
     preferencesRef.current = DEFAULT_DESKTOP_PREFERENCES
     writeStoredPreferences(DEFAULT_DESKTOP_PREFERENCES)
   }, [])
 
-  return { preferences, updatePreferences, resetWallpaper, resetPreferences }
+  return {
+    preferences,
+    preferencesLoaded,
+    updatePreferences,
+    resetWallpaper,
+    resetPreferences,
+  }
 }

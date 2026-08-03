@@ -1,4 +1,4 @@
-import { Mail } from 'lucide-react'
+import { Copy, ExternalLink, Mail } from 'lucide-react'
 import { CONTACT } from '@/lib/portfolio-data'
 import { GithubIcon, LinkedinIcon } from '@/components/os/brand-icons'
 
@@ -14,7 +14,7 @@ const LINKS = [
   { label: 'Email', value: CONTACT.email, href: `mailto:${CONTACT.email}`, Icon: Mail, external: false },
 ]
 
-export function ContactContent() {
+export function ContactContent({ onCopyEmail }: { onCopyEmail: () => void }) {
   return (
     <div className="space-y-5">
       <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
@@ -39,12 +39,24 @@ export function ContactContent() {
                 <span className="block font-pixel text-[9px] leading-relaxed text-muted-foreground group-hover:text-primary-foreground/80">
                   {label}
                 </span>
-                <span className="block truncate text-sm font-medium">{value}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="block truncate text-sm font-medium">{value}</span>
+                  {external ? <ExternalLink aria-hidden className="size-3 shrink-0" /> : null}
+                </span>
               </span>
             </a>
           </li>
         ))}
       </ul>
+
+      <button
+        type="button"
+        onClick={onCopyEmail}
+        className="os-border inline-flex items-center gap-2 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+      >
+        <Copy className="size-3.5" />
+        Copy Email
+      </button>
 
       <div className="os-border bg-secondary p-4 text-center">
         <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
