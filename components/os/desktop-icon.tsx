@@ -50,11 +50,11 @@ export function DesktopIcon({
       <span
         aria-hidden
         className={cn(
-          'os-border grid size-12 place-items-center transition-colors sm:size-14',
+          'os-border grid size-12 place-items-center transition-colors',
           iconFrameClassName,
         )}
       >
-        <Icon className="size-6 sm:size-7" />
+        <Icon className="size-6" />
       </span>
       <span
         className={cn(
@@ -71,7 +71,7 @@ export function DesktopIcon({
   )
 
   const className =
-    'group flex w-20 flex-col items-center gap-1.5 rounded-sm p-1 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
+    'group flex w-20 flex-col items-center gap-1 rounded-sm p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
 
   if (item.kind === 'link') {
     return (

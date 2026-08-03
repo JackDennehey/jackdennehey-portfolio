@@ -1,15 +1,20 @@
 import type { MetadataRoute } from 'next'
+import { SITE_AUTHOR, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site-metadata'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Jack OS',
-    short_name: 'Jack OS',
-    description:
-      'An interactive retro operating-system portfolio for Jack Dennehey, featuring a network firewall simulation, Timeline, Guestbook, Recruiter Mode, and technical projects.',
+    id: '/',
+    name: `${SITE_NAME} - ${SITE_AUTHOR} Portfolio`,
+    short_name: SITE_NAME,
+    description: SITE_DESCRIPTION,
     start_url: '/',
+    scope: '/',
     display: 'browser',
     background_color: '#eae7df',
     theme_color: '#eae7df',
+    lang: 'en-US',
+    dir: 'ltr',
+    categories: ['portfolio', 'education', 'productivity'],
     icons: [
       {
         src: '/icon.svg',

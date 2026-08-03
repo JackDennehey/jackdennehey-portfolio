@@ -47,15 +47,37 @@ export type WindowApp = {
 }
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
-  home: { id: 'home', title: 'Welcome to Jack OS', Icon: JackSystemIcon, width: 460, height: 480 },
-  about: { id: 'about', title: 'About Me', Icon: JackIdIcon, width: 560, height: 540 },
-  projects: { id: 'projects', title: 'Projects', Icon: JackProjectsIcon, width: 620, height: 520 },
+  home: {
+    id: 'home',
+    title: 'Welcome to Jack OS',
+    Icon: JackSystemIcon,
+    width: 460,
+    height: 480,
+    description: 'first stops',
+  },
+  about: {
+    id: 'about',
+    title: 'About Me',
+    Icon: JackIdIcon,
+    width: 560,
+    height: 540,
+    description: 'background and interests',
+  },
+  projects: {
+    id: 'projects',
+    title: 'Projects',
+    Icon: JackProjectsIcon,
+    width: 620,
+    height: 520,
+    description: 'technical work',
+  },
   certifications: {
     id: 'certifications',
     title: 'Credentials',
     Icon: JackBadgeIcon,
     width: 520,
     height: 480,
+    description: 'verified learning',
   },
   recruiter: {
     id: 'recruiter',
@@ -66,8 +88,22 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     description: 'guided professional overview',
     tone: 'recruiter',
   },
-  resume: { id: 'resume', title: 'Resume', Icon: JackDocumentIcon, width: 560, height: 560 },
-  contact: { id: 'contact', title: 'Contact', Icon: JackMailIcon, width: 420, height: 520 },
+  resume: {
+    id: 'resume',
+    title: 'Resume',
+    Icon: JackDocumentIcon,
+    width: 560,
+    height: 560,
+    description: 'downloadable overview',
+  },
+  contact: {
+    id: 'contact',
+    title: 'Contact',
+    Icon: JackMailIcon,
+    width: 420,
+    height: 520,
+    description: 'email and external links',
+  },
   assistant: {
     id: 'assistant',
     title: 'J.D. — Jack OS Assistant',
@@ -107,6 +143,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     Icon: JackWallpapersIcon,
     width: 780,
     height: 660,
+    description: 'personalization',
   },
   secrets: {
     id: 'secrets',
@@ -114,6 +151,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     Icon: JackSecretsIcon,
     width: 500,
     height: 500,
+    description: 'hidden files',
   },
 }
 

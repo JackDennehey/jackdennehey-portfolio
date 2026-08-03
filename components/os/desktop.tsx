@@ -911,7 +911,7 @@ export function Desktop() {
       return {
         id: `open-${id}`,
         title: id === 'home' ? 'Open Welcome' : `Open ${app.title}`,
-        subtitle: 'Application',
+        subtitle: app.description ? `Application / ${app.description}` : 'Application',
         keywords: [app.title, id, ...(appAliases[id] ?? [])],
         Icon: app.Icon,
         tone: app.tone,
