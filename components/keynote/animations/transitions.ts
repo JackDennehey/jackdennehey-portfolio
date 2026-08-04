@@ -1,12 +1,28 @@
-import type { KeynoteTransition } from '../types/keynote'
+import type { KeynoteStep, KeynoteTransition, KeynoteTransitionScope } from '../types/keynote'
 
-export const KEYNOTE_TRANSITIONS: Record<KeynoteTransition, string> = {
-  fade: 'keynote-transition-fade',
-  slide: 'keynote-transition-slide',
-  reveal: 'keynote-transition-reveal',
-  image: 'keynote-transition-image',
+const BUILD_TRANSITIONS: Record<KeynoteTransition, string> = {
+  fade: 'keynote-build-fade',
+  slide: 'keynote-build-slide',
+  reveal: 'keynote-build-reveal',
+  image: 'keynote-build-image',
 }
 
-export function getKeynoteTransitionClassName(transition: KeynoteTransition) {
-  return KEYNOTE_TRANSITIONS[transition]
+const CHAPTER_TRANSITIONS: Record<KeynoteTransition, string> = {
+  fade: 'keynote-chapter-fade',
+  slide: 'keynote-chapter-slide',
+  reveal: 'keynote-chapter-reveal',
+  image: 'keynote-chapter-image',
+}
+
+export function getKeynoteTransitionClassName(
+  transition: KeynoteTransition,
+  scope: KeynoteTransitionScope,
+) {
+  return scope === 'chapter'
+    ? CHAPTER_TRANSITIONS[transition]
+    : BUILD_TRANSITIONS[transition]
+}
+
+export function getKeynoteStepTransitionClassName(step: KeynoteStep) {
+  return getKeynoteTransitionClassName(step.transition, step.transitionScope)
 }

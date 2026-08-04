@@ -3,7 +3,7 @@ import type { KeynoteStageComponentProps } from '../types/keynote'
 
 export function PlaceholderChapter({
   step,
-  chapterStageCount,
+  progress,
 }: KeynoteStageComponentProps) {
   const typography = getKeynoteTypography(step.typographyTheme)
 
@@ -13,7 +13,7 @@ export function PlaceholderChapter({
       className={`keynote-stage-frame ${typography.frame}`}
     >
       <p className={typography.eyebrow}>
-        {`Stage ${step.stage} of ${chapterStageCount}`}
+        {`Stage ${progress.stageNumber} of ${progress.stageTotal}`}
       </p>
       <h2
         id={`${step.id}-title`}
