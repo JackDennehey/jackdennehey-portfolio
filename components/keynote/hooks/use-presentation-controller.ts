@@ -25,6 +25,7 @@ type UsePresentationControllerOptions = {
   active: boolean
   presentationMode?: boolean
   onExitPresentationMode?: () => void
+  onFinalNext?: () => void
 }
 
 function isTextEntryTarget(target: EventTarget | null) {
@@ -84,6 +85,7 @@ export function usePresentationController({
   active,
   presentationMode = false,
   onExitPresentationMode,
+  onFinalNext,
 }: UsePresentationControllerOptions) {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null)
   const [resumeIndex, setResumeIndex] = useState<number | null>(null)
@@ -208,6 +210,11 @@ export function usePresentationController({
         if (event.key === ' ' && isNativeActivationTarget(event.target)) return
         event.preventDefault()
         event.stopPropagation()
+        const currentStepForKey = currentIndex === null ? null : KEYNOTE_STEPS[currentIndex]
+        if (currentStepForKey?.completionAction === 'power-down') {
+          onFinalNext?.()
+          return
+        }
         goNext()
         return
       }
@@ -253,12 +260,14 @@ export function usePresentationController({
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true })
   }, [
     active,
+    currentIndex,
     goEnd,
     goHome,
     goNext,
     goPrevious,
     isCover,
     onExitPresentationMode,
+    onFinalNext,
     presentationMode,
     showCover,
   ])

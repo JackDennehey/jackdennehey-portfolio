@@ -30,7 +30,7 @@ export const KEYNOTE_ASSET_REGISTRY: Record<KeynoteAssetId, KeynoteAsset> = {
     focalPosition: 'center',
     overlayPreference: 'light',
     preloadPriority: 'cover',
-    caption: 'Opening visual placeholder.',
+    caption: 'Open water and alignment.',
   },
   'school-of-fish': {
     id: 'school-of-fish',
@@ -41,7 +41,7 @@ export const KEYNOTE_ASSET_REGISTRY: Record<KeynoteAssetId, KeynoteAsset> = {
     focalPosition: 'center',
     overlayPreference: 'medium',
     preloadPriority: 'next',
-    caption: 'Coordination visual placeholder.',
+    caption: 'Coordination and shared movement.',
   },
   sharks: {
     id: 'sharks',
@@ -52,7 +52,7 @@ export const KEYNOTE_ASSET_REGISTRY: Record<KeynoteAssetId, KeynoteAsset> = {
     focalPosition: 'center',
     overlayPreference: 'dark',
     preloadPriority: 'lazy',
-    caption: 'Risk visual placeholder.',
+    caption: 'Exposure and competition.',
   },
   sunlight: {
     id: 'sunlight',
@@ -63,7 +63,7 @@ export const KEYNOTE_ASSET_REGISTRY: Record<KeynoteAssetId, KeynoteAsset> = {
     focalPosition: 'center',
     overlayPreference: 'medium',
     preloadPriority: 'lazy',
-    caption: 'Opportunity visual placeholder.',
+    caption: 'Clarity and opportunity.',
   },
   'ocean-floor': {
     id: 'ocean-floor',
@@ -74,7 +74,7 @@ export const KEYNOTE_ASSET_REGISTRY: Record<KeynoteAssetId, KeynoteAsset> = {
     focalPosition: 'center',
     overlayPreference: 'medium',
     preloadPriority: 'lazy',
-    caption: 'Simplicity visual placeholder.',
+    caption: 'Depth, calm, and conclusion.',
   },
 }
 

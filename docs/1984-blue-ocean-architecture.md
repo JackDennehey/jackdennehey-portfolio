@@ -1,6 +1,6 @@
 # 1984 Blue Ocean Keynote Architecture
 
-1984 Blue Ocean is a Jack OS desktop application built as a reusable keynote engine. Phase 2 establishes the presentation shell, visual system, and renderer contracts; it does not contain final keynote chapter copy.
+1984 Blue Ocean is a Jack OS desktop application built as a reusable keynote engine. V3B Phase 3 uses the Phase 2 shell to deliver the final narrative, chapter builds, and Power Down ending while keeping navigation centralized.
 
 ## State Model
 
@@ -23,15 +23,16 @@ Escape returns to the cover in windowed mode. In presentation mode, Escape exits
 - ARIA label
 - optional presenter note
 - chapter start/end flags
+- optional completion action
 - typed content payload
 
-Future chapter work should replace the placeholder content objects in this file while preserving the shape of the registry.
+The cover screen is intentionally outside the step count. The in-deck sequence contains the working thesis, five numbered chapters, and the final Power Down Keynote step.
 
 ## Renderer Registry
 
 `components/keynote/config/renderers.ts` maps typed renderer keys to React components. The app shell asks the registry for the current renderer, which keeps component lookup explicit and avoids unsafe dynamic component names.
 
-Available Phase 2 renderers:
+Available renderers:
 
 - `title`
 - `split`
@@ -72,6 +73,10 @@ The shell provides semantic headings, visible focus states, keyboard-complete co
 
 Photography is decorative only where it functions as a background. Meaningful image frames use registry alt text and captions.
 
-## Phase 3 Content Path
+## Final Narrative Path
 
-Phase 3 should add final keynote content by editing the chapter metadata, step registry content payloads, presenter notes, and asset associations. It should not duplicate navigation, create per-chapter controller state, or bypass the renderer and theme registries.
+Future content revisions should edit the chapter metadata, step registry content payloads, presenter notes, and asset associations. They should not duplicate navigation, create per-chapter controller state, or bypass the renderer and theme registries.
+
+## Power Down Ending
+
+The final step uses `completionAction: 'power-down'`. The shell displays a short status sequence, exits presentation mode, and asks the Jack OS window manager to close the keynote window. Reduced-motion users receive the same state change with a much shorter delay.

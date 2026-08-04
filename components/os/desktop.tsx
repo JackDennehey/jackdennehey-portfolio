@@ -1369,7 +1369,15 @@ export function Desktop() {
           />
         )
       case 'blue-ocean':
-        return <BlueOceanContent active={active} />
+        return (
+          <BlueOceanContent
+            active={active}
+            onPowerDown={() => {
+              closeWindow('blue-ocean')
+              focusDesktop()
+            }}
+          />
+        )
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':

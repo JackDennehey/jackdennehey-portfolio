@@ -59,6 +59,8 @@ export type KeynoteTitleContent = {
   title: string
   subtitle?: string
   body?: string
+  labels?: string[]
+  closingLine?: string
 }
 
 export type KeynoteSplitContent = {
@@ -68,6 +70,8 @@ export type KeynoteSplitContent = {
   rightTitle: string
   rightBody: string
   summary?: string
+  bridgeLabel?: string
+  closingLine?: string
 }
 
 export type KeynoteMetricContent = {
@@ -75,6 +79,8 @@ export type KeynoteMetricContent = {
   value: string
   label: string
   body: string
+  labels?: string[]
+  closingLine?: string
 }
 
 export type KeynoteQuoteContent = {
@@ -82,6 +88,7 @@ export type KeynoteQuoteContent = {
   quote: string
   attribution?: string
   body?: string
+  lines?: string[]
 }
 
 export type KeynoteDiagramItem = {
@@ -94,6 +101,8 @@ export type KeynoteDiagramContent = {
   title: string
   summary: string
   items: KeynoteDiagramItem[]
+  variant?: 'grid' | 'flow' | 'stack' | 'layered' | 'loop' | 'risk'
+  closingLine?: string
 }
 
 export type KeynoteTimelineMilestone = {
@@ -113,12 +122,16 @@ export type KeynoteImageTextContent = {
   headline: string
   body: string
   layout: 'image-left' | 'image-right' | 'image-background'
+  secondaryLine?: string
+  labels?: string[]
+  closingLine?: string
 }
 
 export type KeynoteTerminalContent = {
   renderer: 'terminal'
   title: string
   lines: string[]
+  footer?: string
 }
 
 export type KeynoteStepContent =
@@ -148,6 +161,7 @@ export type KeynoteStep = {
   presenterNote?: string
   chapterStart?: boolean
   chapterEnd?: boolean
+  completionAction?: 'power-down'
   content: KeynoteStepContent
 }
 

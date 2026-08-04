@@ -84,6 +84,14 @@ export function KeynoteTitleStage({ step }: KeynoteStageComponentProps) {
         </StageHeading>
         {content.subtitle ? <p className={typography.subheading}>{content.subtitle}</p> : null}
         {content.body ? <p className={typography.body}>{content.body}</p> : null}
+        {content.labels?.length ? (
+          <ul className="keynote-label-list" aria-label={`${content.title} supporting labels`}>
+            {content.labels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        ) : null}
+        {content.closingLine ? <p className={typography.accent}>{content.closingLine}</p> : null}
       </div>
     </section>
   )
@@ -106,16 +114,28 @@ export function KeynoteSplitStage({ step }: KeynoteStageComponentProps) {
       >
         {content.summary ?? step.title}
       </StageHeading>
-      <div className="keynote-split-grid">
+      <div
+        className="keynote-split-grid"
+        data-keynote-bridge={content.bridgeLabel ? 'true' : 'false'}
+      >
         <div className="keynote-comparison-panel">
           <h3 className={typography.subheading}>{content.leftTitle}</h3>
           <p className={typography.body}>{content.leftBody}</p>
         </div>
+        {content.bridgeLabel ? (
+          <div
+            className="keynote-bridge-label"
+            aria-label={`Bridge: ${content.bridgeLabel}`}
+          >
+            {content.bridgeLabel}
+          </div>
+        ) : null}
         <div className="keynote-comparison-panel">
           <h3 className={typography.subheading}>{content.rightTitle}</h3>
           <p className={typography.body}>{content.rightBody}</p>
         </div>
       </div>
+      {content.closingLine ? <p className={typography.accent}>{content.closingLine}</p> : null}
     </section>
   )
 }
@@ -139,12 +159,20 @@ export function KeynoteMetricStage({ step }: KeynoteStageComponentProps) {
       </StageHeading>
       <p className={typography.subheading}>{content.label}</p>
       <p className={typography.body}>{content.body}</p>
+      {content.labels?.length ? (
+        <ul className="keynote-label-list" aria-label={`${content.value} supporting labels`}>
+          {content.labels.map((label) => (
+            <li key={label}>{label}</li>
+          ))}
+        </ul>
+      ) : null}
       {step.imageAssetId ? (
         <KeynoteStageImage
           assetId={step.imageAssetId}
           className="keynote-metric-media"
         />
       ) : null}
+      {content.closingLine ? <p className={typography.accent}>{content.closingLine}</p> : null}
     </section>
   )
 }
@@ -167,6 +195,13 @@ export function KeynoteQuoteStage({ step }: KeynoteStageComponentProps) {
       </StageHeading>
       {content.attribution ? <p className={typography.accent}>{content.attribution}</p> : null}
       {content.body ? <p className={typography.body}>{content.body}</p> : null}
+      {content.lines?.length ? (
+        <ul className="keynote-status-list" aria-label={`${step.title} status lines`}>
+          {content.lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   )
 }
@@ -190,7 +225,12 @@ export function KeynoteDiagramStage({ step }: KeynoteStageComponentProps) {
         {content.title}
       </StageHeading>
       <p className={typography.body}>{content.summary}</p>
-      <ul className={cn('keynote-diagram-grid', visualTheme.diagramStyle)}>
+      <ul className={cn(
+        'keynote-diagram-grid',
+        content.variant ? `keynote-diagram-${content.variant}` : null,
+        visualTheme.diagramStyle,
+      )}
+      >
         {content.items.map((item) => (
           <li
             key={item.label}
@@ -201,6 +241,7 @@ export function KeynoteDiagramStage({ step }: KeynoteStageComponentProps) {
           </li>
         ))}
       </ul>
+      {content.closingLine ? <p className={typography.accent}>{content.closingLine}</p> : null}
     </section>
   )
 }
@@ -257,7 +298,16 @@ export function KeynoteImageTextStage({ step }: KeynoteStageComponentProps) {
       >
         {content.headline}
       </StageHeading>
+      {content.secondaryLine ? <p className={typography.subheading}>{content.secondaryLine}</p> : null}
       <p className={typography.body}>{content.body}</p>
+      {content.labels?.length ? (
+        <ul className="keynote-label-list" aria-label={`${content.headline} supporting labels`}>
+          {content.labels.map((label) => (
+            <li key={label}>{label}</li>
+          ))}
+        </ul>
+      ) : null}
+      {content.closingLine ? <p className={typography.accent}>{content.closingLine}</p> : null}
     </div>
   )
 
@@ -306,7 +356,7 @@ export function KeynoteTerminalStage({ step }: KeynoteStageComponentProps) {
       <div
         className="keynote-terminal os-border"
         role="list"
-        aria-label="Deployment log placeholder"
+        aria-label={`${content.title} lines`}
       >
         {content.lines.map((line) => (
           <p
@@ -317,6 +367,7 @@ export function KeynoteTerminalStage({ step }: KeynoteStageComponentProps) {
           </p>
         ))}
       </div>
+      {content.footer ? <p className={typography.accent}>{content.footer}</p> : null}
     </section>
   )
 }

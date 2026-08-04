@@ -828,6 +828,7 @@
 .blink { animation: blink 1s step-end infinite; }
 
 .keynote-shell {
+  position: relative;
   display: flex;
   min-height: min(72vh, 640px);
   height: 100%;
@@ -835,6 +836,14 @@
   gap: 0.75rem;
   color: var(--keynote-fg);
   outline: none;
+}
+
+.keynote-shell-powering-down .keynote-shell-header,
+.keynote-shell-powering-down .keynote-canvas,
+.keynote-shell-powering-down .keynote-controls {
+  opacity: 0.24;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
 }
 
 .keynote-shell-presentation {
@@ -1014,11 +1023,30 @@
   gap: 0.75rem;
 }
 
+.keynote-split-grid[data-keynote-bridge='true'] {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+}
+
 .keynote-comparison-panel,
 .keynote-diagram-node {
   border: 2px solid color-mix(in oklch, var(--keynote-border) 68%, transparent);
   background: color-mix(in oklch, var(--keynote-bg) 78%, var(--paper));
   padding: clamp(0.85rem, 2vw, 1.25rem);
+}
+
+.keynote-bridge-label {
+  display: grid;
+  min-width: 4.25rem;
+  place-items: center;
+  border: 2px solid var(--keynote-accent);
+  background: color-mix(in oklch, var(--keynote-accent) 16%, var(--keynote-bg));
+  color: var(--keynote-fg);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 1.6;
+  padding: 0.65rem 0.5rem;
+  text-align: center;
 }
 
 .keynote-metric-panel {
@@ -1033,6 +1061,34 @@
 
 .keynote-quote-panel {
   border-left-width: 6px;
+}
+
+.keynote-label-list,
+.keynote-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  list-style: none;
+  padding: 0;
+}
+
+.keynote-label-list li,
+.keynote-status-list li {
+  border: 2px solid color-mix(in oklch, var(--keynote-border) 62%, transparent);
+  background: color-mix(in oklch, var(--keynote-bg) 82%, var(--paper));
+  color: var(--keynote-fg);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 1.6;
+  padding: 0.4rem 0.55rem;
+}
+
+.keynote-status-list {
+  display: grid;
+}
+
+.keynote-status-list li {
+  width: fit-content;
 }
 
 .keynote-diagram-grid {
@@ -1059,6 +1115,66 @@
 
 .keynote-diagram-grid .keynote-diagram-node > * {
   padding-left: 0.85rem;
+}
+
+.keynote-diagram-flow {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.keynote-diagram-flow .keynote-diagram-node {
+  min-height: 100%;
+}
+
+.keynote-diagram-flow .keynote-diagram-node:not(:last-child)::after {
+  position: absolute;
+  right: -0.55rem;
+  top: 50%;
+  width: 0.7rem;
+  height: 2px;
+  background: var(--keynote-accent);
+  content: '';
+}
+
+.keynote-diagram-stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.keynote-diagram-stack .keynote-diagram-node {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.keynote-diagram-risk {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.keynote-diagram-risk .keynote-diagram-node {
+  min-height: 8rem;
+}
+
+.keynote-diagram-layered {
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+}
+
+.keynote-diagram-layered .keynote-diagram-node {
+  border-color: var(--keynote-accent);
+  background: color-mix(in oklch, var(--keynote-bg) 68%, var(--keynote-accent));
+}
+
+.keynote-diagram-layered .keynote-diagram-node:last-child {
+  grid-column: 1 / -1;
+  background: color-mix(in oklch, var(--keynote-accent) 22%, var(--keynote-bg));
+}
+
+.keynote-diagram-loop {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.keynote-diagram-loop .keynote-diagram-node {
+  border-radius: 999px;
+  min-height: 8rem;
 }
 
 .keynote-diagram-ledger .keynote-diagram-node {
@@ -1155,6 +1271,30 @@
   color: var(--keynote-accent);
   content: '>';
   padding-right: 0.55rem;
+}
+
+.keynote-power-down-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  width: min(420px, calc(100% - 2rem));
+  gap: 0.55rem;
+  transform: translate(-50%, -50%);
+  border-color: var(--keynote-border);
+  background: var(--keynote-bg);
+  color: var(--keynote-fg);
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  line-height: 1.7;
+  padding: 1rem;
+  box-shadow: 5px 5px 0 var(--os-shadow-strong-color);
+  animation: keynote-build-reveal 0.18s ease-out both;
+}
+
+.keynote-power-down-panel p::before {
+  content: '• ';
 }
 
 .keynote-controls {
@@ -1338,10 +1478,30 @@
   }
 
   .keynote-split-grid,
+  .keynote-split-grid[data-keynote-bridge='true'],
   .keynote-diagram-grid,
+  .keynote-diagram-risk,
   .keynote-image-text-stage,
   .keynote-image-text-stage.keynote-image-right {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .keynote-diagram-flow .keynote-diagram-node:not(:last-child)::after {
+    bottom: -0.45rem;
+    left: 50%;
+    right: auto;
+    top: auto;
+    width: 2px;
+    height: 0.7rem;
+  }
+
+  .keynote-diagram-stack .keynote-diagram-node {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .keynote-bridge-label {
+    min-height: 3rem;
+    min-width: 0;
   }
 
   .keynote-image-right .keynote-image-text-media {
@@ -1580,6 +1740,7 @@ a:active {
   .keynote-chapter-reveal,
   .keynote-chapter-image,
   .keynote-timeline-item,
+  .keynote-power-down-panel,
   .achievement-notice,
   .first-visit-window,
   .firewall-packet,

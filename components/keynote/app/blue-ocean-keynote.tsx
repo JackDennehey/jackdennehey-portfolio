@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getKeynoteStepTransitionClassName } from '../animations/transitions'
 import { getKeynoteAsset, getNextKeynoteAssetId } from '../assets/keynote-assets'
 import { getKeynoteRenderer } from '../config/renderers'
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 
 type BlueOceanKeynoteProps = {
   active: boolean
+  onPowerDown?: () => void
 }
 
 type KeynoteCoverProps = {
@@ -175,13 +176,54 @@ function getShellTheme(currentStep: KeynoteStep | null): KeynoteVisualTheme {
   return currentStep?.visualTheme ?? 'opening'
 }
 
-export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
+const POWER_DOWN_MESSAGES = [
+  'Saving presentation state...',
+  'Closing 1984 Blue Ocean...',
+  'Returning to Jack OS...',
+]
+
+export function BlueOceanKeynote({ active, onPowerDown }: BlueOceanKeynoteProps) {
   const [presentationMode, setPresentationMode] = useState(false)
+  const [powerDownStep, setPowerDownStep] = useState<number | null>(null)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const powerDownTimersRef = useRef<number[]>([])
+  const isPoweringDown = powerDownStep !== null
+
+  const clearPowerDownTimers = useCallback(() => {
+    powerDownTimersRef.current.forEach((timer) => window.clearTimeout(timer))
+    powerDownTimersRef.current = []
+  }, [])
+
+  const handlePowerDown = useCallback(() => {
+    if (isPoweringDown) return
+
+    clearPowerDownTimers()
+    setPresentationMode(false)
+    setPowerDownStep(0)
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reducedMotion) {
+      powerDownTimersRef.current = [
+        window.setTimeout(() => {
+          setPowerDownStep(POWER_DOWN_MESSAGES.length - 1)
+          onPowerDown?.()
+        }, 160),
+      ]
+      return
+    }
+
+    powerDownTimersRef.current = [
+      window.setTimeout(() => setPowerDownStep(1), 650),
+      window.setTimeout(() => setPowerDownStep(2), 1250),
+      window.setTimeout(() => onPowerDown?.(), 1900),
+    ]
+  }, [clearPowerDownTimers, isPoweringDown, onPowerDown])
+
   const controller = usePresentationController({
     active,
     presentationMode,
     onExitPresentationMode: () => setPresentationMode(false),
+    onFinalNext: handlePowerDown,
   })
   const { currentStep, isCover, progress } = controller
   const visualThemeId = getShellTheme(currentStep)
@@ -193,12 +235,22 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
 
   useKeynoteImagePreload(currentStep, isCover)
 
+  useEffect(() => clearPowerDownTimers, [clearPowerDownTimers])
+
   useEffect(() => {
     if (!active || isCover) return
     rootRef.current
       ?.querySelector<HTMLElement>('[data-keynote-stage-heading="true"]')
       ?.focus({ preventScroll: true })
   }, [active, currentStep?.id, isCover])
+
+  const isPowerDownStep = currentStep?.completionAction === 'power-down'
+  const nextButtonLabel = isPowerDownStep
+    ? 'Power Down Keynote'
+    : progress?.isFinalStep
+      ? 'Complete'
+      : 'Next'
+  const nextButtonDisabled = isPoweringDown || (!controller.canGoNext && !isPowerDownStep)
 
   return (
     <div
@@ -208,6 +260,7 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
         'keynote-shell',
         visualTheme.texture,
         presentationMode ? 'keynote-shell-presentation' : null,
+        isPoweringDown ? 'keynote-shell-powering-down' : null,
       )}
       style={themeStyle}
       aria-label="1984 Blue Ocean keynote"
@@ -226,6 +279,7 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
             onClick={() => setPresentationMode((value) => !value)}
             className="keynote-secondary-button"
             aria-pressed={presentationMode}
+            disabled={isPoweringDown}
           >
             {presentationMode ? 'Windowed' : 'Present'}
           </button>
@@ -235,6 +289,7 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
               onClick={controller.showCover}
               className="keynote-secondary-button"
               aria-label="Exit presentation and return to keynote cover"
+              disabled={isPoweringDown}
             >
               Exit
             </button>
@@ -257,6 +312,18 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
         )}
       </main>
 
+      {isPoweringDown ? (
+        <div
+          className="keynote-power-down-panel os-border"
+          role="status"
+          aria-live="polite"
+        >
+          {POWER_DOWN_MESSAGES.slice(0, powerDownStep + 1).map((message) => (
+            <p key={message}>{message}</p>
+          ))}
+        </div>
+      ) : null}
+
       <footer className="keynote-controls os-border">
         {progress ? <KeynoteProgressMeter progress={progress} /> : (
           <p className="keynote-key-hint">Arrow keys and Space navigate after the presentation begins.</p>
@@ -265,7 +332,7 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
           <button
             type="button"
             onClick={controller.goPrevious}
-            disabled={!controller.canGoPrevious}
+            disabled={isPoweringDown || !controller.canGoPrevious}
             aria-label="Previous keynote step"
             className="keynote-secondary-button"
           >
@@ -279,12 +346,12 @@ export function BlueOceanKeynote({ active }: BlueOceanKeynoteProps) {
           </p>
           <button
             type="button"
-            onClick={controller.goNext}
-            disabled={!controller.canGoNext}
-            aria-label="Next keynote step"
+            onClick={isPowerDownStep ? handlePowerDown : controller.goNext}
+            disabled={nextButtonDisabled}
+            aria-label={isPowerDownStep ? 'Power down keynote and return to Jack OS' : 'Next keynote step'}
             className="keynote-primary-button"
           >
-            {progress?.isFinalStep ? 'Complete' : 'Next'}
+            {nextButtonLabel}
           </button>
         </div>
       </footer>
