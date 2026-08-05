@@ -1,3 +1,5 @@
+import { BLUE_OCEAN_COPY } from './blue-ocean'
+
 export const CONTACT = {
   email: 'jackdennehey@gmail.com',
   github: 'https://github.com/JackDennehey',
@@ -12,6 +14,10 @@ export type Project = {
   technologies: string[]
   github?: string
   demo?: string
+  internalApp?: 'blue-ocean'
+  role?: string
+  implementation?: string
+  keySystems?: string[]
 }
 
 export const PROJECTS: Project[] = [
@@ -23,6 +29,32 @@ export const PROJECTS: Project[] = [
     technologies: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS'],
     github: CONTACT.github,
     demo: `https://${CONTACT.domain}`,
+  },
+  {
+    title: BLUE_OCEAN_COPY.title,
+    status: 'Interactive Keynote - Jack OS V3B',
+    description: BLUE_OCEAN_COPY.longDescription,
+    technologies: [
+      'Jack OS',
+      'React',
+      'TypeScript',
+      'Presentation Engine',
+      'AI-assisted workflow',
+    ],
+    demo: `https://${CONTACT.domain}/#1984-blue-ocean`,
+    internalApp: 'blue-ocean',
+    role:
+      'Jack directed the product vision, narrative, visual identity, requirements, priorities, testing, critique, and iteration.',
+    implementation:
+      "Built as a 31-stage interactive keynote inside Jack OS, with Codex and AI-assisted development tools handling much of the direct implementation code under Jack's direction.",
+    keySystems: [
+      'centralized ordered step registry',
+      'keyboard-driven presentation controller',
+      'full-screen presentation mode',
+      'chapter divider pacing',
+      'session resume',
+      'reduced-motion support',
+    ],
   },
   {
     title: 'Azure AI Projects',

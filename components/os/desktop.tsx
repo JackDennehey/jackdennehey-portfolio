@@ -10,6 +10,7 @@ import {
   type MouseEvent,
 } from 'react'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import { BootScreen } from './boot-screen'
 import { MenuBar } from './menu-bar'
 import { AchievementsPanel } from './achievements-panel'
@@ -72,6 +73,11 @@ import {
   type JackOsInteractiveAppId,
 } from '@/lib/achievements'
 import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
+import {
+  readBlueOceanCompleted,
+  type BlueOceanLaunchContext,
+} from '@/lib/blue-ocean'
+import { hasValidBlueOceanSession } from '@/components/keynote/config/session'
 
 const TimelineContent = dynamic(
   () => import('./content/timeline-content').then((module) => module.TimelineContent),
@@ -106,7 +112,11 @@ type OpenWindow = WindowGeometry & {
   status: WindowStatus
   restoreStatus?: RestorableWindowStatus
 }
-type OpenWindowOptions = { playSound?: boolean; updateHash?: boolean }
+type OpenWindowOptions = {
+  playSound?: boolean
+  updateHash?: boolean
+  launchContext?: BlueOceanLaunchContext
+}
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
@@ -319,6 +329,7 @@ function getDesktopIconRows(viewportHeight: number) {
 }
 
 export function Desktop() {
+  const router = useRouter()
   const [booted, setBooted] = useState(false)
   const [scanlines, setScanlines] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
@@ -341,6 +352,10 @@ export function Desktop() {
     title: string
     message: string
   } | null>(null)
+  const [blueOceanCompleted, setBlueOceanCompleted] = useState(false)
+  const [blueOceanCanResume, setBlueOceanCanResume] = useState(false)
+  const [blueOceanLaunchContext, setBlueOceanLaunchContext] =
+    useState<BlueOceanLaunchContext>('desktop')
   const secretUnlocks = useSecretUnlocks()
   const { preferences, preferencesLoaded, updatePreferences, resetWallpaper } =
     useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
@@ -357,10 +372,15 @@ export function Desktop() {
   const uiActivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
   const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
+  const blueOceanLaunchContextRef = useRef<BlueOceanLaunchContext>('desktop')
 
   useEffect(() => {
     windowsRef.current = windows
   }, [windows])
+
+  useEffect(() => {
+    blueOceanLaunchContextRef.current = blueOceanLaunchContext
+  }, [blueOceanLaunchContext])
 
   useHourlyChime({
     booted,
@@ -371,6 +391,8 @@ export function Desktop() {
 
   useEffect(() => {
     setEarnedAchievementIds(readStoredAchievementIds())
+    setBlueOceanCompleted(readBlueOceanCompleted())
+    setBlueOceanCanResume(hasValidBlueOceanSession())
   }, [])
 
   useEffect(() => {
@@ -424,6 +446,11 @@ export function Desktop() {
     window.setTimeout(() => {
       document.getElementById('jack-os-desktop')?.focus()
     }, 0)
+  }, [])
+
+  const refreshBlueOceanState = useCallback(() => {
+    setBlueOceanCompleted(readBlueOceanCompleted())
+    setBlueOceanCanResume(hasValidBlueOceanSession())
   }, [])
 
   const showAchievement = useCallback(
@@ -499,6 +526,15 @@ export function Desktop() {
     (id: string, options: OpenWindowOptions = {}) => {
       const windowId = id as WindowId
       if (!WINDOW_APPS[windowId]) return
+      if (windowId === 'blue-ocean') {
+        const urlContext =
+          typeof window !== 'undefined' &&
+          new URLSearchParams(window.location.search).get('from') === 'simple'
+            ? 'simple'
+            : null
+        setBlueOceanLaunchContext(options.launchContext ?? urlContext ?? 'desktop')
+        refreshBlueOceanState()
+      }
 
       const existing = windowsRef.current.find((w) => w.id === windowId)
       if (windowId === 'recruiter' && options.updateHash !== false) {
@@ -611,6 +647,7 @@ export function Desktop() {
       recordInteractiveAppOpen,
       showAchievement,
       soundEffects,
+      refreshBlueOceanState,
     ],
   )
 
@@ -700,6 +737,47 @@ export function Desktop() {
     bumpUiActivity(8)
     focusWindow(id)
   }, [bumpUiActivity, focusWindow])
+
+  const restoreBlueOceanOrigin = useCallback(() => {
+    refreshBlueOceanState()
+    const context = blueOceanLaunchContextRef.current
+    const originByContext: Partial<Record<BlueOceanLaunchContext, WindowId>> = {
+      welcome: 'home',
+      recruiter: 'recruiter',
+      projects: 'projects',
+      'ask-jd': 'assistant',
+    }
+    const origin = originByContext[context]
+
+    if (context === 'simple') {
+      router.push('/simple')
+      return
+    }
+
+    if (origin) {
+      const originWindow = windowsRef.current.find((w) => w.id === origin)
+      if (originWindow && originWindow.status !== 'closing') {
+        if (originWindow.status === 'minimized') {
+          restoreWindow(origin)
+        } else {
+          focusWindow(origin)
+        }
+        return
+      }
+    }
+
+    focusDesktop()
+  }, [focusDesktop, focusWindow, refreshBlueOceanState, restoreWindow, router])
+
+  const handleBlueOceanCompleted = useCallback(() => {
+    setBlueOceanCompleted(true)
+    showAchievement('blue-ocean-completed')
+  }, [showAchievement])
+
+  const handleBlueOceanPowerDown = useCallback(() => {
+    closeWindow('blue-ocean')
+    window.setTimeout(restoreBlueOceanOrigin, WINDOW_CLOSE_DURATION_MS + 30)
+  }, [closeWindow, restoreBlueOceanOrigin])
 
   const restoreAllMinimized = useCallback(() => {
     const minimizedWindows = windowsRef.current.filter((w) => w.status === 'minimized')
@@ -1071,7 +1149,18 @@ export function Desktop() {
     ]
     const appAliases: Partial<Record<WindowId, readonly string[]>> = {
       home: ['welcome', 'system', 'start'],
-      'blue-ocean': ['1984', 'blue ocean', 'keynote', 'presentation', 'retro computing'],
+      'blue-ocean': [
+        '1984',
+        'blue ocean',
+        'keynote',
+        'presentation',
+        'flagship',
+        'business strategy',
+        'technical communication',
+        'ai-assisted',
+        'product development',
+        'retro computing',
+      ],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
       recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
@@ -1099,7 +1188,12 @@ export function Desktop() {
       return {
         id: `open-${id}`,
         title: id === 'home' ? 'Open Welcome' : `Open ${app.title}`,
-        subtitle: app.description ? `Application / ${app.description}` : 'Application',
+        subtitle:
+          id === 'blue-ocean'
+            ? 'Featured Experience / 31-stage interactive keynote'
+            : app.description
+              ? `Application / ${app.description}`
+              : 'Application',
         keywords: [app.title, id, ...(appAliases[id] ?? [])],
         Icon: app.Icon,
         tone: app.tone,
@@ -1107,8 +1201,14 @@ export function Desktop() {
         ariaLabel:
           id === 'recruiter'
             ? 'Open Recruiter Mode — guided professional overview'
-            : undefined,
-        action: () => openWindow(id),
+            : id === 'blue-ocean'
+              ? 'Open 1984 Blue Ocean — flagship guided interactive keynote'
+              : undefined,
+        action: () =>
+          openWindow(
+            id,
+            id === 'blue-ocean' ? { launchContext: 'search' } : undefined,
+          ),
       }
     })
 
@@ -1358,6 +1458,8 @@ export function Desktop() {
         return (
           <HomeContent
             onOpen={openWindow}
+            onOpenBlueOcean={() => openWindow('blue-ocean', { launchContext: 'welcome' })}
+            onResumeBlueOcean={() => openWindow('blue-ocean', { launchContext: 'welcome' })}
             onAskAssistant={() => openAssistant()}
             onOpenSimpleMode={openSimpleMode}
             theme={theme}
@@ -1366,6 +1468,8 @@ export function Desktop() {
             scanlines={scanlines}
             achievementCount={earnedAchievementIds.length}
             achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
+            blueOceanCanResume={blueOceanCanResume}
+            blueOceanCompleted={blueOceanCompleted}
           />
         )
       case 'blue-ocean':
@@ -1374,16 +1478,23 @@ export function Desktop() {
             active={active}
             onPresentationEnter={soundEffects.keynotePresentationEnter}
             onPresentationPowerDown={soundEffects.keynotePresentationPowerDown}
-            onPowerDown={() => {
-              closeWindow('blue-ocean')
-              focusDesktop()
-            }}
+            onCompleted={handleBlueOceanCompleted}
+            onPowerDown={handleBlueOceanPowerDown}
           />
         )
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':
-        return <ProjectsContent />
+        return (
+          <ProjectsContent
+            onOpen={(windowId) =>
+              openWindow(
+                windowId,
+                windowId === 'blue-ocean' ? { launchContext: 'projects' } : undefined,
+              )
+            }
+          />
+        )
       case 'certifications':
         return <CertificationsContent />
       case 'recruiter':
@@ -1391,7 +1502,12 @@ export function Desktop() {
           <RecruiterModeContent
             activeSection={recruiterSection}
             onSectionChange={selectRecruiterSection}
-            onOpen={openWindow}
+            onOpen={(windowId) =>
+              openWindow(
+                windowId,
+                windowId === 'blue-ocean' ? { launchContext: 'recruiter' } : undefined,
+              )
+            }
             onCopyEmail={copyEmailToClipboard}
             onAskAssistant={() => openAssistant()}
             onOpenSimpleMode={openSimpleMode}
@@ -1405,7 +1521,12 @@ export function Desktop() {
         return (
           <JdAssistantContent
             seedPrompt={assistantSeedPrompt}
-            onOpen={openWindow}
+            onOpen={(windowId) =>
+              openWindow(
+                windowId,
+                windowId === 'blue-ocean' ? { launchContext: 'ask-jd' } : undefined,
+              )
+            }
             onCopyEmail={copyEmailToClipboard}
             onQuestionAnswered={() => showAchievement('jd-first-question')}
           />
@@ -1501,7 +1622,7 @@ export function Desktop() {
           aria-hidden
           className="pointer-events-none absolute bottom-4 left-4 max-w-xs font-pixel text-[9px] leading-relaxed text-muted-foreground/60"
         >
-          Jack OS V3A
+          Jack OS V3B
           <br />
           {isMobile ? 'Tap an icon to open' : 'Double-click icons to open'}
         </p>
@@ -1594,7 +1715,9 @@ export function Desktop() {
                   focusWindow(w.id)
                 }
               }}
-              onClose={() => closeWindow(w.id)}
+              onClose={() =>
+                w.id === 'blue-ocean' ? handleBlueOceanPowerDown() : closeWindow(w.id)
+              }
               onMinimize={() => minimizeWindow(w.id)}
               onMaximize={() => maximizeWindow(w.id)}
               onMove={(x, y) => moveWindow(w.id, x, y)}

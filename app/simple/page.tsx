@@ -36,6 +36,9 @@ export const metadata: Metadata = {
 
 export default function SimpleModePage() {
   const knowledge = PORTFOLIO_KNOWLEDGE
+  const blueOceanProject = knowledge.projects.all.find(
+    (project) => project.internalApp === 'blue-ocean',
+  )
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
@@ -73,7 +76,7 @@ export default function SimpleModePage() {
         Skip to professional overview
       </a>
       <Link href="/" className="simple-return">
-        Return to Jack OS V3A
+        Return to Jack OS V3B
       </Link>
 
       <div id="simple-content" className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 lg:py-20">
@@ -125,6 +128,27 @@ export default function SimpleModePage() {
             {knowledge.person.professionalDirection}
           </p>
         </section>
+
+        {blueOceanProject ? (
+          <section aria-labelledby="blue-ocean-heading" className="simple-section">
+            <div className="simple-card">
+              <p className="simple-label">Featured Interactive Case Study</p>
+              <h2 id="blue-ocean-heading">{blueOceanProject.title}</h2>
+              <p>{blueOceanProject.description}</p>
+              <p className="mt-4 text-sm leading-7 text-[#4d473d]">
+                Best viewed inside Jack OS as a guided keynote presentation.
+              </p>
+              <div className="simple-actions mt-5 flex flex-wrap gap-3">
+                <Link href="/?from=simple#1984-blue-ocean" className="simple-action-primary">
+                  Open Interactive Keynote
+                </Link>
+                <Link href="/#projects" className="simple-action">
+                  View in Projects
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section aria-labelledby="education-heading" className="simple-section">
           <h2 id="education-heading">Education</h2>
@@ -232,7 +256,7 @@ export default function SimpleModePage() {
 
         <footer className="mt-14 border-t-2 border-[#171713] pt-6 text-sm leading-7 text-[#4d473d]">
           <p>
-            Jack OS V3A - The Identity Update. Simple Mode is an alternate presentation of the
+            Jack OS V3B - 1984 Blue Ocean. Simple Mode is an alternate presentation of the
             same portfolio content, not a separate website.
           </p>
           <p className="mt-2">{SITE_DESCRIPTION}</p>

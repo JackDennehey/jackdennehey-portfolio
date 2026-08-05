@@ -6,6 +6,7 @@ import {
   PROJECTS,
   SKILLS,
 } from './portfolio-data'
+import { BLUE_OCEAN_COPY } from './blue-ocean'
 
 export const RECRUITER_SECTIONS = [
   { id: 'overview', label: 'Overview' },
@@ -92,10 +93,22 @@ export const PORTFOLIO_KNOWLEDGE = {
       'Simple Mode',
       'moderated Guestbook',
       'Network Firewall simulation',
+      '1984 Blue Ocean keynote',
       'responsive behavior',
       'accessibility',
       'persistence',
     ],
+    keynote: {
+      type: BLUE_OCEAN_COPY.type,
+      title: BLUE_OCEAN_COPY.title,
+      shortDescription: BLUE_OCEAN_COPY.shortDescription,
+      longDescription: BLUE_OCEAN_COPY.longDescription,
+      themes: BLUE_OCEAN_COPY.themes,
+      authorship: BLUE_OCEAN_COPY.authorship,
+      chapters: BLUE_OCEAN_COPY.chapters,
+      stageCount: 31,
+      release: BLUE_OCEAN_COPY.versionLabel,
+    },
   },
   skills: {
     groups: SKILLS,

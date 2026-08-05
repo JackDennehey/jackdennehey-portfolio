@@ -1,8 +1,10 @@
 import { PORTFOLIO_KNOWLEDGE } from './portfolio-knowledge'
 import { JACK_OS_ACHIEVEMENT_REGISTRY } from './achievements'
 import { ROADMAP_SECTIONS } from './roadmap-data'
+import { BLUE_OCEAN_COPY } from './blue-ocean'
 
 export type AssistantWindowTarget =
+  | 'blue-ocean'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -35,6 +37,10 @@ export type AssistantIntent =
   | 'ai'
   | 'frontend'
   | 'project-list'
+  | 'blue-ocean'
+  | 'blue-ocean-authorship'
+  | 'blue-ocean-recommendation'
+  | 'blue-ocean-launch'
   | 'jack-os'
   | 'jack-os-technologies'
   | 'jack-os-features'
@@ -81,14 +87,15 @@ type IntentDefinition = {
 }
 
 export const JD_ASSISTANT_INTRO =
-  "Hello, I'm J.D., Jack OS's Local Portfolio Assistant. Ask me about Jack's education, credentials, projects, skills, or professional direction."
+  "Hello, I'm J.D., Jack OS's Local Portfolio Assistant. Ask me about Jack's education, credentials, projects, 1984 Blue Ocean, skills, or professional direction."
 
 export const JD_SUGGESTED_PROMPTS = [
+  'What is 1984 Blue Ocean?',
   'What has Jack built?',
+  'Why should I watch the keynote?',
   'What credentials has Jack earned?',
   'What is Jack studying?',
   'What is on the Road Map?',
-  'Tell me about Jack OS.',
   'How can I contact Jack?',
 ] as const
 
@@ -109,6 +116,10 @@ export const JD_SUPPORTED_CATEGORIES: readonly AssistantIntent[] = [
   'ai',
   'frontend',
   'project-list',
+  'blue-ocean',
+  'blue-ocean-authorship',
+  'blue-ocean-recommendation',
+  'blue-ocean-launch',
   'jack-os',
   'jack-os-technologies',
   'jack-os-features',
@@ -136,6 +147,11 @@ const OPEN_RECRUITER: AssistantAction = {
   type: 'open',
   label: 'Open Recruiter Mode',
   target: 'recruiter',
+}
+const OPEN_BLUE_OCEAN: AssistantAction = {
+  type: 'open',
+  label: 'Launch 1984 Blue Ocean',
+  target: 'blue-ocean',
 }
 const OPEN_ABOUT: AssistantAction = { type: 'open', label: 'Open About', target: 'about' }
 const OPEN_PROJECTS: AssistantAction = {
@@ -219,6 +235,98 @@ const INTENTS: readonly IntentDefinition[] = [
     phrases: ['cisco networking basics', 'cisco credential', 'networking academy'],
     keywords: { cisco: 8, networking: 3, academy: 3, credential: 2 },
     priority: 11,
+  },
+  {
+    intent: 'blue-ocean-authorship',
+    phrases: [
+      'did jack code 1984 blue ocean',
+      'did jack code it',
+      'did jack build the keynote',
+      'who coded 1984 blue ocean',
+      'was 1984 blue ocean ai assisted',
+    ],
+    keywords: {
+      code: 5,
+      coded: 6,
+      build: 3,
+      built: 3,
+      authored: 4,
+      ai: 3,
+      assistant: 2,
+      codex: 5,
+      keynote: 3,
+      ocean: 3,
+    },
+    priority: 18,
+  },
+  {
+    intent: 'blue-ocean-recommendation',
+    phrases: [
+      'why should i watch 1984 blue ocean',
+      'why should i watch the keynote',
+      'why watch 1984 blue ocean',
+      'strongest project',
+      'best demonstration',
+    ],
+    keywords: {
+      why: 2,
+      watch: 6,
+      strongest: 6,
+      best: 4,
+      demonstration: 5,
+      recruiter: 3,
+      keynote: 4,
+      ocean: 3,
+    },
+    priority: 17,
+  },
+  {
+    intent: 'blue-ocean-launch',
+    phrases: [
+      'open 1984 blue ocean',
+      'launch 1984 blue ocean',
+      'start 1984 blue ocean',
+      'show me 1984 blue ocean',
+      'resume 1984 blue ocean',
+      'open the keynote',
+      'launch the keynote',
+      'start the keynote',
+      'resume the keynote',
+    ],
+    keywords: {
+      '1984': 8,
+      blue: 5,
+      open: 5,
+      launch: 6,
+      start: 5,
+      show: 4,
+      resume: 5,
+      keynote: 5,
+      ocean: 4,
+      presentation: 3,
+    },
+    priority: 18,
+  },
+  {
+    intent: 'blue-ocean',
+    phrases: [
+      'what is 1984 blue ocean',
+      'tell me about 1984 blue ocean',
+      'what is the keynote',
+      '1984 blue ocean',
+      'blue ocean keynote',
+    ],
+    keywords: {
+      '1984': 8,
+      blue: 5,
+      ocean: 7,
+      keynote: 6,
+      presentation: 4,
+      strategy: 3,
+      execution: 3,
+      product: 3,
+    },
+    priority: 16,
   },
   {
     intent: 'completed-credentials',
@@ -708,7 +816,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content: PORTFOLIO_KNOWLEDGE.career.businessTechnology,
-        actions: [OPEN_RECRUITER, OPEN_ABOUT],
+        actions: [OPEN_BLUE_OCEAN, OPEN_RECRUITER, OPEN_ABOUT],
       }
     case 'cloud':
       return {
@@ -722,28 +830,56 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
         intent,
         content:
           'Jack is studying artificial intelligence through Microsoft Azure AI Fundamentals topics such as machine-learning concepts, generative AI, computer vision, language, speech, and responsible AI. His angle is practical: how AI can be evaluated and used in real workflows.',
-        actions: [OPEN_ABOUT, OPEN_CREDENTIALS],
+        actions: [OPEN_BLUE_OCEAN, OPEN_ABOUT, OPEN_CREDENTIALS],
       }
     case 'frontend':
       return {
         intent,
         content:
           'Front-end development shows up most clearly in Jack OS itself. The project uses React, Next.js, TypeScript, and Tailwind CSS to turn professional portfolio content into an interactive desktop-style interface.',
-        actions: [OPEN_PROJECTS, OPEN_RECRUITER],
+        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
       }
     case 'project-list':
       return {
         intent,
         content:
-          'The primary project is Jack OS, this operating-system-inspired portfolio. Other listed work includes Azure AI Projects and Networking Labs. Longer-term goals now live in the Road Map rather than placeholder project cards.',
-        actions: [OPEN_PROJECTS, OPEN_GITHUB],
+          'The primary project is Jack OS, this operating-system-inspired portfolio. Its flagship project experience is 1984 Blue Ocean, a 31-stage interactive keynote about business strategy, technical execution, and AI-assisted product development. Other listed work includes Azure AI Projects and Networking Labs.',
+        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_GITHUB],
+      }
+    case 'blue-ocean':
+      return {
+        intent,
+        content:
+          `${BLUE_OCEAN_COPY.title} is the flagship Jack OS V3B interactive keynote. ${BLUE_OCEAN_COPY.shortDescription} It lives inside Jack OS as a normal window or in Presentation Mode, and supports keyboard navigation, reduced motion, and session resume. It has 31 stages across five chapters rather than a traditional static slide deck.`,
+        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
+      }
+    case 'blue-ocean-authorship':
+      return {
+        intent,
+        content:
+          `Jack did not manually code every line of 1984 Blue Ocean. ${BLUE_OCEAN_COPY.authorship} The project is strongest when understood as product direction, narrative design, critique, testing, and iterative AI-assisted execution, not as a claim that Jack hand-wrote the entire implementation alone.`,
+        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS],
+      }
+    case 'blue-ocean-recommendation':
+      return {
+        intent,
+        content:
+          'You should watch 1984 Blue Ocean if you want the clearest proof of how Jack thinks. It connects business strategy, technical communication, AI-assisted product development, and Jack OS itself into one guided case study. For recruiters, it is one of the fastest ways to see his product judgment and ability to bridge business and technical work.',
+        actions: [OPEN_BLUE_OCEAN, OPEN_RECRUITER, OPEN_PROJECTS],
+      }
+    case 'blue-ocean-launch':
+      return {
+        intent,
+        content:
+          'I can open 1984 Blue Ocean from here. It will start at the cover, and if this browser has a valid keynote session, the keynote window will offer Resume Presentation. Presentation Mode is the best viewing experience, but the normal Jack OS window works for previewing it.',
+        actions: [OPEN_BLUE_OCEAN],
       }
     case 'jack-os':
       return {
         intent,
         content:
-          "Jack OS is Jack's interactive portfolio, built as an original retro desktop experience rather than a conventional resume page. It organizes About, Projects, Credentials, Contact, Wallpapers, Secrets, Recruiter Mode, and J.D. as apps inside one interface.",
-        actions: [OPEN_PROJECTS, OPEN_RECRUITER],
+          "Jack OS is Jack's interactive portfolio, built as an original retro desktop experience rather than a conventional resume page. It organizes About, Projects, Credentials, Contact, Wallpapers, Secrets, Recruiter Mode, J.D., and the 1984 Blue Ocean keynote as apps inside one interface.",
+        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
       }
     case 'jack-os-technologies':
       return {
@@ -757,7 +893,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
         intent,
         content:
           `Technically, Jack OS is interesting because it includes ${PORTFOLIO_KNOWLEDGE.projects.jackOsSystems.join(', ')}, Timeline, Guestbook, and a simulated Network Firewall. The work is also iterative: each phase adds polish while preserving the retro desktop identity.`,
-        actions: [OPEN_PROJECTS, OPEN_TIMELINE, OPEN_FIREWALL, OPEN_RECRUITER],
+        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_TIMELINE, OPEN_FIREWALL, OPEN_RECRUITER],
       }
     case 'timeline':
       return {
@@ -805,7 +941,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'From Simple Mode, use the persistent “Return to Jack OS V3A” control at the top right. Returning preserves local Jack OS preferences such as wallpaper, theme, achievements, and sound settings.',
+          'From Simple Mode, use the persistent Return to Jack OS V3B control at the top right. Returning preserves local Jack OS preferences such as wallpaper, theme, achievements, and sound settings.',
         actions: [OPEN_RECRUITER],
       }
     case 'github':
@@ -834,7 +970,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content: `${PORTFOLIO_KNOWLEDGE.career.opportunityStatement} His current direction connects cybersecurity, networking, business, cloud computing, AI, front-end development, and product/interface thinking.`,
-        actions: [OPEN_RECRUITER, OPEN_CONTACT, COPY_EMAIL],
+        actions: [OPEN_RECRUITER, OPEN_BLUE_OCEAN, OPEN_CONTACT, COPY_EMAIL],
       }
     case 'management-leadership':
       return {
@@ -848,6 +984,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
         content: `${PORTFOLIO_KNOWLEDGE.career.navigationSummary} Timeline shows milestones, Guestbook accepts reviewed visitor messages, and Network Firewall demonstrates sample traffic rules with a stronger packet inspector.`,
         actions: [
           OPEN_RECRUITER,
+          OPEN_BLUE_OCEAN,
           OPEN_TIMELINE,
           OPEN_PROJECTS,
           OPEN_CREDENTIALS,

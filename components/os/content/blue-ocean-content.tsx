@@ -5,11 +5,13 @@ import { BlueOceanKeynote } from '@/components/keynote/app/blue-ocean-keynote'
 export function BlueOceanContent({
   active,
   onPowerDown,
+  onCompleted,
   onPresentationEnter,
   onPresentationPowerDown,
 }: {
   active: boolean
   onPowerDown?: () => void
+  onCompleted?: () => void
   onPresentationEnter?: () => void
   onPresentationPowerDown?: () => void
 }) {
@@ -17,6 +19,7 @@ export function BlueOceanContent({
     <BlueOceanKeynote
       active={active}
       onPowerDown={onPowerDown}
+      onCompleted={onCompleted}
       onPresentationEnter={onPresentationEnter}
       onPresentationPowerDown={onPresentationPowerDown}
     />

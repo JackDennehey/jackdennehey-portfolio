@@ -7,19 +7,12 @@ import {
 } from '../config/chapters'
 import {
   KEYNOTE_STEPS,
-  getKeynoteStepById,
-  getKeynoteStepIndexById,
 } from '../config/steps'
+import {
+  getStoredPresentationResumeIndex,
+  writeStoredPresentationSession,
+} from '../config/session'
 import type { KeynoteNavigationDirection, KeynoteProgress } from '../types/keynote'
-
-const KEYNOTE_SESSION_KEY = 'jack-os:blue-ocean-session.v1'
-
-type StoredPresentationSession = {
-  version: 1
-  currentStepId: string
-  hasBegun: boolean
-  returnedToCover: boolean
-}
 
 type UsePresentationControllerOptions = {
   active: boolean
@@ -44,45 +37,6 @@ function isNativeActivationTarget(target: EventTarget | null) {
   )
 }
 
-function readSession(): StoredPresentationSession | null {
-  if (typeof window === 'undefined') return null
-
-  try {
-    const raw = window.sessionStorage.getItem(KEYNOTE_SESSION_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<StoredPresentationSession>
-    if (parsed.version !== 1 || parsed.hasBegun !== true || !parsed.currentStepId) return null
-    if (!getKeynoteStepById(parsed.currentStepId)) return null
-
-    return {
-      version: 1,
-      currentStepId: parsed.currentStepId,
-      hasBegun: true,
-      returnedToCover: parsed.returnedToCover === true,
-    }
-  } catch {
-    return null
-  }
-}
-
-function writeSession(index: number, returnedToCover: boolean) {
-  if (typeof window === 'undefined') return
-  const step = KEYNOTE_STEPS[index]
-  if (!step) return
-
-  try {
-    const session: StoredPresentationSession = {
-      version: 1,
-      currentStepId: step.id,
-      hasBegun: true,
-      returnedToCover,
-    }
-    window.sessionStorage.setItem(KEYNOTE_SESSION_KEY, JSON.stringify(session))
-  } catch {
-    // Session resume is an enhancement; presentation controls still work without storage.
-  }
-}
-
 export function usePresentationController({
   active,
   presentationMode = false,
@@ -100,10 +54,7 @@ export function usePresentationController({
   const isCover = currentIndex === null
 
   useEffect(() => {
-    const session = readSession()
-    if (!session) return
-    const index = getKeynoteStepIndexById(session.currentStepId)
-    setResumeIndex(index >= 0 ? index : null)
+    setResumeIndex(getStoredPresentationResumeIndex())
   }, [])
 
   const moveToIndex = useCallback((
@@ -115,7 +66,7 @@ export function usePresentationController({
     setNavigationDirection(direction)
     setCurrentIndex(boundedIndex)
     setResumeIndex(boundedIndex)
-    writeSession(boundedIndex, returnedToCover)
+    writeStoredPresentationSession(boundedIndex, returnedToCover)
   }, [totalSteps])
 
   const begin = useCallback(() => {
@@ -137,13 +88,13 @@ export function usePresentationController({
       setNavigationDirection('backward')
       if (index <= 0) {
         setResumeIndex(0)
-        writeSession(0, true)
+        writeStoredPresentationSession(0, true)
         return null
       }
 
       const nextIndex = index - 1
       setResumeIndex(nextIndex)
-      writeSession(nextIndex, false)
+      writeStoredPresentationSession(nextIndex, false)
       return nextIndex
     })
   }, [])
@@ -153,7 +104,7 @@ export function usePresentationController({
       const nextIndex = index === null ? 0 : Math.min(totalSteps - 1, index + 1)
       setNavigationDirection('forward')
       setResumeIndex(nextIndex)
-      writeSession(nextIndex, false)
+      writeStoredPresentationSession(nextIndex, false)
       return nextIndex
     })
   }, [totalSteps])
@@ -171,7 +122,7 @@ export function usePresentationController({
       if (index !== null) {
         setNavigationDirection('backward')
         setResumeIndex(index)
-        writeSession(index, true)
+        writeStoredPresentationSession(index, true)
       }
 
       return null

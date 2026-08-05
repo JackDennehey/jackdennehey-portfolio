@@ -5,10 +5,10 @@ export const KEYNOTE_MOTION_TOKENS = {
   microMs: 140,
   revealMs: 260,
   buildMs: 420,
-  chapterMs: 920,
+  chapterMs: 2200,
   launchMs: 1550,
   powerDownMs: 1900,
-  reducedMs: 180,
+  reducedMs: 280,
   easingStandard: 'cubic-bezier(0.22, 1, 0.36, 1)',
   easingClose: 'cubic-bezier(0.4, 0, 0.2, 1)',
 } as const

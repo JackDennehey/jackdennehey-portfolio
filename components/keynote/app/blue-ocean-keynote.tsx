@@ -26,11 +26,13 @@ import type {
   KeynoteStep,
   KeynoteVisualTheme,
 } from '../types/keynote'
+import { writeBlueOceanCompleted } from '@/lib/blue-ocean'
 import { cn } from '@/lib/utils'
 
 type BlueOceanKeynoteProps = {
   active: boolean
   onPowerDown?: () => void
+  onCompleted?: () => void
   onPresentationEnter?: () => void
   onPresentationPowerDown?: () => void
 }
@@ -38,6 +40,7 @@ type BlueOceanKeynoteProps = {
 type KeynoteCoverProps = {
   canResume: boolean
   onBegin: () => void
+  onPresent: () => void
   onResume: () => void
 }
 
@@ -121,7 +124,7 @@ function useTouchLikeInput() {
   return touchLikeInput
 }
 
-function KeynoteCover({ canResume, onBegin, onResume }: KeynoteCoverProps) {
+function KeynoteCover({ canResume, onBegin, onPresent, onResume }: KeynoteCoverProps) {
   const beginRef = useRef<HTMLButtonElement | null>(null)
   const typography = getKeynoteTypography('opening')
   const sailboats = getKeynoteAsset('sailboats')
@@ -174,6 +177,13 @@ function KeynoteCover({ canResume, onBegin, onResume }: KeynoteCoverProps) {
             className="keynote-primary-button"
           >
             Begin Presentation
+          </button>
+          <button
+            type="button"
+            onClick={onPresent}
+            className="keynote-secondary-button"
+          >
+            Present Full Screen
           </button>
           {canResume ? (
             <button
@@ -370,6 +380,7 @@ function getShellTheme(currentStep: KeynoteStep | null): KeynoteVisualTheme {
 export function BlueOceanKeynote({
   active,
   onPowerDown,
+  onCompleted,
   onPresentationEnter,
   onPresentationPowerDown,
 }: BlueOceanKeynoteProps) {
@@ -517,8 +528,10 @@ export function BlueOceanKeynote({
     setCursorHidden(false)
     setPowerDownStep(null)
     clearInactivityTimers()
+    writeBlueOceanCompleted()
+    onCompleted?.()
     onPowerDown?.()
-  }, [clearInactivityTimers, onPowerDown])
+  }, [clearInactivityTimers, onCompleted, onPowerDown])
 
   const handlePowerDown = useCallback(() => {
     if (isPoweringDown) return
@@ -885,6 +898,7 @@ export function BlueOceanKeynote({
           <KeynoteCover
             canResume={controller.canResume}
             onBegin={handleBegin}
+            onPresent={enterPresentationMode}
             onResume={handleResume}
           />
         ) : (

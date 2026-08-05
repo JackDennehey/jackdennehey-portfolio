@@ -1,8 +1,11 @@
 import type { InterfaceTheme } from '@/lib/interface-theme'
 import type { WindowId } from '../apps'
+import { BLUE_OCEAN_COPY } from '@/lib/blue-ocean'
 
 export function HomeContent({
   onOpen,
+  onOpenBlueOcean,
+  onResumeBlueOcean,
   onAskAssistant,
   onOpenSimpleMode,
   theme,
@@ -11,8 +14,12 @@ export function HomeContent({
   scanlines,
   achievementCount,
   achievementTotal,
+  blueOceanCanResume,
+  blueOceanCompleted,
 }: {
   onOpen: (id: WindowId) => void
+  onOpenBlueOcean: () => void
+  onResumeBlueOcean: () => void
   onAskAssistant: () => void
   onOpenSimpleMode: () => void
   theme: InterfaceTheme
@@ -21,6 +28,8 @@ export function HomeContent({
   scanlines: boolean
   achievementCount: number
   achievementTotal: number
+  blueOceanCanResume: boolean
+  blueOceanCompleted: boolean
 }) {
   return (
     <div className="space-y-5">
@@ -65,6 +74,46 @@ export function HomeContent({
         </p>
       </section>
 
+      <section className="os-border bg-card p-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              Featured Experience
+            </p>
+            <h3 className="mt-1 font-pixel text-[11px] leading-relaxed text-foreground">
+              {BLUE_OCEAN_COPY.title}
+            </h3>
+          </div>
+          <span className="os-border shrink-0 bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-muted-foreground">
+            {blueOceanCompleted ? 'Revisit' : 'V3B'}
+          </span>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
+          {BLUE_OCEAN_COPY.shortDescription}
+        </p>
+        <p className="mt-2 font-pixel text-[8px] leading-relaxed text-foreground">
+          {BLUE_OCEAN_COPY.metadata}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onOpenBlueOcean}
+            className="os-border bg-foreground px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-primary-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:bg-card focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Launch 1984 Blue Ocean
+          </button>
+          {blueOceanCanResume ? (
+            <button
+              type="button"
+              onClick={onResumeBlueOcean}
+              className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Resume Keynote
+            </button>
+          ) : null}
+        </div>
+      </section>
+
       <p className="text-sm leading-relaxed text-foreground text-pretty">
         {
           "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, and building meaningful projects."
@@ -83,9 +132,9 @@ export function HomeContent({
           <dt>Edition</dt>
           <dd className="text-foreground">Portfolio</dd>
           <dt>Version</dt>
-          <dd className="text-foreground">V3A</dd>
+          <dd className="text-foreground">V3B</dd>
           <dt>Release</dt>
-          <dd className="text-foreground">Identity Update</dd>
+          <dd className="text-foreground">1984 Blue Ocean</dd>
           <dt>Achievements</dt>
           <dd className="text-foreground">
             {achievementCount}/{achievementTotal}
