@@ -210,6 +210,26 @@ export function JackTimelineIcon(props: IconProps) {
   )
 }
 
+export function JackBlueOceanIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" fill="#07131f" stroke="#c1a36a" strokeWidth="2" />
+      <rect x="6" y="6" width="12" height="12" fill="#12344d" />
+      <path d="M6 13h12" stroke="#d8ccb0" strokeWidth="1.5" />
+      <path d="M6 15c2-1 4-1 6 0s4 1 6 0" stroke="#7fb0c8" strokeWidth="1.5" />
+      <path d="M6 17c2-1 4-1 6 0s4 1 6 0" stroke="#4d7d98" strokeWidth="1.5" />
+      <path d="M12 5l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" fill="#d6b96f" />
+      <path d="M4 4h4M16 4h4M4 20h4M16 20h4" stroke="#f2e4bc" strokeWidth="1" />
+    </svg>
+  )
+}
+
 export function JackGuestbookIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

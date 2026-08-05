@@ -3,13 +3,13 @@ export const SITE_DOMAIN = 'jackdennehey.com'
 export const SITE_NAME = 'Jack OS'
 export const SITE_AUTHOR = 'Jack Dennehey'
 export const SITE_TITLE = 'Jack Dennehey | Jack OS Portfolio'
-export const SITE_OG_TITLE = 'Jack Dennehey - Jack OS V3A Interactive Portfolio'
+export const SITE_OG_TITLE = 'Jack Dennehey - Jack OS V3B Interactive Portfolio'
 export const SITE_DESCRIPTION =
-  "Explore Jack Dennehey's Jack OS portfolio: a retro desktop with Recruiter Mode, Network Firewall, Timeline, Road Map, Achievements, Simple Mode, cybersecurity credentials, projects, cloud learning, and AI studies."
+  "Explore Jack Dennehey's Jack OS portfolio: a retro desktop with 1984 Blue Ocean, Recruiter Mode, Network Firewall, Timeline, Road Map, Achievements, Simple Mode, cybersecurity credentials, projects, cloud learning, and AI studies."
 export const SITE_OG_ALT =
   "Jack OS - Jack Dennehey's interactive cybersecurity, business, and technology portfolio"
 export const SITE_OG_SUBTITLE = 'Cybersecurity, Business, Cloud & AI'
-export const SITE_LAST_UPDATED = '2026-08-03T00:00:00-04:00'
+export const SITE_LAST_UPDATED = '2026-08-05T00:00:00-04:00'
 
 export const SITE_KEYWORDS = [
   'Jack Dennehey',
@@ -28,6 +28,10 @@ export const SITE_KEYWORDS = [
   'artificial intelligence',
   'technology portfolio',
   'interactive portfolio',
+  '1984 Blue Ocean',
+  'interactive keynote',
+  'business strategy portfolio',
+  'AI-assisted product development',
   'Recruiter Mode',
   'portfolio timeline',
   'portfolio guestbook',

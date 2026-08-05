@@ -1,8 +1,9 @@
 import { ExternalLink } from 'lucide-react'
 import { PROJECTS } from '@/lib/portfolio-data'
 import { GithubIcon } from '@/components/os/brand-icons'
+import type { WindowId } from '../apps'
 
-export function ProjectsContent() {
+export function ProjectsContent({ onOpen }: { onOpen?: (id: WindowId) => void }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {PROJECTS.map((project) => (
@@ -22,6 +23,32 @@ export function ProjectsContent() {
             {project.description}
           </p>
 
+          {project.role || project.implementation || project.keySystems ? (
+            <div className="mt-3 space-y-2 border-t-2 border-border pt-3 text-xs leading-relaxed text-muted-foreground">
+              {project.role ? (
+                <p>
+                  <span className="font-semibold text-foreground">Role:</span> {project.role}
+                </p>
+              ) : null}
+              {project.implementation ? (
+                <p>
+                  <span className="font-semibold text-foreground">Implementation:</span>{' '}
+                  {project.implementation}
+                </p>
+              ) : null}
+              {project.keySystems ? (
+                <ul className="grid gap-1" aria-label={`${project.title} key systems`}>
+                  {project.keySystems.map((system) => (
+                    <li key={system} className="flex min-w-0 gap-2">
+                      <span aria-hidden className="mt-1.5 size-1 shrink-0 bg-current" />
+                      <span>{system}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
           <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Technologies">
             {project.technologies.map((tech) => (
               <li
@@ -34,6 +61,15 @@ export function ProjectsContent() {
           </ul>
 
           <div className="mt-4 flex flex-wrap gap-2">
+            {project.internalApp && onOpen ? (
+              <button
+                type="button"
+                onClick={() => onOpen(project.internalApp as WindowId)}
+                className="os-border inline-flex items-center gap-1.5 bg-foreground px-2.5 py-1.5 font-pixel text-[8px] leading-relaxed text-primary-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:bg-background focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Launch Keynote
+              </button>
+            ) : null}
             {project.github ? (
               <a
                 href={project.github}

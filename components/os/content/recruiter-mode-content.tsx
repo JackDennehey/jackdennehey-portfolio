@@ -9,6 +9,7 @@ import {
   RECRUITER_SECTIONS,
   type RecruiterSectionId,
 } from '@/lib/portfolio-knowledge'
+import { BLUE_OCEAN_COPY } from '@/lib/blue-ocean'
 import { GithubIcon, LinkedinIcon } from '@/components/os/brand-icons'
 import { cn } from '@/lib/utils'
 
@@ -122,6 +123,7 @@ export function RecruiterModeContent({
           onCopyEmail={onCopyEmail}
           onAskAssistant={onAskAssistant}
           onOpenSimpleMode={onOpenSimpleMode}
+          onContinue={() => onSectionChange('education')}
         />
 
         <footer className="sticky bottom-0 flex flex-wrap justify-between gap-2 border-t-2 border-border bg-paper/95 pt-3">
@@ -153,12 +155,14 @@ function RecruiterSection({
   onCopyEmail,
   onAskAssistant,
   onOpenSimpleMode,
+  onContinue,
 }: {
   section: RecruiterSectionId
   onOpen: (id: WindowId) => void
   onCopyEmail: () => void
   onAskAssistant: () => void
   onOpenSimpleMode: () => void
+  onContinue: () => void
 }) {
   switch (section) {
     case 'overview':
@@ -167,6 +171,7 @@ function RecruiterSection({
           onOpen={onOpen}
           onAskAssistant={onAskAssistant}
           onOpenSimpleMode={onOpenSimpleMode}
+          onContinue={onContinue}
         />
       )
     case 'education':
@@ -186,10 +191,12 @@ function OverviewSection({
   onOpen,
   onAskAssistant,
   onOpenSimpleMode,
+  onContinue,
 }: {
   onOpen: (id: WindowId) => void
   onAskAssistant: () => void
   onOpenSimpleMode: () => void
+  onContinue: () => void
 }) {
   return (
     <div className="space-y-4">
@@ -202,6 +209,34 @@ function OverviewSection({
         <FactCard label="Current Focus" value="Business studies at Penn State Brandywine" />
         <FactCard label="Foundation" value="Cybersecurity, networking, and hands-on projects" />
       </div>
+      <article className="os-border bg-card p-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              Featured Case Study
+            </p>
+            <h4 className="mt-1 font-pixel text-[10px] leading-relaxed text-foreground">
+              {BLUE_OCEAN_COPY.title}
+            </h4>
+          </div>
+          <span className="os-border shrink-0 bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-muted-foreground">
+            31 stages
+          </span>
+        </div>
+        <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
+          {BLUE_OCEAN_COPY.recruiterSummary}
+        </p>
+        <div className="mt-3">
+          <ActionRow>
+            <ActionButton onClick={() => onOpen('blue-ocean')}>
+              View the Keynote
+            </ActionButton>
+            <ActionButton onClick={onContinue}>
+              Continue Recruiter Mode
+            </ActionButton>
+          </ActionRow>
+        </div>
+      </article>
       <ActionRow>
         <ActionButton onClick={() => onOpen('about')}>View About</ActionButton>
         <ActionButton onClick={() => onOpen('projects')}>View Projects</ActionButton>

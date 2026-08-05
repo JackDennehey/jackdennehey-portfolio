@@ -232,7 +232,9 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                           ? 'recruiter-inline-icon'
                           : command.tone === 'firewall'
                             ? 'firewall-inline-icon'
-                            : 'border-current bg-paper text-foreground',
+                            : command.tone === 'blue-ocean'
+                              ? 'blue-ocean-inline-icon'
+                              : 'border-current bg-paper text-foreground',
                       )}
                     >
                       {Icon ? (

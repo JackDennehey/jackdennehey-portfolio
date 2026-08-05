@@ -33,6 +33,7 @@ export function MinimizedWindowStrip({
               'grid size-4 shrink-0 place-items-center overflow-hidden',
               app.tone === 'recruiter' ? 'recruiter-inline-icon border' : null,
               app.tone === 'firewall' ? 'firewall-inline-icon border' : null,
+              app.tone === 'blue-ocean' ? 'blue-ocean-inline-icon border' : null,
             )}
           >
             <app.Icon className={app.tone ? 'size-3' : 'size-4'} />

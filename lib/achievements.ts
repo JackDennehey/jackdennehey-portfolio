@@ -15,6 +15,7 @@ export type JackOsAchievementId =
   | 'secret-discovered'
   | 'roadmap-opened'
   | 'simple-mode-opened'
+  | 'blue-ocean-completed'
 export type JackOsInteractiveAppId = 'timeline' | 'guestbook' | 'firewall'
 
 export type JackOsAchievementDefinition = {
@@ -83,6 +84,11 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
     title: 'Direct Access',
     description: 'Entered Simple Mode.',
   },
+  {
+    id: 'blue-ocean-completed',
+    title: 'Blue Ocean Navigator',
+    description: 'Completed the 1984 Blue Ocean keynote.',
+  },
 ] as const
 
 export const JACK_OS_ACHIEVEMENT_IDS = JACK_OS_ACHIEVEMENT_REGISTRY.map(
@@ -136,6 +142,10 @@ export const ACHIEVEMENT_MESSAGES: Record<
   'simple-mode-opened': {
     title: 'Achievement Unlocked',
     message: 'Direct Access',
+  },
+  'blue-ocean-completed': {
+    title: 'Achievement Unlocked',
+    message: 'Blue Ocean Navigator',
   },
 }
 

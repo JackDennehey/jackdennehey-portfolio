@@ -15,16 +15,19 @@ export function DesktopIcon({
 }) {
   const { Icon, label } = item
   const tone = item.kind === 'window' ? item.tone : undefined
+  const isBlueOcean = item.kind === 'window' && item.id === 'blue-ocean'
   const isRecruiter = item.kind === 'window' && item.id === 'recruiter'
   const isFirewall = item.kind === 'window' && item.id === 'firewall'
-  const isFlagship = isRecruiter || isFirewall
+  const isFlagship = isBlueOcean || isRecruiter || isFirewall
   const isImageIcon = item.kind === 'window' && item.iconVisual === 'image'
   const externalTone = item.kind === 'link' ? item.id : null
   const accessibleLabel = isRecruiter
     ? 'Recruiter Mode — guided professional overview'
     : isFirewall
       ? 'Network Firewall — flagship simulated packet firewall demonstration'
-      : label
+      : isBlueOcean
+        ? '1984 Blue Ocean — flagship guided interactive keynote'
+        : label
   const openItem = () => {
     if (item.kind === 'window') {
       onOpenWindow(item.id)
@@ -40,11 +43,13 @@ export function DesktopIcon({
       ? 'recruiter-icon-frame'
       : tone === 'firewall'
         ? 'firewall-icon-frame'
-        : externalTone === 'github'
-          ? 'github-icon-frame'
-          : externalTone === 'linkedin'
-            ? 'linkedin-icon-frame'
-            : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground'
+        : tone === 'blue-ocean'
+          ? 'blue-ocean-icon-frame'
+          : externalTone === 'github'
+            ? 'github-icon-frame'
+            : externalTone === 'linkedin'
+              ? 'linkedin-icon-frame'
+              : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground'
 
   const inner = (
     <>
@@ -62,6 +67,7 @@ export function DesktopIcon({
           'desktop-icon-label w-full text-center font-pixel text-[8px] leading-relaxed text-foreground',
           tone === 'recruiter' ? 'recruiter-icon-label' : null,
           tone === 'firewall' ? 'firewall-icon-label' : null,
+          tone === 'blue-ocean' ? 'blue-ocean-icon-label' : null,
           externalTone === 'github' ? 'github-icon-label' : null,
           externalTone === 'linkedin' ? 'linkedin-icon-label' : null,
         )}
