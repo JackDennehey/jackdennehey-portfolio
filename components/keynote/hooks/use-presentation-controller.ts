@@ -10,7 +10,7 @@ import {
   getKeynoteStepById,
   getKeynoteStepIndexById,
 } from '../config/steps'
-import type { KeynoteProgress } from '../types/keynote'
+import type { KeynoteNavigationDirection, KeynoteProgress } from '../types/keynote'
 
 const KEYNOTE_SESSION_KEY = 'jack-os:blue-ocean-session.v1'
 
@@ -26,6 +26,8 @@ type UsePresentationControllerOptions = {
   presentationMode?: boolean
   onExitPresentationMode?: () => void
   onFinalNext?: () => void
+  onInteraction?: () => void
+  onSkipOverlay?: () => boolean
 }
 
 function isTextEntryTarget(target: EventTarget | null) {
@@ -86,9 +88,13 @@ export function usePresentationController({
   presentationMode = false,
   onExitPresentationMode,
   onFinalNext,
+  onInteraction,
+  onSkipOverlay,
 }: UsePresentationControllerOptions) {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null)
   const [resumeIndex, setResumeIndex] = useState<number | null>(null)
+  const [navigationDirection, setNavigationDirection] =
+    useState<KeynoteNavigationDirection>('initial')
   const totalSteps = KEYNOTE_STEPS.length
   const currentStep = currentIndex === null ? null : KEYNOTE_STEPS[currentIndex]
   const isCover = currentIndex === null
@@ -100,15 +106,20 @@ export function usePresentationController({
     setResumeIndex(index >= 0 ? index : null)
   }, [])
 
-  const moveToIndex = useCallback((nextIndex: number, returnedToCover = false) => {
+  const moveToIndex = useCallback((
+    nextIndex: number,
+    returnedToCover = false,
+    direction: KeynoteNavigationDirection = 'jump',
+  ) => {
     const boundedIndex = Math.max(0, Math.min(totalSteps - 1, nextIndex))
+    setNavigationDirection(direction)
     setCurrentIndex(boundedIndex)
     setResumeIndex(boundedIndex)
     writeSession(boundedIndex, returnedToCover)
   }, [totalSteps])
 
   const begin = useCallback(() => {
-    moveToIndex(0)
+    moveToIndex(0, false, 'forward')
   }, [moveToIndex])
 
   const resume = useCallback(() => {
@@ -117,12 +128,13 @@ export function usePresentationController({
       return
     }
 
-    moveToIndex(resumeIndex)
+    moveToIndex(resumeIndex, false, 'jump')
   }, [begin, moveToIndex, resumeIndex])
 
   const goPrevious = useCallback(() => {
     setCurrentIndex((index) => {
       if (index === null) return null
+      setNavigationDirection('backward')
       if (index <= 0) {
         setResumeIndex(0)
         writeSession(0, true)
@@ -139,6 +151,7 @@ export function usePresentationController({
   const goNext = useCallback(() => {
     setCurrentIndex((index) => {
       const nextIndex = index === null ? 0 : Math.min(totalSteps - 1, index + 1)
+      setNavigationDirection('forward')
       setResumeIndex(nextIndex)
       writeSession(nextIndex, false)
       return nextIndex
@@ -146,16 +159,17 @@ export function usePresentationController({
   }, [totalSteps])
 
   const goHome = useCallback(() => {
-    moveToIndex(0)
+    moveToIndex(0, false, 'jump')
   }, [moveToIndex])
 
   const goEnd = useCallback(() => {
-    moveToIndex(Math.max(0, totalSteps - 1))
+    moveToIndex(Math.max(0, totalSteps - 1), false, 'jump')
   }, [moveToIndex, totalSteps])
 
   const showCover = useCallback(() => {
     setCurrentIndex((index) => {
       if (index !== null) {
+        setNavigationDirection('backward')
         setResumeIndex(index)
         writeSession(index, true)
       }
@@ -210,6 +224,8 @@ export function usePresentationController({
         if (event.key === ' ' && isNativeActivationTarget(event.target)) return
         event.preventDefault()
         event.stopPropagation()
+        onInteraction?.()
+        if (onSkipOverlay?.()) return
         const currentStepForKey = currentIndex === null ? null : KEYNOTE_STEPS[currentIndex]
         if (currentStepForKey?.completionAction === 'power-down') {
           onFinalNext?.()
@@ -222,6 +238,8 @@ export function usePresentationController({
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
         event.stopPropagation()
+        onInteraction?.()
+        if (onSkipOverlay?.()) return
         goPrevious()
         return
       }
@@ -229,6 +247,8 @@ export function usePresentationController({
       if (event.key === 'Home') {
         event.preventDefault()
         event.stopPropagation()
+        onInteraction?.()
+        if (onSkipOverlay?.()) return
         goHome()
         return
       }
@@ -236,6 +256,8 @@ export function usePresentationController({
       if (event.key === 'End') {
         event.preventDefault()
         event.stopPropagation()
+        onInteraction?.()
+        if (onSkipOverlay?.()) return
         goEnd()
         return
       }
@@ -244,6 +266,7 @@ export function usePresentationController({
         if (presentationMode) {
           event.preventDefault()
           event.stopPropagation()
+          onInteraction?.()
           onExitPresentationMode?.()
           return
         }
@@ -251,6 +274,7 @@ export function usePresentationController({
         if (!isCover) {
           event.preventDefault()
           event.stopPropagation()
+          onInteraction?.()
           showCover()
         }
       }
@@ -266,8 +290,10 @@ export function usePresentationController({
     goNext,
     goPrevious,
     isCover,
+    onInteraction,
     onExitPresentationMode,
     onFinalNext,
+    onSkipOverlay,
     presentationMode,
     showCover,
   ])
@@ -276,6 +302,7 @@ export function usePresentationController({
     steps: KEYNOTE_STEPS,
     currentIndex,
     currentStep,
+    navigationDirection,
     isCover,
     progress,
     canResume: resumeIndex !== null && isCover,

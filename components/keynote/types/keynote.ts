@@ -21,6 +21,19 @@ export type KeynoteRendererKey =
 export type KeynoteTransition = 'fade' | 'slide' | 'reveal' | 'image'
 export type KeynoteTransitionScope = 'build' | 'chapter'
 export type KeynoteBuildMode = 'replace' | 'accumulate'
+export type KeynoteMotionPreset =
+  | 'fade-up'
+  | 'fade-in'
+  | 'crossfade'
+  | 'split-reveal'
+  | 'diagram-build'
+  | 'layer-stack'
+  | 'timeline-advance'
+  | 'status-reveal'
+  | 'chapter-reset'
+  | 'power-down'
+export type KeynoteEntranceOrder = 'default' | 'image-first' | 'text-first' | 'minimal'
+export type KeynoteNavigationDirection = 'initial' | 'forward' | 'backward' | 'jump'
 export type KeynoteTypographyTheme =
   | 'opening'
   | 'technical'
@@ -161,6 +174,8 @@ export type KeynoteStep = {
   presenterNote?: string
   chapterStart?: boolean
   chapterEnd?: boolean
+  motionPreset?: KeynoteMotionPreset
+  entranceOrder?: KeynoteEntranceOrder
   completionAction?: 'power-down'
   content: KeynoteStepContent
 }

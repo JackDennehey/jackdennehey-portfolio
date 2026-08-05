@@ -829,6 +829,8 @@ export function useSoundEffects() {
       setSoundEffectsEnabled,
       appOpen: () => playSound('appOpen'),
       windowClose: () => playSound('windowClose'),
+      keynotePresentationEnter: () => playSound('appOpen'),
+      keynotePresentationPowerDown: () => playSound('windowClose'),
       guestbookSign: () => playSound('guestbookSign'),
       playHourlyChime: () => playSound('hourlyChime'),
       firstWallpaperSet: playFirstWallpaperSet,

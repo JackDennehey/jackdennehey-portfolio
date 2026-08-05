@@ -1,12 +1,23 @@
 # 1984 Blue Ocean Keynote Architecture
 
-1984 Blue Ocean is a Jack OS desktop application built as a reusable keynote engine. V3B Phase 3 uses the Phase 2 shell to deliver the final narrative, chapter builds, and Power Down ending while keeping navigation centralized.
+1984 Blue Ocean is a Jack OS desktop application built as a reusable keynote engine. V3B Phase 4 keeps the approved 31-step narrative intact while adding an immersive presentation runtime, fullscreen fallback, motion presets, cinematic chapter dividers, and a more complete Power Down lifecycle.
 
 ## State Model
 
-Presentation state is owned by `usePresentationController`. The controller stores the current global step index, derives cover vs. stage state, exposes previous/next/home/end actions, and handles keyboard navigation. Individual stage components never own global navigation.
+Presentation state is owned by `usePresentationController`. The controller stores the current global step index, derives cover vs. stage state, exposes previous/next/home/end actions, tracks navigation direction, and handles keyboard navigation. Individual stage components never own global navigation.
 
-Escape returns to the cover in windowed mode. In presentation mode, Escape exits presentation mode first. Repeated keydown events are ignored so holding a key does not skip through multiple stages.
+Escape returns to the cover in windowed mode. In presentation mode, Escape exits presentation mode first. Repeated keydown events are ignored so holding a key does not skip through multiple stages. Overlay skip hooks allow the launch sequence and chapter dividers to be dismissed without accidentally advancing multiple narrative steps.
+
+## Presentation Mode
+
+The keynote has two operating states:
+
+- Windowed Preview Mode keeps the Jack OS application shell, header, window controls, full progress copy, and standard Previous/Next controls.
+- Presentation Mode removes the ordinary window frame from the canvas, fills the viewport with a dedicated presentation shell, shows discreet controls near the bottom edge, and preserves the active stage instead of resetting progress.
+
+The Present action attempts the browser Fullscreen API from the user gesture. If fullscreen succeeds, the same shell runs inside the browser fullscreen element. If the API is unavailable, denied, or skipped on touch-first devices, the fixed viewport-filling overlay remains fully functional as the fallback. `fullscreenchange` synchronizes unexpected browser exits back to windowed preview mode.
+
+The `keynote-presentation-active` document class prevents page-level scrolling while the overlay is active. All fullscreen calls are caught so a rejected promise cannot block navigation.
 
 ## Master Step Registry
 
@@ -61,6 +72,33 @@ The keynote preloads the cover and next likely image when needed, then lazy-load
 
 `components/keynote/animations/transitions.ts` distinguishes build transitions from chapter transitions. Build transitions are short and subtle. Chapter transitions are slightly longer and provide a clearer visual reset. CSS reduced-motion rules disable nonessential motion while preserving immediate state changes.
 
+`components/keynote/config/motion.ts` defines shared timing tokens, the concise preset library, Roman numeral formatting, and chapter-divider metadata. Future steps should prefer `motionPreset` metadata only when the inferred preset is not suitable. The available presets are:
+
+- `fade-up`
+- `fade-in`
+- `crossfade`
+- `split-reveal`
+- `diagram-build`
+- `layer-stack`
+- `timeline-advance`
+- `status-reveal`
+- `chapter-reset`
+- `power-down`
+
+Stage renderers expose stable sequence markers such as headings, images, panels, nodes, labels, and terminal lines. CSS uses those markers plus `--keynote-build-index` to sequence entrances without moving animation state into chapter components.
+
+## Chapter Dividers
+
+Chapter dividers are transitional overlays triggered by `chapterStart` steps for Chapters I-V. They do not count as separate narrative steps. Each divider shares the same structure and uses a motif from the incoming chapter: split grid, ledger, ocean, version marker, or minimal field. Pointer or keyboard navigation can skip a divider immediately, and reduced-motion mode shortens the divider to a near-immediate crossfade.
+
+## Launch Sequence
+
+The cover Begin action and presentation entry from the cover use a restrained launch overlay. The overlay briefly preserves the cover, shows a compact `1984 BLUE OCEAN` title card, displays a segmented progress treatment, then enters the Working Thesis. Space, ArrowRight, click, or tap can skip the sequence after it begins. Reduced-motion mode runs the pending begin/resume action promptly and removes artificial delay.
+
+## Inactivity Controls
+
+Presentation Mode starts with controls visible. Pointer movement, pointer down, focus movement, and keyboard navigation reveal them again. After roughly three seconds, controls reduce opacity but remain discoverable. Focused or hovered controls restore full opacity. Cursor auto-hide is disabled on touch-first devices and is also suppressed when a control is focused or hovered. Timers are cleaned up on exit and unmount.
+
 ## Session Resume
 
 Progress is stored in `sessionStorage` under `jack-os:blue-ocean-session.v1`. The stored state contains only the current step id, whether the presentation has begun, and whether the visitor returned to the cover.
@@ -73,10 +111,18 @@ The shell provides semantic headings, visible focus states, keyboard-complete co
 
 Photography is decorative only where it functions as a background. Meaningful image frames use registry alt text and captions.
 
+Presentation Mode announces entry and exit through a polite screen-reader message. The visible Exit Presentation control works independently of Escape. Chapter dividers and launch overlays use polite status regions and can be skipped without producing alert dialogs.
+
+## Sound Hooks
+
+Blue Ocean receives semantic sound callbacks from the centralized Jack OS sound system. Presentation entry uses the existing app-open cue, and Power Down uses the existing window-close cue. Standard slide builds and chapter dividers remain silent in Phase 4 because no dedicated restrained page-advance asset exists. All playback obeys the global Sound Effects preference and rejected playback promises are handled by the shared sound hook.
+
 ## Final Narrative Path
 
 Future content revisions should edit the chapter metadata, step registry content payloads, presenter notes, and asset associations. They should not duplicate navigation, create per-chapter controller state, or bypass the renderer and theme registries.
 
 ## Power Down Ending
 
-The final step uses `completionAction: 'power-down'`. The shell displays a short status sequence, exits presentation mode, and asks the Jack OS window manager to close the keynote window. Reduced-motion users receive the same state change with a much shorter delay.
+The final step uses `completionAction: 'power-down'`. The shell locks duplicate activation, fades ordinary navigation, displays the status sequence, advances a restrained progress indicator, exits browser fullscreen if active, removes the presentation overlay, and asks the Jack OS window manager to close the keynote window. Reduced-motion users receive the same lifecycle with a much shorter delay.
+
+Cleanup responsibilities live in the shell: launch timers, divider timers, inactivity timers, power-down timers, fullscreen listeners, document classes, and pointer/focus listeners are cleared on exit or unmount.

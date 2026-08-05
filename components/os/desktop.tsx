@@ -1372,6 +1372,8 @@ export function Desktop() {
         return (
           <BlueOceanContent
             active={active}
+            onPresentationEnter={soundEffects.keynotePresentationEnter}
+            onPresentationPowerDown={soundEffects.keynotePresentationPowerDown}
             onPowerDown={() => {
               closeWindow('blue-ocean')
               focusDesktop()
