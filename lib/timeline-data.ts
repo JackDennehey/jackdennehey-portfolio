@@ -10,6 +10,7 @@ export type TimelineCategory =
 export type TimelineActionTarget =
   | 'about'
   | 'projects'
+  | 'pocket-pier'
   | 'certifications'
   | 'recruiter'
   | 'timeline'
@@ -53,6 +54,7 @@ const azureCredential = CREDENTIALS.find(
   (credential) => credential.id === 'microsoft-azure-ai-fundamentals',
 )
 const jackOsProject = PROJECTS.find((project) => project.title === 'Portfolio Website')
+const pocketPierProject = PROJECTS.find((project) => project.title === 'Pocket Pier')
 
 export const TIMELINE_CATEGORIES: readonly TimelineCategory[] = [
   'Education',
@@ -212,6 +214,24 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
         }
       : undefined,
     action: { label: 'Open Credentials', target: 'certifications' },
+  },
+  {
+    id: 'pocket-pier-mobile-product',
+    order: 66,
+    year: 'Current',
+    title: 'Pocket Pier - Mobile Product Development',
+    summary:
+      "Pocket Pier expands Jack's public work from web software into independent mobile product development under JDen Studios.",
+    description:
+      pocketPierProject?.description ??
+      'Pocket Pier is a cozy pixel-art harbor management game built with Godot and GDScript for iOS. The project demonstrates the product lifecycle from concept and prototype through gameplay systems, iteration, mobile packaging, and App Store preparation.',
+    category: 'Projects',
+    featured: true,
+    badge: 'JDen',
+    actions: [
+      { label: 'Open Pocket Pier', target: 'pocket-pier' },
+      { label: 'Open Projects', target: 'projects' },
+    ],
   },
   {
     id: 'penn-state-business-studies',

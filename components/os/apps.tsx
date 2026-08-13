@@ -4,6 +4,7 @@ import {
   JackAboutImageIcon,
   JackCredentialsImageIcon,
   JackGuestbookImageIcon,
+  JackPocketPierImageIcon,
   JackRoadmapImageIcon,
   JackResumeImageIcon,
   JackSecretsImageIcon,
@@ -24,6 +25,7 @@ import {
 export type WindowId =
   | 'home'
   | 'blue-ocean'
+  | 'pocket-pier'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -71,6 +73,15 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 660,
     description: 'flagship interactive keynote',
     tone: 'blue-ocean',
+  },
+  'pocket-pier': {
+    id: 'pocket-pier',
+    title: 'Pocket Pier',
+    Icon: JackPocketPierImageIcon,
+    iconVisual: 'image',
+    width: 860,
+    height: 640,
+    description: 'indie mobile game',
   },
   about: {
     id: 'about',
@@ -189,6 +200,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
 export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   home: 'home',
   'blue-ocean': '1984-blue-ocean',
+  'pocket-pier': 'pocket-pier',
   about: 'about',
   projects: 'projects',
   certifications: 'credentials',
@@ -217,6 +229,8 @@ WINDOW_IDS_BY_HASH['recruiter-mode'] = 'recruiter'
 WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
 WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
 WINDOW_IDS_BY_HASH['blue-ocean'] = 'blue-ocean'
+WINDOW_IDS_BY_HASH.pocketpier = 'pocket-pier'
+WINDOW_IDS_BY_HASH['jden-studios'] = 'pocket-pier'
 
 export function getWindowHash(id: WindowId) {
   return WINDOW_HASH_SLUGS[id]
@@ -247,6 +261,14 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     Icon: JackBlueOceanIcon,
     description: 'flagship interactive keynote',
     tone: 'blue-ocean',
+  },
+  {
+    kind: 'window',
+    id: 'pocket-pier',
+    label: 'Pocket Pier',
+    Icon: JackPocketPierImageIcon,
+    iconVisual: 'image',
+    description: 'indie mobile game',
   },
   {
     kind: 'window',

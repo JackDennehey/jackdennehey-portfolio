@@ -3,6 +3,7 @@ import type { SVGProps } from 'react'
 export const APP_ICON_IMAGE_SOURCES = {
   about: '/photos/app-icons/north-star.png',
   guestbook: '/photos/app-icons/guestbook.png',
+  pocketPier: '/images/Pocket%20Pier/PPICON.png',
   resume: '/photos/app-icons/resume.png',
   roadmap: '/photos/app-icons/roadmap.png',
   secrets: '/photos/app-icons/secrets.png',
@@ -38,6 +39,7 @@ function createAppImageIcon(id: AppIconImageId, title: string) {
 
 export const JackAboutImageIcon = createAppImageIcon('about', 'About Me')
 export const JackGuestbookImageIcon = createAppImageIcon('guestbook', 'Guestbook')
+export const JackPocketPierImageIcon = createAppImageIcon('pocketPier', 'Pocket Pier')
 export const JackResumeImageIcon = createAppImageIcon('resume', 'Resume')
 export const JackRoadmapImageIcon = createAppImageIcon('roadmap', 'Road Map')
 export const JackSecretsImageIcon = createAppImageIcon('secrets', 'Secrets')

@@ -1,4 +1,5 @@
 import { BLUE_OCEAN_COPY } from './blue-ocean'
+import { POCKET_PIER_COPY } from './pocket-pier'
 
 export const CONTACT = {
   email: 'jackdennehey@gmail.com',
@@ -14,7 +15,12 @@ export type Project = {
   technologies: string[]
   github?: string
   demo?: string
-  internalApp?: 'blue-ocean'
+  internalApp?: 'blue-ocean' | 'pocket-pier'
+  internalActionLabel?: string
+  thumbnail?: {
+    src: string
+    alt: string
+  }
   role?: string
   implementation?: string
   keySystems?: string[]
@@ -54,6 +60,33 @@ export const PROJECTS: Project[] = [
       'chapter divider pacing',
       'session resume',
       'reduced-motion support',
+    ],
+  },
+  {
+    title: POCKET_PIER_COPY.title,
+    status: POCKET_PIER_COPY.subtitle,
+    description: POCKET_PIER_COPY.shortDescription,
+    technologies: [
+      'Godot',
+      'GDScript',
+      'iOS',
+      'Game Development',
+      'Product Development',
+      'Pixel Art',
+    ],
+    internalApp: 'pocket-pier',
+    internalActionLabel: 'Open Pocket Pier',
+    thumbnail: POCKET_PIER_COPY.assets.icon,
+    role: POCKET_PIER_COPY.role,
+    implementation:
+      'Designed and built as a mobile-first Godot project with GDScript gameplay systems, pixel-art asset integration, iOS packaging, and App Store Connect preparation.',
+    keySystems: [
+      'fishing and selling loop',
+      'progression and economy systems',
+      'worker automation',
+      'boats and harbor expansion',
+      'mobile UI and touch-first flow',
+      'iOS build and distribution workflow',
     ],
   },
   {
