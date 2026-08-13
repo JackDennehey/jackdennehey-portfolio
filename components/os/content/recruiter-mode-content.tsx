@@ -342,6 +342,7 @@ function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
 
       <ActionRow>
         <ActionButton onClick={() => onOpen('projects')}>Open Projects</ActionButton>
+        <ActionButton onClick={() => onOpen('pocket-pier')}>Open Pocket Pier</ActionButton>
         <ActionButton onClick={() => onOpen('firewall')}>Open Firewall Simulation</ActionButton>
         {featuredProject.github ? (
           <ActionLink href={featuredProject.github} Icon={GithubIcon}>

@@ -10,7 +10,7 @@ import {
 } from '@/lib/site-metadata'
 
 const simpleDescription =
-  'Professional overview of Jack Dennehey, a Penn State Brandywine Business student with a background in cybersecurity and networking and interests in cloud computing, artificial intelligence, and front-end development.'
+  'Professional overview of Jack Dennehey, a Penn State Brandywine Business student with a background in cybersecurity and networking and interests in cloud computing, artificial intelligence, front-end development, and product development.'
 
 export const metadata: Metadata = {
   title: {

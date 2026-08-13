@@ -39,7 +39,7 @@ const personJsonLd = {
   email: `mailto:${CONTACT.email}`,
   jobTitle: 'Business Student',
   description:
-    'Penn State Brandywine business student focused on cybersecurity, networking, cloud computing, artificial intelligence, business, and technical projects.',
+    'Penn State Brandywine business student focused on cybersecurity, networking, cloud computing, artificial intelligence, business, and product development.',
   sameAs: [CONTACT.linkedin, CONTACT.github],
   mainEntityOfPage: {
     '@id': `${SITE_PAGE_URL}#profile`,
@@ -66,6 +66,8 @@ const personJsonLd = {
     'Artificial intelligence',
     'Business',
     'Technology projects',
+    'Mobile product development',
+    'Godot game development',
     'Interactive portfolio design',
   ],
 }
@@ -111,6 +113,7 @@ const jackOsJsonLd = {
     'Simple Mode professional portfolio view',
     'Reviewed public Guestbook',
     'Interactive desktop portfolio interface',
+    'Pocket Pier mobile game project overview',
   ],
 }
 
@@ -127,7 +130,8 @@ function SeoContent() {
       <h1>Jack Dennehey — Business Student at Penn State Brandywine</h1>
       <p>
         Jack Dennehey is a business student at Penn State Brandywine passionate about
-        technology, cybersecurity, networking, cloud computing, and artificial intelligence.
+        technology, cybersecurity, networking, cloud computing, artificial intelligence, and
+        product development.
       </p>
 
       <h2>Interests</h2>

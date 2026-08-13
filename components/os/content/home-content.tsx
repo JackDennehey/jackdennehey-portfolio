@@ -116,12 +116,12 @@ export function HomeContent({
 
       <p className="text-sm leading-relaxed text-foreground text-pretty">
         {
-          "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, and building meaningful projects."
+          "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, product development, and building meaningful projects."
         }
       </p>
       <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-        This website documents my professional journey, projects, credentials, and continuous
-        learning.
+        This website documents my professional journey, credentials, and flagship projects,
+        including Jack OS and Pocket Pier.
       </p>
 
       <section className="os-border bg-secondary p-3">
@@ -158,6 +158,7 @@ export function HomeContent({
           {[
             ['firewall', 'Open Network Firewall'],
             ['timeline', 'Open Timeline'],
+            ['pocket-pier', 'Open Pocket Pier'],
           ].map(([id, label]) => (
             <button
               key={id}
