@@ -68,6 +68,8 @@ const personJsonLd = {
     'Technology projects',
     'Mobile product development',
     'Godot game development',
+    'Football intelligence systems',
+    'Machine learning evaluation',
     'Interactive portfolio design',
   ],
 }
@@ -113,6 +115,7 @@ const jackOsJsonLd = {
     'Simple Mode professional portfolio view',
     'Reviewed public Guestbook',
     'Interactive desktop portfolio interface',
+    'Kickoff football intelligence platform',
     'Pocket Pier mobile game project overview',
   ],
 }
@@ -154,6 +157,10 @@ function SeoContent() {
 
       <h2>Interactive Jack OS Applications</h2>
       <ul>
+        <li>
+          Kickoff: a football intelligence platform with a walk-forward prediction model, historical
+          evaluation, structured research tools, and a live public deployment.
+        </li>
         <li>
           Network Firewall: a local educational packet simulation showing protocols, services,
           firewall rules, allowed traffic, blocked traffic, inspected traffic, and plain-English

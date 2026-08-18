@@ -106,6 +106,10 @@ const PocketPierContent = dynamic(
   () => import('./content/pocket-pier-content').then((module) => module.PocketPierContent),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading Pocket Pier..." /> },
 )
+const KickoffContent = dynamic(
+  () => import('./content/kickoff-content').then((module) => module.KickoffContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Kickoff..." /> },
+)
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -1138,6 +1142,7 @@ export function Desktop() {
       'home',
       'blue-ocean',
       'pocket-pier',
+      'kickoff',
       'about',
       'projects',
       'certifications',
@@ -1178,6 +1183,18 @@ export function Desktop() {
         'fishing',
         'product development',
       ],
+      kickoff: [
+        'kickoff',
+        'football',
+        'nfl',
+        'prediction',
+        'model',
+        'machine learning',
+        'ask kickoff',
+        'walk-forward',
+        'football intelligence',
+        'openai',
+      ],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
       recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
@@ -1210,6 +1227,8 @@ export function Desktop() {
             ? 'Featured Experience / 31-stage interactive keynote'
             : id === 'pocket-pier'
               ? 'Featured Project / indie mobile game'
+            : id === 'kickoff'
+              ? 'Flagship Project / football intelligence platform'
             : app.description
               ? `Application / ${app.description}`
               : 'Application',
@@ -1224,6 +1243,8 @@ export function Desktop() {
               ? 'Open 1984 Blue Ocean — flagship guided interactive keynote'
               : id === 'pocket-pier'
                 ? 'Open Pocket Pier — JDen Studios mobile game project'
+              : id === 'kickoff'
+                ? 'Open Kickoff — football intelligence platform'
               : undefined,
         action: () =>
           openWindow(
@@ -1389,6 +1410,14 @@ export function Desktop() {
         action: () => openAssistant('What has Jack built?'),
       },
       {
+        id: 'ask-jd-kickoff',
+        title: 'Ask about Kickoff',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['kickoff', 'football', 'model', 'ask kickoff', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What is Kickoff?'),
+      },
+      {
         id: 'ask-jd-credentials',
         title: 'Ask about credentials',
         subtitle: 'J.D. topic shortcut',
@@ -1516,6 +1545,8 @@ export function Desktop() {
         )
       case 'pocket-pier':
         return <PocketPierContent />
+      case 'kickoff':
+        return <KickoffContent />
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':

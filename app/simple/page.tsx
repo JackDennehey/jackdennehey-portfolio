@@ -39,6 +39,9 @@ export default function SimpleModePage() {
   const blueOceanProject = knowledge.projects.all.find(
     (project) => project.internalApp === 'blue-ocean',
   )
+  const kickoffProject = knowledge.projects.all.find(
+    (project) => project.internalApp === 'kickoff',
+  )
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
@@ -122,12 +125,39 @@ export default function SimpleModePage() {
             <SimpleFact label="Current Education" value="Business studies at Penn State Brandywine" />
             <SimpleFact label="Technical Foundation" value="Cybersecurity and networking" />
             <SimpleFact label="Public Email" value={knowledge.contact.email} />
-            <SimpleFact label="Live Project" value="Jack OS interactive portfolio" />
+            <SimpleFact label="Flagship Product" value="Kickoff football intelligence platform" />
           </div>
           <p className="mt-6 max-w-3xl text-base leading-8 text-[#3c382f]">
             {knowledge.person.professionalDirection}
           </p>
         </section>
+
+        {kickoffProject ? (
+          <section aria-labelledby="kickoff-heading" className="simple-section">
+            <div className="simple-card">
+              <p className="simple-label">Flagship Product</p>
+              <h2 id="kickoff-heading">{kickoffProject.title}</h2>
+              <p>{kickoffProject.description}</p>
+              <p className="mt-4 text-sm leading-7 text-[#4d473d]">
+                Live at kickoff.jackdennehey.com. Model v0.2 is evaluated honestly against an
+                entering-record baseline and does not currently beat it on straight-up accuracy.
+              </p>
+              <div className="simple-actions mt-5 flex flex-wrap gap-3">
+                <a
+                  href={knowledge.projects.kickoff.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="simple-action-primary"
+                >
+                  Launch Kickoff
+                </a>
+                <Link href="/#kickoff" className="simple-action">
+                  Open in Jack OS
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {blueOceanProject ? (
           <section aria-labelledby="blue-ocean-heading" className="simple-section">

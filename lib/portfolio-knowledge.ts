@@ -7,6 +7,7 @@ import {
   SKILLS,
 } from './portfolio-data'
 import { BLUE_OCEAN_COPY } from './blue-ocean'
+import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
 import { POCKET_PIER_COPY } from './pocket-pier'
 
 export const RECRUITER_SECTIONS = [
@@ -61,7 +62,7 @@ export const PORTFOLIO_KNOWLEDGE = {
     opportunityStatement:
       'Open to internships, entry-level opportunities, professional connections, and projects that combine business and technology.',
     businessTechnology:
-      "Jack's direction is the overlap between business judgment and technical understanding. Cybersecurity and networking explain how systems behave, cloud and AI expand what tools are available, and product work like Jack OS and Pocket Pier shows how ideas become usable systems.",
+      "Jack's direction is the overlap between business judgment and technical understanding. Cybersecurity and networking explain how systems behave, cloud and AI expand what tools are available, and product work like Kickoff, Jack OS, and Pocket Pier shows how ideas become usable systems.",
     managementLeadership:
       'The public portfolio supports business studies, communication, analysis, and project-management interests. It does not claim formal management employment or leadership roles beyond those approved public skills and educational direction.',
     navigationSummary:
@@ -123,6 +124,18 @@ export const PORTFOLIO_KNOWLEDGE = {
       lifecycle: POCKET_PIER_COPY.lifecycle,
       distinction:
         'Jack OS is the web/software platform; Pocket Pier is the independent mobile product built under JDen Studios.',
+    },
+    kickoff: {
+      title: KICKOFF_COPY.title,
+      subtitle: KICKOFF_COPY.subtitle,
+      shortDescription: KICKOFF_COPY.shortDescription,
+      status: KICKOFF_COPY.status,
+      url: KICKOFF_URL,
+      modelVersion: KICKOFF_COPY.modelVersion,
+      evaluation: KICKOFF_COPY.evaluation,
+      technologies: KICKOFF_COPY.technologies,
+      distinction:
+        'Kickoff is the deployed football intelligence product; Jack OS is the portfolio platform that presents it.',
     },
   },
   skills: {

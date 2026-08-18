@@ -1,4 +1,5 @@
 import { BLUE_OCEAN_COPY } from './blue-ocean'
+import { KICKOFF_COPY } from './kickoff'
 import { POCKET_PIER_COPY } from './pocket-pier'
 
 export const CONTACT = {
@@ -15,7 +16,9 @@ export type Project = {
   technologies: string[]
   github?: string
   demo?: string
-  internalApp?: 'blue-ocean' | 'pocket-pier'
+  featured?: boolean
+  featuredLabel?: string
+  internalApp?: 'blue-ocean' | 'pocket-pier' | 'kickoff'
   internalActionLabel?: string
   thumbnail?: {
     src: string
@@ -27,6 +30,16 @@ export type Project = {
 }
 
 export const PROJECTS: Project[] = [
+  {
+    title: KICKOFF_COPY.title,
+    status: KICKOFF_COPY.subtitle,
+    featured: true,
+    featuredLabel: 'Flagship Project',
+    description: KICKOFF_COPY.shortDescription,
+    technologies: [...KICKOFF_COPY.technologies],
+    internalApp: 'kickoff',
+    internalActionLabel: 'Open Kickoff',
+  },
   {
     title: 'Portfolio Website',
     status: 'Live',

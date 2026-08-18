@@ -27,6 +27,8 @@ export function DesktopIcon({
       ? 'Network Firewall — flagship simulated packet firewall demonstration'
       : isBlueOcean
         ? '1984 Blue Ocean — flagship guided interactive keynote'
+        : item.kind === 'window' && item.id === 'kickoff'
+          ? 'Kickoff — football intelligence platform'
         : label
   const openItem = () => {
     if (item.kind === 'window') {

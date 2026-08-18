@@ -14,6 +14,7 @@ import {
   JackAssistantIcon,
   JackBlueOceanIcon,
   JackFirewallIcon,
+  JackKickoffIcon,
   JackMailIcon,
   JackProjectsIcon,
   JackRecruiterIcon,
@@ -26,6 +27,7 @@ export type WindowId =
   | 'home'
   | 'blue-ocean'
   | 'pocket-pier'
+  | 'kickoff'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -82,6 +84,14 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 860,
     height: 640,
     description: 'indie mobile game',
+  },
+  kickoff: {
+    id: 'kickoff',
+    title: 'Kickoff',
+    Icon: JackKickoffIcon,
+    width: 900,
+    height: 680,
+    description: 'football intelligence platform',
   },
   about: {
     id: 'about',
@@ -201,6 +211,7 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   home: 'home',
   'blue-ocean': '1984-blue-ocean',
   'pocket-pier': 'pocket-pier',
+  kickoff: 'kickoff',
   about: 'about',
   projects: 'projects',
   certifications: 'credentials',
@@ -231,6 +242,7 @@ WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
 WINDOW_IDS_BY_HASH['blue-ocean'] = 'blue-ocean'
 WINDOW_IDS_BY_HASH.pocketpier = 'pocket-pier'
 WINDOW_IDS_BY_HASH['jden-studios'] = 'pocket-pier'
+WINDOW_IDS_BY_HASH['football-intelligence'] = 'kickoff'
 
 export function getWindowHash(id: WindowId) {
   return WINDOW_HASH_SLUGS[id]
@@ -269,6 +281,13 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     Icon: JackPocketPierImageIcon,
     iconVisual: 'image',
     description: 'indie mobile game',
+  },
+  {
+    kind: 'window',
+    id: 'kickoff',
+    label: 'Kickoff',
+    Icon: JackKickoffIcon,
+    description: 'football intelligence platform',
   },
   {
     kind: 'window',
