@@ -2,9 +2,13 @@ import { PORTFOLIO_KNOWLEDGE } from './portfolio-knowledge'
 import { JACK_OS_ACHIEVEMENT_REGISTRY } from './achievements'
 import { ROADMAP_SECTIONS } from './roadmap-data'
 import { BLUE_OCEAN_COPY } from './blue-ocean'
+import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
+import { POCKET_PIER_COPY } from './pocket-pier'
 
 export type AssistantWindowTarget =
   | 'blue-ocean'
+  | 'pocket-pier'
+  | 'kickoff'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -37,6 +41,14 @@ export type AssistantIntent =
   | 'ai'
   | 'frontend'
   | 'project-list'
+  | 'pocket-pier'
+  | 'pocket-pier-launch'
+  | 'pocket-pier-technology'
+  | 'jden-studios'
+  | 'kickoff'
+  | 'kickoff-launch'
+  | 'kickoff-model'
+  | 'kickoff-ask'
   | 'blue-ocean'
   | 'blue-ocean-authorship'
   | 'blue-ocean-recommendation'
@@ -87,12 +99,14 @@ type IntentDefinition = {
 }
 
 export const JD_ASSISTANT_INTRO =
-  "Hello, I'm J.D., Jack OS's Local Portfolio Assistant. Ask me about Jack's education, credentials, projects, 1984 Blue Ocean, skills, or professional direction."
+  "Hello, I'm J.D., Jack OS's Local Portfolio Assistant. Ask me about Jack's education, credentials, projects, Kickoff, 1984 Blue Ocean, Pocket Pier, skills, or professional direction."
 
 export const JD_SUGGESTED_PROMPTS = [
+  'What is Kickoff?',
   'What is 1984 Blue Ocean?',
+  'What is Pocket Pier?',
   'What has Jack built?',
-  'Why should I watch the keynote?',
+  'What is JDen Studios?',
   'What credentials has Jack earned?',
   'What is Jack studying?',
   'What is on the Road Map?',
@@ -116,6 +130,14 @@ export const JD_SUPPORTED_CATEGORIES: readonly AssistantIntent[] = [
   'ai',
   'frontend',
   'project-list',
+  'pocket-pier',
+  'pocket-pier-launch',
+  'pocket-pier-technology',
+  'jden-studios',
+  'kickoff',
+  'kickoff-launch',
+  'kickoff-model',
+  'kickoff-ask',
   'blue-ocean',
   'blue-ocean-authorship',
   'blue-ocean-recommendation',
@@ -152,6 +174,21 @@ const OPEN_BLUE_OCEAN: AssistantAction = {
   type: 'open',
   label: 'Launch 1984 Blue Ocean',
   target: 'blue-ocean',
+}
+const OPEN_POCKET_PIER: AssistantAction = {
+  type: 'open',
+  label: 'Open Pocket Pier',
+  target: 'pocket-pier',
+}
+const OPEN_KICKOFF: AssistantAction = {
+  type: 'open',
+  label: 'Open Kickoff',
+  target: 'kickoff',
+}
+const LAUNCH_KICKOFF: AssistantAction = {
+  type: 'external',
+  label: 'Launch Kickoff',
+  href: KICKOFF_URL,
 }
 const OPEN_ABOUT: AssistantAction = { type: 'open', label: 'Open About', target: 'about' }
 const OPEN_PROJECTS: AssistantAction = {
@@ -325,6 +362,165 @@ const INTENTS: readonly IntentDefinition[] = [
       strategy: 3,
       execution: 3,
       product: 3,
+    },
+    priority: 16,
+  },
+  {
+    intent: 'pocket-pier-launch',
+    phrases: [
+      'open pocket pier',
+      'launch pocket pier',
+      'show me pocket pier',
+      'open the game',
+      'launch the game',
+      'show me the game',
+    ],
+    keywords: {
+      pocket: 7,
+      pier: 7,
+      open: 5,
+      launch: 6,
+      show: 4,
+      game: 3,
+      mobile: 2,
+    },
+    priority: 18,
+  },
+  {
+    intent: 'jden-studios',
+    phrases: ['what is jden studios', 'tell me about jden studios', 'jden studios'],
+    keywords: { jden: 9, studios: 8, studio: 6, game: 2, pocket: 2, pier: 2 },
+    priority: 17,
+  },
+  {
+    intent: 'pocket-pier-technology',
+    phrases: [
+      'what engine did you use',
+      'what engine did jack use',
+      'what was pocket pier built with',
+      'pocket pier tech stack',
+      'godot pocket pier',
+      'gdscript pocket pier',
+      'xcode app store connect',
+    ],
+    keywords: {
+      pocket: 5,
+      pier: 5,
+      engine: 6,
+      godot: 8,
+      gdscript: 8,
+      xcode: 6,
+      ios: 5,
+      app: 2,
+      store: 2,
+      connect: 2,
+    },
+    priority: 17,
+  },
+  {
+    intent: 'pocket-pier',
+    phrases: [
+      'what is pocket pier',
+      'tell me about pocket pier',
+      'tell me about your game',
+      'what is your game',
+      'why did you build pocket pier',
+      'how is pocket pier different from jack os',
+      'how does pocket pier differ from jack os',
+      'harbor game',
+      'mobile game',
+    ],
+    keywords: {
+      pocket: 7,
+      pier: 7,
+      game: 5,
+      mobile: 4,
+      harbor: 6,
+      fishing: 5,
+      ios: 3,
+      godot: 3,
+      jden: 3,
+      different: 3,
+      differs: 3,
+    },
+    priority: 16,
+  },
+  {
+    intent: 'kickoff-launch',
+    phrases: [
+      'open kickoff',
+      'launch kickoff',
+      'show me kickoff',
+      'open the football project',
+      'launch the football app',
+    ],
+    keywords: {
+      kickoff: 8,
+      open: 5,
+      launch: 6,
+      show: 4,
+      football: 3,
+    },
+    priority: 18,
+  },
+  {
+    intent: 'kickoff-model',
+    phrases: [
+      'kickoff model',
+      'model v0.2',
+      'walk-forward',
+      'brier score',
+      'entering-record',
+      'how accurate is kickoff',
+      'kickoff accuracy',
+    ],
+    keywords: {
+      kickoff: 6,
+      model: 6,
+      accuracy: 5,
+      brier: 8,
+      walk: 4,
+      forward: 4,
+      baseline: 5,
+      logistic: 5,
+    },
+    priority: 18,
+  },
+  {
+    intent: 'kickoff-ask',
+    phrases: [
+      'what is ask kickoff',
+      'ask kickoff',
+      'kickoff chatbot',
+      'kickoff research',
+      'how does ask kickoff work',
+    ],
+    keywords: {
+      ask: 6,
+      kickoff: 6,
+      chatbot: 4,
+      research: 4,
+      tools: 4,
+      nflverse: 5,
+    },
+    priority: 18,
+  },
+  {
+    intent: 'kickoff',
+    phrases: [
+      'what is kickoff',
+      'tell me about kickoff',
+      'football intelligence',
+      'nfl prediction',
+      'why did you build kickoff',
+    ],
+    keywords: {
+      kickoff: 9,
+      football: 6,
+      nfl: 5,
+      prediction: 4,
+      intelligence: 4,
+      sports: 3,
     },
     priority: 16,
   },
@@ -651,6 +847,27 @@ function resolveFollowUpIntent(intent: AssistantIntent, rawQuestion: string, con
   }
 
   if (
+    /\b(technologies|built with|stack|used|engine|platform)\b/.test(input) &&
+    ['pocket-pier', 'pocket-pier-launch', 'jden-studios'].includes(context.lastIntent)
+  ) {
+    return 'pocket-pier-technology'
+  }
+
+  if (
+    /\b(model|accuracy|brier|baseline|evaluation)\b/.test(input) &&
+    ['kickoff', 'kickoff-launch', 'kickoff-ask'].includes(context.lastIntent)
+  ) {
+    return 'kickoff-model'
+  }
+
+  if (
+    /\b(ask|chat|research|tools)\b/.test(input) &&
+    ['kickoff', 'kickoff-launch', 'kickoff-model'].includes(context.lastIntent)
+  ) {
+    return 'kickoff-ask'
+  }
+
+  if (
     /\b(features|interesting|technical|systems)\b/.test(input) &&
     ['project-list', 'jack-os', 'jack-os-technologies'].includes(context.lastIntent)
   ) {
@@ -829,22 +1046,78 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'Jack is studying artificial intelligence through Microsoft Azure AI Fundamentals topics such as machine-learning concepts, generative AI, computer vision, language, speech, and responsible AI. His angle is practical: how AI can be evaluated and used in real workflows.',
-        actions: [OPEN_BLUE_OCEAN, OPEN_ABOUT, OPEN_CREDENTIALS],
+          'Jack is studying artificial intelligence through Microsoft Azure AI Fundamentals topics such as machine-learning concepts, generative AI, computer vision, language, speech, and responsible AI. His angle is practical: how AI can be evaluated and used in real workflows. Kickoff is one public example, where Ask Kickoff interprets questions but retrieves football facts from structured tools rather than model memory.',
+        actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_ABOUT, OPEN_CREDENTIALS],
       }
     case 'frontend':
       return {
         intent,
         content:
-          'Front-end development shows up most clearly in Jack OS itself. The project uses React, Next.js, TypeScript, and Tailwind CSS to turn professional portfolio content into an interactive desktop-style interface.',
-        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
+          'Front-end development shows up most clearly in Jack OS itself and in Kickoff. Both use React, Next.js, TypeScript, and Tailwind CSS, with Jack OS presenting professional work as an interactive desktop and Kickoff shipping as a public football intelligence product.',
+        actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
       }
     case 'project-list':
       return {
         intent,
         content:
-          'The primary project is Jack OS, this operating-system-inspired portfolio. Its flagship project experience is 1984 Blue Ocean, a 31-stage interactive keynote about business strategy, technical execution, and AI-assisted product development. Other listed work includes Azure AI Projects and Networking Labs.',
-        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_GITHUB],
+          'The public flagship work includes Kickoff, Jack OS, and Pocket Pier. Kickoff is a deployed football intelligence platform with a walk-forward prediction model and Ask Kickoff research tools. Jack OS is the operating-system-inspired portfolio and includes 1984 Blue Ocean, a 31-stage interactive keynote. Pocket Pier is an independent mobile game under JDen Studios that demonstrates gameplay systems, product iteration, and iOS deployment preparation. Other listed work includes Azure AI Projects and Networking Labs.',
+        actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_POCKET_PIER, OPEN_PROJECTS, OPEN_GITHUB],
+      }
+    case 'pocket-pier':
+      return {
+        intent,
+        content:
+          `${POCKET_PIER_COPY.title} is ${POCKET_PIER_COPY.subtitle}: ${POCKET_PIER_COPY.shortDescription} It starts with a single wooden pier and grows through fishing, selling catches, upgrades, worker automation, boats, harbor expansion, markets, exploration, and economy management. It differs from Jack OS because Jack OS is the web/software platform, while Pocket Pier is an independent mobile product.`,
+        actions: [OPEN_POCKET_PIER, OPEN_PROJECTS],
+      }
+    case 'pocket-pier-launch':
+      return {
+        intent,
+        content:
+          'I can open the Pocket Pier project window from here. It shows the gameplay concept, development path, screenshots, current status, and the move from idea to iOS distribution workflow.',
+        actions: [OPEN_POCKET_PIER],
+      }
+    case 'pocket-pier-technology':
+      return {
+        intent,
+        content:
+          `Pocket Pier is built with ${POCKET_PIER_COPY.engine} and ${POCKET_PIER_COPY.language} for ${POCKET_PIER_COPY.platform}. The workflow includes gameplay systems, progression and economy design, mobile-first UI, asset integration, Xcode packaging, and App Store Connect preparation. The public portfolio does not claim the game is already available on the App Store.`,
+        actions: [OPEN_POCKET_PIER, OPEN_PROJECTS],
+      }
+    case 'kickoff':
+      return {
+        intent,
+        content:
+          `${KICKOFF_COPY.title} is a ${KICKOFF_COPY.subtitle}: ${KICKOFF_COPY.shortDescription} It is a live product at kickoff.jackdennehey.com, built around ${KICKOFF_COPY.modelVersion}, historical evaluation, and Ask Kickoff. ${KICKOFF_COPY.independence}`,
+        actions: [OPEN_KICKOFF, LAUNCH_KICKOFF, OPEN_PROJECTS],
+      }
+    case 'kickoff-launch':
+      return {
+        intent,
+        content:
+          'I can open the Kickoff project window inside Jack OS. It covers the model, Ask Kickoff architecture, evaluation, engineering, production controls, and a launch link to the live site.',
+        actions: [OPEN_KICKOFF, LAUNCH_KICKOFF],
+      }
+    case 'kickoff-model':
+      return {
+        intent,
+        content:
+          `${KICKOFF_COPY.model} Official historical evaluation is ${KICKOFF_COPY.evaluation.sample}. Metrics: accuracy ${KICKOFF_COPY.evaluation.accuracy}, Brier ${KICKOFF_COPY.evaluation.brier}, log loss ${KICKOFF_COPY.evaluation.logLoss}, ECE ${KICKOFF_COPY.evaluation.ece}. ${KICKOFF_COPY.modelHonesty}`,
+        actions: [OPEN_KICKOFF, LAUNCH_KICKOFF],
+      }
+    case 'kickoff-ask':
+      return {
+        intent,
+        content:
+          `${KICKOFF_COPY.ask} ${KICKOFF_COPY.askUnsupported}`,
+        actions: [OPEN_KICKOFF, LAUNCH_KICKOFF],
+      }
+    case 'jden-studios':
+      return {
+        intent,
+        content:
+          `${POCKET_PIER_COPY.studio} is the independent project label behind Pocket Pier. In the current portfolio, it represents Jack's mobile product-development work rather than a claim of a large company or public game studio release.`,
+        actions: [OPEN_POCKET_PIER, OPEN_PROJECTS],
       }
     case 'blue-ocean':
       return {

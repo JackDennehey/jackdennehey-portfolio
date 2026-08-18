@@ -102,6 +102,14 @@ const BlueOceanContent = dynamic(
   () => import('./content/blue-ocean-content').then((module) => module.BlueOceanContent),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading Keynote..." /> },
 )
+const PocketPierContent = dynamic(
+  () => import('./content/pocket-pier-content').then((module) => module.PocketPierContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Pocket Pier..." /> },
+)
+const KickoffContent = dynamic(
+  () => import('./content/kickoff-content').then((module) => module.KickoffContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Kickoff..." /> },
+)
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
 type RestorableWindowStatus = 'open' | 'maximized'
@@ -1133,6 +1141,8 @@ export function Desktop() {
     const appIds: WindowId[] = [
       'home',
       'blue-ocean',
+      'pocket-pier',
+      'kickoff',
       'about',
       'projects',
       'certifications',
@@ -1160,6 +1170,30 @@ export function Desktop() {
         'ai-assisted',
         'product development',
         'retro computing',
+      ],
+      'pocket-pier': [
+        'pocket pier',
+        'jden studios',
+        'mobile game',
+        'godot',
+        'gdscript',
+        'ios',
+        'pixel art',
+        'harbor',
+        'fishing',
+        'product development',
+      ],
+      kickoff: [
+        'kickoff',
+        'football',
+        'nfl',
+        'prediction',
+        'model',
+        'machine learning',
+        'ask kickoff',
+        'walk-forward',
+        'football intelligence',
+        'openai',
       ],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
@@ -1191,6 +1225,10 @@ export function Desktop() {
         subtitle:
           id === 'blue-ocean'
             ? 'Featured Experience / 31-stage interactive keynote'
+            : id === 'pocket-pier'
+              ? 'Featured Project / indie mobile game'
+            : id === 'kickoff'
+              ? 'Flagship Project / football intelligence platform'
             : app.description
               ? `Application / ${app.description}`
               : 'Application',
@@ -1203,6 +1241,10 @@ export function Desktop() {
             ? 'Open Recruiter Mode — guided professional overview'
             : id === 'blue-ocean'
               ? 'Open 1984 Blue Ocean — flagship guided interactive keynote'
+              : id === 'pocket-pier'
+                ? 'Open Pocket Pier — JDen Studios mobile game project'
+              : id === 'kickoff'
+                ? 'Open Kickoff — football intelligence platform'
               : undefined,
         action: () =>
           openWindow(
@@ -1232,8 +1274,19 @@ export function Desktop() {
         ...project.technologies,
         'projects',
       ],
-      Icon: WINDOW_APPS.projects.Icon,
-      action: () => openWindow('projects'),
+      Icon: project.internalApp ? WINDOW_APPS[project.internalApp].Icon : WINDOW_APPS.projects.Icon,
+      iconVisual: project.internalApp ? WINDOW_APPS[project.internalApp].iconVisual : undefined,
+      tone: project.internalApp ? WINDOW_APPS[project.internalApp].tone : undefined,
+      action: () => {
+        if (project.internalApp) {
+          openWindow(
+            project.internalApp,
+            project.internalApp === 'blue-ocean' ? { launchContext: 'search' } : undefined,
+          )
+          return
+        }
+        openWindow('projects')
+      },
     }))
 
     const credentialCommands = CREDENTIALS.map((credential) => ({
@@ -1355,6 +1408,14 @@ export function Desktop() {
         keywords: ['projects', 'jack os', 'built', 'portfolio assistant'],
         Icon: WINDOW_APPS.assistant.Icon,
         action: () => openAssistant('What has Jack built?'),
+      },
+      {
+        id: 'ask-jd-kickoff',
+        title: 'Ask about Kickoff',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['kickoff', 'football', 'model', 'ask kickoff', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What is Kickoff?'),
       },
       {
         id: 'ask-jd-credentials',
@@ -1482,6 +1543,10 @@ export function Desktop() {
             onPowerDown={handleBlueOceanPowerDown}
           />
         )
+      case 'pocket-pier':
+        return <PocketPierContent />
+      case 'kickoff':
+        return <KickoffContent />
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':

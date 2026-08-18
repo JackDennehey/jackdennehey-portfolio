@@ -142,8 +142,8 @@ export function JdAssistantContent({
               Local Portfolio Assistant
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground text-pretty">
-              Ask about Jack&apos;s education, credentials, projects, 1984 Blue Ocean, skills,
-              or professional direction.
+              Ask about Jack&apos;s education, credentials, projects, Kickoff, 1984 Blue Ocean, Pocket Pier,
+              skills, or professional direction.
             </p>
           </div>
         </div>
@@ -222,7 +222,7 @@ export function JdAssistantContent({
           onKeyDown={onInputKeyDown}
           rows={3}
           spellCheck={false}
-          placeholder="Ask about projects, Blue Ocean, credentials, or contact..."
+          placeholder="Ask about Kickoff, projects, Pocket Pier, Blue Ocean, credentials, or contact..."
           className="w-full resize-none os-border bg-card px-3 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
         />
         {inputNotice ? (

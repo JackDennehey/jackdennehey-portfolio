@@ -239,6 +239,7 @@ function OverviewSection({
       </article>
       <ActionRow>
         <ActionButton onClick={() => onOpen('about')}>View About</ActionButton>
+        <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
         <ActionButton onClick={() => onOpen('projects')}>View Projects</ActionButton>
         <ActionButton onClick={() => onOpen('timeline')}>View Timeline</ActionButton>
         <ActionButton onClick={() => onOpen('contact')}>Contact Jack</ActionButton>
@@ -297,9 +298,34 @@ function CredentialsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
 
 function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
   const featuredProject = PORTFOLIO_KNOWLEDGE.projects.featured
+  const kickoff = PORTFOLIO_KNOWLEDGE.projects.kickoff
+  const otherProjects = PORTFOLIO_KNOWLEDGE.projects.all.filter(
+    (project) => project.title !== 'Portfolio Website' && project.title !== kickoff.title,
+  )
 
   return (
     <div className="space-y-4">
+      <article className="os-border bg-card p-3">
+        <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+          Flagship Product
+        </p>
+        <h4 className="mt-1 font-pixel text-[11px] leading-relaxed text-foreground">
+          {kickoff.title}
+        </h4>
+        <p className="mt-1 text-xs font-medium text-muted-foreground">{kickoff.subtitle}</p>
+        <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
+          {kickoff.shortDescription} {kickoff.modelVersion} was evaluated on{' '}
+          {kickoff.evaluation.sample} at {kickoff.evaluation.accuracy} straight-up accuracy. A
+          simple entering-record baseline reached {kickoff.evaluation.baseline} on the same sample.
+        </p>
+        <ActionRow>
+          <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
+          <ActionLink href={kickoff.url} Icon={ExternalLink}>
+            Launch Kickoff
+          </ActionLink>
+        </ActionRow>
+      </article>
+
       <article className="os-border bg-card p-3">
         <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
           Primary Project
@@ -321,7 +347,7 @@ function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
       </article>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {PORTFOLIO_KNOWLEDGE.projects.all.slice(1).map((project) => (
+        {otherProjects.map((project) => (
           <article key={project.title} className="os-border bg-card p-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
@@ -342,6 +368,8 @@ function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
 
       <ActionRow>
         <ActionButton onClick={() => onOpen('projects')}>Open Projects</ActionButton>
+        <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
+        <ActionButton onClick={() => onOpen('pocket-pier')}>Open Pocket Pier</ActionButton>
         <ActionButton onClick={() => onOpen('firewall')}>Open Firewall Simulation</ActionButton>
         {featuredProject.github ? (
           <ActionLink href={featuredProject.github} Icon={GithubIcon}>

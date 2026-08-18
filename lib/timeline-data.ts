@@ -1,4 +1,5 @@
 import { CONTACT, CREDENTIALS, PROJECTS } from './portfolio-data'
+import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
 
 export type TimelineCategory =
   | 'Education'
@@ -10,6 +11,8 @@ export type TimelineCategory =
 export type TimelineActionTarget =
   | 'about'
   | 'projects'
+  | 'pocket-pier'
+  | 'kickoff'
   | 'certifications'
   | 'recruiter'
   | 'timeline'
@@ -53,6 +56,8 @@ const azureCredential = CREDENTIALS.find(
   (credential) => credential.id === 'microsoft-azure-ai-fundamentals',
 )
 const jackOsProject = PROJECTS.find((project) => project.title === 'Portfolio Website')
+const pocketPierProject = PROJECTS.find((project) => project.title === 'Pocket Pier')
+const kickoffProject = PROJECTS.find((project) => project.title === KICKOFF_COPY.title)
 
 export const TIMELINE_CATEGORIES: readonly TimelineCategory[] = [
   'Education',
@@ -212,6 +217,47 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
         }
       : undefined,
     action: { label: 'Open Credentials', target: 'certifications' },
+  },
+  {
+    id: 'pocket-pier-mobile-product',
+    order: 66,
+    year: 'Current',
+    title: 'Pocket Pier - Mobile Product Development',
+    summary:
+      "Pocket Pier expands Jack's public work from web software into independent mobile product development under JDen Studios.",
+    description:
+      pocketPierProject?.description ??
+      'Pocket Pier is a cozy pixel-art harbor management game built with Godot and GDScript for iOS. The project demonstrates the product lifecycle from concept and prototype through gameplay systems, iteration, mobile packaging, and App Store preparation.',
+    category: 'Projects',
+    featured: true,
+    badge: 'JDen',
+    actions: [
+      { label: 'Open Pocket Pier', target: 'pocket-pier' },
+      { label: 'Open Projects', target: 'projects' },
+    ],
+  },
+  {
+    id: 'kickoff-public-product',
+    order: 68,
+    year: '2026',
+    month: 'August',
+    title: 'Kickoff - Football Intelligence Platform',
+    summary:
+      'Kickoff launched as a public football intelligence product combining a walk-forward prediction model, historical NFL research data, and Ask Kickoff.',
+    description:
+      kickoffProject?.description ??
+      KICKOFF_COPY.shortDescription,
+    category: 'Projects',
+    featured: true,
+    badge: 'Live',
+    actions: [
+      { label: 'Open Kickoff', target: 'kickoff' },
+      { label: 'Open Projects', target: 'projects' },
+    ],
+    externalLink: {
+      label: 'Launch Kickoff',
+      href: KICKOFF_URL,
+    },
   },
   {
     id: 'penn-state-business-studies',
