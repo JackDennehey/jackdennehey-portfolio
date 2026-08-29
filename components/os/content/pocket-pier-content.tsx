@@ -2,7 +2,7 @@
 
 import { ExternalLink } from 'lucide-react'
 import { useState } from 'react'
-import { POCKET_PIER_COPY } from '@/lib/pocket-pier'
+import { POCKET_PIER_APP_STORE_URL, POCKET_PIER_COPY } from '@/lib/pocket-pier'
 
 type MediaImageProps = {
   src: string
@@ -55,6 +55,20 @@ export function PocketPierContent() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground text-pretty">
               {POCKET_PIER_COPY.intro}
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={POCKET_PIER_APP_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="os-border inline-flex min-h-10 items-center gap-1.5 bg-foreground px-3 py-2 font-pixel text-[8px] leading-relaxed text-primary-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:bg-background focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                View on App Store
+                <ExternalLink aria-hidden className="size-3" />
+              </a>
+              <p className="self-center text-xs leading-relaxed text-muted-foreground">
+                Opens the official App Store listing in a new tab.
+              </p>
+            </div>
             <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 ['Platform', POCKET_PIER_COPY.platform],

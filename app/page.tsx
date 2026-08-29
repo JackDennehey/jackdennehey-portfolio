@@ -116,7 +116,7 @@ const jackOsJsonLd = {
     'Reviewed public Guestbook',
     'Interactive desktop portfolio interface',
     'Kickoff football intelligence platform',
-    'Pocket Pier mobile game project overview',
+    'Pocket Pier mobile game on the App Store',
   ],
 }
 
@@ -151,6 +151,12 @@ function SeoContent() {
             <h3>{project.title}</h3>
             <p>{project.description}</p>
             <p>Technologies: {project.technologies.join(', ')}</p>
+            {project.demo ? (
+              <p>
+                {project.internalApp === 'pocket-pier' ? 'App Store' : 'Live demo'}:{' '}
+                <a href={project.demo}>{project.demo}</a>
+              </p>
+            ) : null}
           </li>
         ))}
       </ul>

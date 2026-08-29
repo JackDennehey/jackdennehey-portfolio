@@ -370,6 +370,9 @@ function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
         <ActionButton onClick={() => onOpen('projects')}>Open Projects</ActionButton>
         <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
         <ActionButton onClick={() => onOpen('pocket-pier')}>Open Pocket Pier</ActionButton>
+        <ActionLink href={PORTFOLIO_KNOWLEDGE.projects.pocketPier.url} Icon={ExternalLink}>
+          View on App Store
+        </ActionLink>
         <ActionButton onClick={() => onOpen('firewall')}>Open Firewall Simulation</ActionButton>
         {featuredProject.github ? (
           <ActionLink href={featuredProject.github} Icon={GithubIcon}>

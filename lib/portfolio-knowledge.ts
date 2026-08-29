@@ -8,7 +8,7 @@ import {
 } from './portfolio-data'
 import { BLUE_OCEAN_COPY } from './blue-ocean'
 import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
-import { POCKET_PIER_COPY } from './pocket-pier'
+import { POCKET_PIER_APP_STORE_URL, POCKET_PIER_COPY } from './pocket-pier'
 
 export const RECRUITER_SECTIONS = [
   { id: 'overview', label: 'Overview' },
@@ -120,10 +120,11 @@ export const PORTFOLIO_KNOWLEDGE = {
       platform: POCKET_PIER_COPY.platform,
       engine: POCKET_PIER_COPY.engine,
       language: POCKET_PIER_COPY.language,
+      url: POCKET_PIER_APP_STORE_URL,
       gameplayLoop: POCKET_PIER_COPY.gameplayLoop,
       lifecycle: POCKET_PIER_COPY.lifecycle,
       distinction:
-        'Jack OS is the web/software platform; Pocket Pier is the independent mobile product built under JDen Studios.',
+        'Jack OS is the web/software platform; Pocket Pier is the independent mobile product built under JDen Studios and now available on the App Store.',
     },
     kickoff: {
       title: KICKOFF_COPY.title,

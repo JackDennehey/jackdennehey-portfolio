@@ -1,4 +1,6 @@
 export const POCKET_PIER_ASSET_BASE = '/images/Pocket%20Pier'
+export const POCKET_PIER_APP_STORE_URL =
+  'https://apps.apple.com/us/app/pocket-pier/id6800466326'
 
 export const POCKET_PIER_COPY = {
   title: 'Pocket Pier',
@@ -8,19 +10,19 @@ export const POCKET_PIER_COPY = {
   engine: 'Godot 4',
   language: 'GDScript',
   role: 'Creator, designer, and developer',
-  status: 'In development - App Store preparation',
+  status: 'Available on the App Store',
   shortDescription:
-    'A cozy pixel-art harbor management game developed with Godot for iOS. Pocket Pier represents the complete journey from product concept and gameplay design through iterative development, mobile packaging, and App Store preparation.',
+    'A cozy pixel-art harbor management game developed with Godot for iOS. Pocket Pier is now available on the App Store and represents the complete journey from product concept and gameplay design through iterative development, mobile packaging, and public release.',
   intro:
-    'Pocket Pier is an independent mobile game created under JDen Studios. It expands Jack OS beyond web experiences into original interactive product development for mobile.',
+    'Pocket Pier is an independent mobile game created under JDen Studios. It is now live on the App Store and expands Jack OS beyond web experiences into original interactive product development for mobile.',
   whatItIs:
     'Pocket Pier begins with a single wooden pier and grows into a layered harbor-management game about fishing, selling catches, upgrading the pier, and building a small coastal operation over time.',
   whatWasBuilt:
     'The project includes the core gameplay loop, progression systems, economy management, fish collection, worker automation, boat and harbor expansion concepts, mobile UI, and pixel-art asset integration.',
   howItWasBuilt:
-    'Pocket Pier is built in Godot 4 with GDScript and prepared for iOS through the Xcode and App Store Connect workflow.',
+    'Pocket Pier is built in Godot 4 with GDScript and shipped for iOS through the Xcode and App Store Connect workflow.',
   whyItMatters:
-    'Pocket Pier demonstrates product execution: moving from an original concept through prototyping, gameplay iteration, polish, mobile packaging, and distribution preparation.',
+    'Pocket Pier demonstrates product execution: moving from an original concept through prototyping, gameplay iteration, polish, mobile packaging, and a public App Store release.',
   gameplayLoop: [
     'Catch fish from the pier',
     'Sell catches through the harbor economy',
@@ -38,6 +40,7 @@ export const POCKET_PIER_COPY = {
     'Pixel-art asset integration',
     'iOS packaging through Xcode',
     'App Store Connect distribution workflow',
+    'Public App Store release',
   ],
   lifecycle: [
     'Concept',
@@ -45,7 +48,7 @@ export const POCKET_PIER_COPY = {
     'Gameplay',
     'Polish',
     'iOS Build',
-    'App Store Distribution Workflow',
+    'App Store Release',
   ],
   assets: {
     icon: {
@@ -73,9 +76,11 @@ export const POCKET_PIER_COPY = {
       },
     ],
   },
-  links: [] as readonly {
-    label: string
-    href: string
-    kind: 'app-store' | 'github' | 'website'
-  }[],
+  links: [
+    {
+      label: 'View on App Store',
+      href: POCKET_PIER_APP_STORE_URL,
+      kind: 'app-store',
+    },
+  ] as const,
 } as const

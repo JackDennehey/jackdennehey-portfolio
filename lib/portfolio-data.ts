@@ -1,6 +1,6 @@
 import { BLUE_OCEAN_COPY } from './blue-ocean'
 import { KICKOFF_COPY } from './kickoff'
-import { POCKET_PIER_COPY } from './pocket-pier'
+import { POCKET_PIER_APP_STORE_URL, POCKET_PIER_COPY } from './pocket-pier'
 
 export const CONTACT = {
   email: 'jackdennehey@gmail.com',
@@ -89,10 +89,11 @@ export const PROJECTS: Project[] = [
     ],
     internalApp: 'pocket-pier',
     internalActionLabel: 'Open Pocket Pier',
+    demo: POCKET_PIER_APP_STORE_URL,
     thumbnail: POCKET_PIER_COPY.assets.icon,
     role: POCKET_PIER_COPY.role,
     implementation:
-      'Designed and built as a mobile-first Godot project with GDScript gameplay systems, pixel-art asset integration, iOS packaging, and App Store Connect preparation.',
+      'Designed and built as a mobile-first Godot project with GDScript gameplay systems, pixel-art asset integration, iOS packaging, and a public App Store release.',
     keySystems: [
       'fishing and selling loop',
       'progression and economy systems',

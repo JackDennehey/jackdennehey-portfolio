@@ -3,7 +3,7 @@ import { JACK_OS_ACHIEVEMENT_REGISTRY } from './achievements'
 import { ROADMAP_SECTIONS } from './roadmap-data'
 import { BLUE_OCEAN_COPY } from './blue-ocean'
 import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
-import { POCKET_PIER_COPY } from './pocket-pier'
+import { POCKET_PIER_APP_STORE_URL, POCKET_PIER_COPY } from './pocket-pier'
 
 export type AssistantWindowTarget =
   | 'blue-ocean'
@@ -179,6 +179,11 @@ const OPEN_POCKET_PIER: AssistantAction = {
   type: 'open',
   label: 'Open Pocket Pier',
   target: 'pocket-pier',
+}
+const VIEW_POCKET_PIER_APP_STORE: AssistantAction = {
+  type: 'external',
+  label: 'View on App Store',
+  href: POCKET_PIER_APP_STORE_URL,
 }
 const OPEN_KICKOFF: AssistantAction = {
   type: 'open',
@@ -374,6 +379,9 @@ const INTENTS: readonly IntentDefinition[] = [
       'open the game',
       'launch the game',
       'show me the game',
+      'download pocket pier',
+      'pocket pier app store',
+      'is pocket pier on the app store',
     ],
     keywords: {
       pocket: 7,
@@ -1060,29 +1068,29 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'The public flagship work includes Kickoff, Jack OS, and Pocket Pier. Kickoff is a deployed football intelligence platform with a walk-forward prediction model and Ask Kickoff research tools. Jack OS is the operating-system-inspired portfolio and includes 1984 Blue Ocean, a 31-stage interactive keynote. Pocket Pier is an independent mobile game under JDen Studios that demonstrates gameplay systems, product iteration, and iOS deployment preparation. Other listed work includes Azure AI Projects and Networking Labs.',
-        actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_POCKET_PIER, OPEN_PROJECTS, OPEN_GITHUB],
+          'The public flagship work includes Kickoff, Jack OS, and Pocket Pier. Kickoff is a deployed football intelligence platform with a walk-forward prediction model and Ask Kickoff research tools. Jack OS is the operating-system-inspired portfolio and includes 1984 Blue Ocean, a 31-stage interactive keynote. Pocket Pier is an independent mobile game under JDen Studios, now available on the App Store. Other listed work includes Azure AI Projects and Networking Labs.',
+        actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS, OPEN_GITHUB],
       }
     case 'pocket-pier':
       return {
         intent,
         content:
           `${POCKET_PIER_COPY.title} is ${POCKET_PIER_COPY.subtitle}: ${POCKET_PIER_COPY.shortDescription} It starts with a single wooden pier and grows through fishing, selling catches, upgrades, worker automation, boats, harbor expansion, markets, exploration, and economy management. It differs from Jack OS because Jack OS is the web/software platform, while Pocket Pier is an independent mobile product.`,
-        actions: [OPEN_POCKET_PIER, OPEN_PROJECTS],
+        actions: [OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS],
       }
     case 'pocket-pier-launch':
       return {
         intent,
         content:
-          'I can open the Pocket Pier project window from here. It shows the gameplay concept, development path, screenshots, current status, and the move from idea to iOS distribution workflow.',
-        actions: [OPEN_POCKET_PIER],
+          'I can open the Pocket Pier project window from here, or send you to the official App Store listing. The window shows the gameplay concept, development path, screenshots, and current public-release status.',
+        actions: [OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE],
       }
     case 'pocket-pier-technology':
       return {
         intent,
         content:
-          `Pocket Pier is built with ${POCKET_PIER_COPY.engine} and ${POCKET_PIER_COPY.language} for ${POCKET_PIER_COPY.platform}. The workflow includes gameplay systems, progression and economy design, mobile-first UI, asset integration, Xcode packaging, and App Store Connect preparation. The public portfolio does not claim the game is already available on the App Store.`,
-        actions: [OPEN_POCKET_PIER, OPEN_PROJECTS],
+          `Pocket Pier is built with ${POCKET_PIER_COPY.engine} and ${POCKET_PIER_COPY.language} for ${POCKET_PIER_COPY.platform}. The workflow includes gameplay systems, progression and economy design, mobile-first UI, asset integration, Xcode packaging, and App Store Connect. The game is now publicly available on the App Store.`,
+        actions: [OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS],
       }
     case 'kickoff':
       return {
@@ -1116,8 +1124,8 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          `${POCKET_PIER_COPY.studio} is the independent project label behind Pocket Pier. In the current portfolio, it represents Jack's mobile product-development work rather than a claim of a large company or public game studio release.`,
-        actions: [OPEN_POCKET_PIER, OPEN_PROJECTS],
+          `${POCKET_PIER_COPY.studio} is the independent project label behind Pocket Pier. Pocket Pier is publicly available on the App Store. JDen Studios represents Jack's mobile product-development work rather than a claim of a large company.`,
+        actions: [OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS],
       }
     case 'blue-ocean':
       return {

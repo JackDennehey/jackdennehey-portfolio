@@ -114,7 +114,11 @@ export function ProjectsContent({ onOpen }: { onOpen?: (id: WindowId) => void })
                 className="os-border inline-flex min-h-9 items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
               >
                 <ExternalLink className="size-3.5" />{' '}
-                {project.internalApp === 'kickoff' ? 'Launch Kickoff' : 'Live Demo'}
+                {project.internalApp === 'kickoff'
+                  ? 'Launch Kickoff'
+                  : project.internalApp === 'pocket-pier'
+                    ? 'View on App Store'
+                    : 'Live Demo'}
               </a>
             ) : null}
           </div>

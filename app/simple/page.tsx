@@ -42,6 +42,9 @@ export default function SimpleModePage() {
   const kickoffProject = knowledge.projects.all.find(
     (project) => project.internalApp === 'kickoff',
   )
+  const pocketPierProject = knowledge.projects.all.find(
+    (project) => project.internalApp === 'pocket-pier',
+  )
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
@@ -159,6 +162,32 @@ export default function SimpleModePage() {
           </section>
         ) : null}
 
+        {pocketPierProject ? (
+          <section aria-labelledby="pocket-pier-heading" className="simple-section">
+            <div className="simple-card">
+              <p className="simple-label">Mobile Product</p>
+              <h2 id="pocket-pier-heading">{pocketPierProject.title}</h2>
+              <p>{pocketPierProject.description}</p>
+              <p className="mt-4 text-sm leading-7 text-[#4d473d]">
+                Now available on the App Store as an independent JDen Studios iOS game.
+              </p>
+              <div className="simple-actions mt-5 flex flex-wrap gap-3">
+                <a
+                  href={knowledge.projects.pocketPier.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="simple-action-primary"
+                >
+                  View on App Store
+                </a>
+                <Link href="/#pocket-pier" className="simple-action">
+                  Open in Jack OS
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {blueOceanProject ? (
           <section aria-labelledby="blue-ocean-heading" className="simple-section">
             <div className="simple-card">
@@ -230,6 +259,20 @@ export default function SimpleModePage() {
                 <p className="simple-label">{project.status ?? 'Project'}</p>
                 <h3>{project.title}</h3>
                 <p>{project.description}</p>
+                {project.demo ? (
+                  <a
+                    href={project.demo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="simple-text-link mt-3 inline-block"
+                  >
+                    {project.internalApp === 'pocket-pier'
+                      ? 'View on App Store'
+                      : project.internalApp === 'kickoff'
+                        ? 'Launch Kickoff'
+                        : 'Live Demo'}
+                  </a>
+                ) : null}
                 <ul className="mt-4 flex flex-wrap gap-2" aria-label={`${project.title} technologies`}>
                   {project.technologies.map((technology) => (
                     <li key={technology} className="simple-pill">

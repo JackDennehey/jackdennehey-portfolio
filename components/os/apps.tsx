@@ -43,7 +43,7 @@ export type WindowId =
   | 'secrets'
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
-export type AppTone = 'recruiter' | 'firewall' | 'blue-ocean'
+export type AppTone = 'recruiter' | 'firewall' | 'blue-ocean' | 'kickoff'
 export type IconVisual = 'image'
 
 export type WindowApp = {
@@ -91,7 +91,8 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     Icon: JackKickoffIcon,
     width: 900,
     height: 680,
-    description: 'football intelligence platform',
+    description: 'flagship football intelligence platform',
+    tone: 'kickoff',
   },
   about: {
     id: 'about',
@@ -287,7 +288,8 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     id: 'kickoff',
     label: 'Kickoff',
     Icon: JackKickoffIcon,
-    description: 'football intelligence platform',
+    description: 'flagship football intelligence platform',
+    tone: 'kickoff',
   },
   {
     kind: 'window',

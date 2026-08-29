@@ -714,6 +714,92 @@
     font-weight: 700;
   }
 
+  .kickoff-icon-frame {
+    position: relative;
+    border-width: 3px;
+    border-color: #c9a227;
+    background: var(--paper);
+    color: var(--foreground);
+    box-shadow:
+      inset 0 0 0 2px #f3e0a0,
+      0 0 0 1px #8c6d14;
+  }
+
+  .kickoff-icon-frame::before,
+  .kickoff-icon-frame::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: #d4af37;
+    pointer-events: none;
+  }
+
+  .kickoff-icon-frame::before {
+    left: 3px;
+    top: 3px;
+    border-left-width: 2px;
+    border-top-width: 2px;
+  }
+
+  .kickoff-icon-frame::after {
+    right: 3px;
+    bottom: 3px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+  }
+
+  .group:hover .kickoff-icon-frame,
+  .group:focus-visible .kickoff-icon-frame,
+  .kickoff-icon-frame[data-active='true'] {
+    background: var(--foreground);
+    color: var(--primary-foreground);
+  }
+
+  [data-theme='dark'] .kickoff-icon-frame {
+    background: var(--card);
+    border-color: #e0c15a;
+    box-shadow:
+      inset 0 0 0 2px #8c6d14,
+      0 0 0 1px #f3e0a0;
+  }
+
+  [data-theme='dark'] .group:hover .kickoff-icon-frame,
+  [data-theme='dark'] .group:focus-visible .kickoff-icon-frame,
+  [data-theme='dark'] .kickoff-icon-frame[data-active='true'] {
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+
+  .kickoff-icon-label {
+    width: auto;
+    max-width: 100%;
+    border-bottom: 2px solid #c9a227;
+    background: color-mix(in oklch, var(--paper) 86%, transparent);
+    padding: 1px 2px;
+    font-weight: 700;
+  }
+
+  .kickoff-inline-icon {
+    position: relative;
+    border-color: #c9a227;
+    background: var(--paper);
+    color: var(--foreground);
+    box-shadow: inset 0 0 0 1px #f3e0a0;
+  }
+
+  .kickoff-inline-icon::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 5px;
+    height: 5px;
+    border-left: 1px solid #d4af37;
+    border-top: 1px solid #d4af37;
+    pointer-events: none;
+  }
+
   .blue-ocean-inline-icon {
     position: relative;
     border-color: #c1a36a;

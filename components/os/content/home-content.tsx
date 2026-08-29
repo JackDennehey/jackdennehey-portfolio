@@ -1,6 +1,7 @@
 import type { InterfaceTheme } from '@/lib/interface-theme'
 import type { WindowId } from '../apps'
 import { BLUE_OCEAN_COPY } from '@/lib/blue-ocean'
+import { POCKET_PIER_APP_STORE_URL } from '@/lib/pocket-pier'
 
 export function HomeContent({
   onOpen,
@@ -170,6 +171,14 @@ export function HomeContent({
               {label}
             </button>
           ))}
+          <a
+            href={POCKET_PIER_APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            View Pocket Pier on App Store
+          </a>
           <button
             type="button"
             onClick={onAskAssistant}

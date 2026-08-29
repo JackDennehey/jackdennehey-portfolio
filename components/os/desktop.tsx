@@ -56,6 +56,7 @@ import {
   isHiddenWallpaper,
 } from '@/lib/wallpapers'
 import { CONTACT, CREDENTIALS, PROJECTS } from '@/lib/portfolio-data'
+import { POCKET_PIER_APP_STORE_URL } from '@/lib/pocket-pier'
 import {
   RECRUITER_SECTIONS,
   isRecruiterSectionId,
@@ -1178,6 +1179,7 @@ export function Desktop() {
         'godot',
         'gdscript',
         'ios',
+        'app store',
         'pixel art',
         'harbor',
         'fishing',
@@ -1242,9 +1244,9 @@ export function Desktop() {
             : id === 'blue-ocean'
               ? 'Open 1984 Blue Ocean — flagship guided interactive keynote'
               : id === 'pocket-pier'
-                ? 'Open Pocket Pier — JDen Studios mobile game project'
+                ? 'Open Pocket Pier — JDen Studios mobile game, available on the App Store'
               : id === 'kickoff'
-                ? 'Open Kickoff — football intelligence platform'
+                ? 'Open Kickoff — flagship football intelligence platform'
               : undefined,
         action: () =>
           openWindow(
@@ -1364,6 +1366,18 @@ export function Desktop() {
 
     return [
       ...appCommands,
+      {
+        id: 'view-pocket-pier-app-store',
+        title: 'View Pocket Pier on the App Store',
+        subtitle: 'Official iOS listing',
+        keywords: ['pocket pier', 'app store', 'download', 'ios', 'jden studios', 'apple'],
+        Icon: WINDOW_APPS['pocket-pier'].Icon,
+        iconVisual: WINDOW_APPS['pocket-pier'].iconVisual,
+        ariaLabel: 'View Pocket Pier on the App Store (opens in a new tab)',
+        action: () => {
+          window.open(POCKET_PIER_APP_STORE_URL, '_blank', 'noopener,noreferrer')
+        },
+      },
       ...projectCommands,
       ...credentialCommands,
       ...recruiterSectionCommands,
@@ -1416,6 +1430,14 @@ export function Desktop() {
         keywords: ['kickoff', 'football', 'model', 'ask kickoff', 'portfolio assistant'],
         Icon: WINDOW_APPS.assistant.Icon,
         action: () => openAssistant('What is Kickoff?'),
+      },
+      {
+        id: 'ask-jd-pocket-pier',
+        title: 'Ask about Pocket Pier',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['pocket pier', 'app store', 'game', 'jden studios', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What is Pocket Pier?'),
       },
       {
         id: 'ask-jd-credentials',

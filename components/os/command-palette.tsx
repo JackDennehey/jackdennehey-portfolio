@@ -234,7 +234,9 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
                             ? 'firewall-inline-icon'
                             : command.tone === 'blue-ocean'
                               ? 'blue-ocean-inline-icon'
-                              : 'border-current bg-paper text-foreground',
+                              : command.tone === 'kickoff'
+                                ? 'kickoff-inline-icon'
+                                : 'border-current bg-paper text-foreground',
                       )}
                     >
                       {Icon ? (

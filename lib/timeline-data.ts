@@ -1,5 +1,6 @@
 import { CONTACT, CREDENTIALS, PROJECTS } from './portfolio-data'
 import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
+import { POCKET_PIER_APP_STORE_URL } from './pocket-pier'
 
 export type TimelineCategory =
   | 'Education'
@@ -227,14 +228,18 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
       "Pocket Pier expands Jack's public work from web software into independent mobile product development under JDen Studios.",
     description:
       pocketPierProject?.description ??
-      'Pocket Pier is a cozy pixel-art harbor management game built with Godot and GDScript for iOS. The project demonstrates the product lifecycle from concept and prototype through gameplay systems, iteration, mobile packaging, and App Store preparation.',
+      'Pocket Pier is a cozy pixel-art harbor management game built with Godot and GDScript for iOS. The project demonstrates the product lifecycle from concept and prototype through gameplay systems, iteration, mobile packaging, and a public App Store release.',
     category: 'Projects',
     featured: true,
-    badge: 'JDen',
+    badge: 'App Store',
     actions: [
       { label: 'Open Pocket Pier', target: 'pocket-pier' },
       { label: 'Open Projects', target: 'projects' },
     ],
+    externalLink: {
+      label: 'View on App Store',
+      href: POCKET_PIER_APP_STORE_URL,
+    },
   },
   {
     id: 'kickoff-public-product',
