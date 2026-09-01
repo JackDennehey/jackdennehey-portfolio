@@ -8,6 +8,7 @@ export const APP_ICON_IMAGE_SOURCES = {
   roadmap: '/photos/app-icons/roadmap.png',
   secrets: '/photos/app-icons/secrets.png',
   certifications: '/photos/app-icons/credentials.png',
+  jdenStudios: '/images/Jden/jden-studios-mark.jpg',
 } as const
 
 type AppIconImageId = keyof typeof APP_ICON_IMAGE_SOURCES
@@ -44,3 +45,4 @@ export const JackResumeImageIcon = createAppImageIcon('resume', 'Resume')
 export const JackRoadmapImageIcon = createAppImageIcon('roadmap', 'Road Map')
 export const JackSecretsImageIcon = createAppImageIcon('secrets', 'Secrets')
 export const JackCredentialsImageIcon = createAppImageIcon('certifications', 'Credentials')
+export const JackJdenStudiosImageIcon = createAppImageIcon('jdenStudios', 'JDEN STUDIOS')

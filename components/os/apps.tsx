@@ -8,6 +8,7 @@ import {
   JackRoadmapImageIcon,
   JackResumeImageIcon,
   JackSecretsImageIcon,
+  JackJdenStudiosImageIcon,
 } from './app-image-icons'
 import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
@@ -28,6 +29,7 @@ export type WindowId =
   | 'blue-ocean'
   | 'pocket-pier'
   | 'kickoff'
+  | 'jden-studios'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -93,6 +95,15 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 680,
     description: 'flagship football intelligence platform',
     tone: 'kickoff',
+  },
+  'jden-studios': {
+    id: 'jden-studios',
+    title: 'JDEN STUDIOS',
+    Icon: JackJdenStudiosImageIcon,
+    iconVisual: 'image',
+    width: 640,
+    height: 600,
+    description: 'independent digital studio',
   },
   about: {
     id: 'about',
@@ -213,6 +224,7 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   'blue-ocean': '1984-blue-ocean',
   'pocket-pier': 'pocket-pier',
   kickoff: 'kickoff',
+  'jden-studios': 'jden-studios',
   about: 'about',
   projects: 'projects',
   certifications: 'credentials',
@@ -242,7 +254,8 @@ WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
 WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
 WINDOW_IDS_BY_HASH['blue-ocean'] = 'blue-ocean'
 WINDOW_IDS_BY_HASH.pocketpier = 'pocket-pier'
-WINDOW_IDS_BY_HASH['jden-studios'] = 'pocket-pier'
+WINDOW_IDS_BY_HASH.jden = 'jden-studios'
+WINDOW_IDS_BY_HASH.jdenstudios = 'jden-studios'
 WINDOW_IDS_BY_HASH['football-intelligence'] = 'kickoff'
 
 export function getWindowHash(id: WindowId) {

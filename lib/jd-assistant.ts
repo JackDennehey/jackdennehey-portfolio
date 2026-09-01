@@ -4,11 +4,13 @@ import { ROADMAP_SECTIONS } from './roadmap-data'
 import { BLUE_OCEAN_COPY } from './blue-ocean'
 import { KICKOFF_COPY, KICKOFF_URL } from './kickoff'
 import { POCKET_PIER_APP_STORE_URL, POCKET_PIER_COPY } from './pocket-pier'
+import { JDEN_STUDIOS_URL } from './jden-studios'
 
 export type AssistantWindowTarget =
   | 'blue-ocean'
   | 'pocket-pier'
   | 'kickoff'
+  | 'jden-studios'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -189,6 +191,16 @@ const OPEN_KICKOFF: AssistantAction = {
   type: 'open',
   label: 'Open Kickoff',
   target: 'kickoff',
+}
+const OPEN_JDEN: AssistantAction = {
+  type: 'open',
+  label: 'Open JDEN STUDIOS',
+  target: 'jden-studios',
+}
+const ENTER_JDEN: AssistantAction = {
+  type: 'external',
+  label: 'Enter JDEN STUDIOS',
+  href: JDEN_STUDIOS_URL,
 }
 const LAUNCH_KICKOFF: AssistantAction = {
   type: 'external',
@@ -1124,8 +1136,8 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          `${POCKET_PIER_COPY.studio} is the independent project label behind Pocket Pier. Pocket Pier is publicly available on the App Store. JDen Studios represents Jack's mobile product-development work rather than a claim of a large company.`,
-        actions: [OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS],
+          'JDEN STUDIOS is an independent digital studio founded by Jack Dennehey. Jack OS is Jack\'s personal portfolio environment. JDEN STUDIOS is the studio for commercial work and finished releases. Pocket Pier is currently the studio\'s released product. Kickoff is a personal Jack OS project, not a JDEN product. The studio website is jdenstudios.com.',
+        actions: [OPEN_JDEN, OPEN_POCKET_PIER, ENTER_JDEN],
       }
     case 'blue-ocean':
       return {
