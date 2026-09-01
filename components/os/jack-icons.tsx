@@ -251,3 +251,15 @@ export function JackFirewallIcon(props: IconProps) {
     </JackIcon>
   )
 }
+
+export function JackKickoffIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="4" y="5" width="16" height="14" />
+      <path d="M12 5v14" />
+      <path d="M4 12h16" />
+      <path d="M7 8h3M14 8h3M7 16h3M14 16h3" />
+      <rect x="10" y="10" width="4" height="4" />
+    </JackIcon>
+  )
+}

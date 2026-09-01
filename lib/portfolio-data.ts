@@ -1,4 +1,6 @@
 import { BLUE_OCEAN_COPY } from './blue-ocean'
+import { KICKOFF_COPY } from './kickoff'
+import { POCKET_PIER_APP_STORE_URL, POCKET_PIER_COPY } from './pocket-pier'
 
 export const CONTACT = {
   email: 'jackdennehey@gmail.com',
@@ -14,13 +16,30 @@ export type Project = {
   technologies: string[]
   github?: string
   demo?: string
-  internalApp?: 'blue-ocean'
+  featured?: boolean
+  featuredLabel?: string
+  internalApp?: 'blue-ocean' | 'pocket-pier' | 'kickoff'
+  internalActionLabel?: string
+  thumbnail?: {
+    src: string
+    alt: string
+  }
   role?: string
   implementation?: string
   keySystems?: string[]
 }
 
 export const PROJECTS: Project[] = [
+  {
+    title: KICKOFF_COPY.title,
+    status: KICKOFF_COPY.subtitle,
+    featured: true,
+    featuredLabel: 'Flagship Project',
+    description: KICKOFF_COPY.shortDescription,
+    technologies: [...KICKOFF_COPY.technologies],
+    internalApp: 'kickoff',
+    internalActionLabel: 'Open Kickoff',
+  },
   {
     title: 'Portfolio Website',
     status: 'Live',
@@ -54,6 +73,34 @@ export const PROJECTS: Project[] = [
       'chapter divider pacing',
       'session resume',
       'reduced-motion support',
+    ],
+  },
+  {
+    title: POCKET_PIER_COPY.title,
+    status: POCKET_PIER_COPY.subtitle,
+    description: POCKET_PIER_COPY.shortDescription,
+    technologies: [
+      'Godot',
+      'GDScript',
+      'iOS',
+      'Game Development',
+      'Product Development',
+      'Pixel Art',
+    ],
+    internalApp: 'pocket-pier',
+    internalActionLabel: 'Open Pocket Pier',
+    demo: POCKET_PIER_APP_STORE_URL,
+    thumbnail: POCKET_PIER_COPY.assets.icon,
+    role: POCKET_PIER_COPY.role,
+    implementation:
+      'Designed and built as a mobile-first Godot project with GDScript gameplay systems, pixel-art asset integration, iOS packaging, and a public App Store release.',
+    keySystems: [
+      'fishing and selling loop',
+      'progression and economy systems',
+      'worker automation',
+      'boats and harbor expansion',
+      'mobile UI and touch-first flow',
+      'iOS build and distribution workflow',
     ],
   },
   {

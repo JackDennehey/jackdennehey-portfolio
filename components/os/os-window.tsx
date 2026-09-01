@@ -214,6 +214,13 @@ export function OsWindow({
               >
                 <app.Icon className="size-3" />
               </span>
+            ) : app.tone === 'kickoff' ? (
+              <span
+                aria-hidden
+                className="kickoff-inline-icon grid size-4 shrink-0 place-items-center border"
+              >
+                <app.Icon className="size-3" />
+              </span>
             ) : (
               <app.Icon aria-hidden className="size-3.5 shrink-0" />
             )}

@@ -2,18 +2,43 @@ import { ExternalLink } from 'lucide-react'
 import { PROJECTS } from '@/lib/portfolio-data'
 import { GithubIcon } from '@/components/os/brand-icons'
 import type { WindowId } from '../apps'
+import { cn } from '@/lib/utils'
 
 export function ProjectsContent({ onOpen }: { onOpen?: (id: WindowId) => void }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {PROJECTS.map((project) => (
-        <article key={project.title} className="os-border flex flex-col bg-card p-4">
+        <article
+          key={project.title}
+          className={cn(
+            'os-border flex flex-col bg-card p-4',
+            project.featured ? 'sm:col-span-2' : null,
+          )}
+        >
+          {project.featuredLabel ? (
+            <p className="mb-2 font-pixel text-[8px] leading-relaxed text-muted-foreground">
+              {project.featuredLabel}
+            </p>
+          ) : null}
+
+          {project.thumbnail ? (
+            <div className="os-border mb-3 grid aspect-[5/3] place-items-center overflow-hidden bg-secondary p-2">
+              <img
+                src={project.thumbnail.src}
+                alt={project.thumbnail.alt}
+                loading="lazy"
+                decoding="async"
+                className="h-full max-h-28 w-full object-contain"
+              />
+            </div>
+          ) : null}
+
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-pixel text-[11px] leading-relaxed text-foreground">
               {project.title}
             </h3>
             {project.status ? (
-              <span className="os-border shrink-0 bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="os-border max-w-[12rem] shrink-0 bg-secondary px-1.5 py-0.5 text-right text-[10px] font-medium leading-snug text-muted-foreground">
                 {project.status}
               </span>
             ) : null}
@@ -65,9 +90,10 @@ export function ProjectsContent({ onOpen }: { onOpen?: (id: WindowId) => void })
               <button
                 type="button"
                 onClick={() => onOpen(project.internalApp as WindowId)}
-                className="os-border inline-flex items-center gap-1.5 bg-foreground px-2.5 py-1.5 font-pixel text-[8px] leading-relaxed text-primary-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:bg-background focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="os-border inline-flex min-h-9 items-center gap-1.5 bg-foreground px-2.5 py-1.5 font-pixel text-[8px] leading-relaxed text-primary-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:bg-background focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Launch Keynote
+                {project.internalActionLabel ??
+                  (project.internalApp === 'blue-ocean' ? 'Launch Keynote' : 'Open Project')}
               </button>
             ) : null}
             {project.github ? (
@@ -75,7 +101,7 @@ export function ProjectsContent({ onOpen }: { onOpen?: (id: WindowId) => void })
                 href={project.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="os-border inline-flex items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
+                className="os-border inline-flex min-h-9 items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
               >
                 <GithubIcon className="size-3.5" /> Code
               </a>
@@ -85,9 +111,14 @@ export function ProjectsContent({ onOpen }: { onOpen?: (id: WindowId) => void })
                 href={project.demo}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="os-border inline-flex items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
+                className="os-border inline-flex min-h-9 items-center gap-1.5 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground"
               >
-                <ExternalLink className="size-3.5" /> Live Demo
+                <ExternalLink className="size-3.5" />{' '}
+                {project.internalApp === 'kickoff'
+                  ? 'Launch Kickoff'
+                  : project.internalApp === 'pocket-pier'
+                    ? 'View on App Store'
+                    : 'Live Demo'}
               </a>
             ) : null}
           </div>

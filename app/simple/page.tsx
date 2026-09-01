@@ -10,7 +10,7 @@ import {
 } from '@/lib/site-metadata'
 
 const simpleDescription =
-  'Professional overview of Jack Dennehey, a Penn State Brandywine Business student with a background in cybersecurity and networking and interests in cloud computing, artificial intelligence, and front-end development.'
+  'Professional overview of Jack Dennehey, a Penn State Brandywine Business student with a background in cybersecurity and networking and interests in cloud computing, artificial intelligence, front-end development, and product development.'
 
 export const metadata: Metadata = {
   title: {
@@ -38,6 +38,12 @@ export default function SimpleModePage() {
   const knowledge = PORTFOLIO_KNOWLEDGE
   const blueOceanProject = knowledge.projects.all.find(
     (project) => project.internalApp === 'blue-ocean',
+  )
+  const kickoffProject = knowledge.projects.all.find(
+    (project) => project.internalApp === 'kickoff',
+  )
+  const pocketPierProject = knowledge.projects.all.find(
+    (project) => project.internalApp === 'pocket-pier',
   )
   const schema = {
     '@context': 'https://schema.org',
@@ -122,12 +128,65 @@ export default function SimpleModePage() {
             <SimpleFact label="Current Education" value="Business studies at Penn State Brandywine" />
             <SimpleFact label="Technical Foundation" value="Cybersecurity and networking" />
             <SimpleFact label="Public Email" value={knowledge.contact.email} />
-            <SimpleFact label="Live Project" value="Jack OS interactive portfolio" />
+            <SimpleFact label="Flagship Product" value="Kickoff football intelligence platform" />
           </div>
           <p className="mt-6 max-w-3xl text-base leading-8 text-[#3c382f]">
             {knowledge.person.professionalDirection}
           </p>
         </section>
+
+        {kickoffProject ? (
+          <section aria-labelledby="kickoff-heading" className="simple-section">
+            <div className="simple-card">
+              <p className="simple-label">Flagship Product</p>
+              <h2 id="kickoff-heading">{kickoffProject.title}</h2>
+              <p>{kickoffProject.description}</p>
+              <p className="mt-4 text-sm leading-7 text-[#4d473d]">
+                Live at kickoff.jackdennehey.com. Model v0.2 is evaluated honestly against an
+                entering-record baseline and does not currently beat it on straight-up accuracy.
+              </p>
+              <div className="simple-actions mt-5 flex flex-wrap gap-3">
+                <a
+                  href={knowledge.projects.kickoff.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="simple-action-primary"
+                >
+                  Launch Kickoff
+                </a>
+                <Link href="/#kickoff" className="simple-action">
+                  Open in Jack OS
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {pocketPierProject ? (
+          <section aria-labelledby="pocket-pier-heading" className="simple-section">
+            <div className="simple-card">
+              <p className="simple-label">Mobile Product</p>
+              <h2 id="pocket-pier-heading">{pocketPierProject.title}</h2>
+              <p>{pocketPierProject.description}</p>
+              <p className="mt-4 text-sm leading-7 text-[#4d473d]">
+                Now available on the App Store as an independent JDen Studios iOS game.
+              </p>
+              <div className="simple-actions mt-5 flex flex-wrap gap-3">
+                <a
+                  href={knowledge.projects.pocketPier.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="simple-action-primary"
+                >
+                  View on App Store
+                </a>
+                <Link href="/#pocket-pier" className="simple-action">
+                  Open in Jack OS
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {blueOceanProject ? (
           <section aria-labelledby="blue-ocean-heading" className="simple-section">
@@ -200,6 +259,20 @@ export default function SimpleModePage() {
                 <p className="simple-label">{project.status ?? 'Project'}</p>
                 <h3>{project.title}</h3>
                 <p>{project.description}</p>
+                {project.demo ? (
+                  <a
+                    href={project.demo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="simple-text-link mt-3 inline-block"
+                  >
+                    {project.internalApp === 'pocket-pier'
+                      ? 'View on App Store'
+                      : project.internalApp === 'kickoff'
+                        ? 'Launch Kickoff'
+                        : 'Live Demo'}
+                  </a>
+                ) : null}
                 <ul className="mt-4 flex flex-wrap gap-2" aria-label={`${project.title} technologies`}>
                   {project.technologies.map((technology) => (
                     <li key={technology} className="simple-pill">

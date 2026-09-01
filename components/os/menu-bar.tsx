@@ -12,6 +12,7 @@ import {
   JackThemeDarkIcon,
   JackThemeLightIcon,
 } from './jack-icons'
+import { JdenOwlMark, JdenWindowTrigger } from './jden-launch'
 
 export function MenuBar({
   onOpen,
@@ -47,8 +48,8 @@ export function MenuBar({
   uiActivity: number
 }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-8 items-center justify-between border-b-2 border-border bg-paper px-2 sm:px-3">
-      <nav aria-label="Main" className="flex items-center gap-0.5">
+    <header className="fixed inset-x-0 top-0 z-50 flex h-11 items-center justify-between border-b-2 border-border bg-paper px-2 sm:h-8 sm:px-3">
+      <nav aria-label="Main" className="flex min-w-0 items-center gap-0.5">
         <MenuButton onClick={() => onOpen('home')} featured>
           <span
             aria-hidden
@@ -58,6 +59,14 @@ export function MenuBar({
           </span>
           Jack OS
         </MenuButton>
+        <JdenWindowTrigger
+          onOpen={() => onOpen('jden-studios')}
+          className="jden-system-entry flex min-h-11 min-w-11 items-center gap-1.5 px-2 font-pixel text-[10px] leading-none text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none sm:min-h-0 sm:py-1"
+        >
+          <JdenOwlMark size="menu" className="size-4 shrink-0" />
+          <span className="sm:hidden">JDEN</span>
+          <span className="hidden sm:inline">JDEN STUDIOS</span>
+        </JdenWindowTrigger>
         <MenuButton onClick={() => onOpen('wallpapers')}>System</MenuButton>
         <MenuButton onClick={() => onOpen('about')}>About</MenuButton>
         <MenuButton onClick={onOpenSimpleMode}>Simple</MenuButton>

@@ -31,6 +31,13 @@ import { useDesktopPreferences } from './use-desktop-preferences'
 import { useHourlyChime } from './use-hourly-chime'
 import { WallpaperManager } from './wallpaper-manager'
 import { CommandPalette, type JackOsCommand } from './command-palette'
+import { JdenDesktopArtifact } from './jden-desktop-artifact'
+import {
+  JdenOwlMark,
+  JdenTransitionOverlay,
+  JdenWindowTrigger,
+  useJdenLaunch,
+} from './jden-launch'
 import { HomeContent } from './content/home-content'
 import { AboutContent } from './content/about-content'
 import { ProjectsContent } from './content/projects-content'
@@ -56,6 +63,7 @@ import {
   isHiddenWallpaper,
 } from '@/lib/wallpapers'
 import { CONTACT, CREDENTIALS, PROJECTS } from '@/lib/portfolio-data'
+import { POCKET_PIER_APP_STORE_URL } from '@/lib/pocket-pier'
 import {
   RECRUITER_SECTIONS,
   isRecruiterSectionId,
@@ -101,6 +109,18 @@ const RoadmapContent = dynamic(
 const BlueOceanContent = dynamic(
   () => import('./content/blue-ocean-content').then((module) => module.BlueOceanContent),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading Keynote..." /> },
+)
+const PocketPierContent = dynamic(
+  () => import('./content/pocket-pier-content').then((module) => module.PocketPierContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Pocket Pier..." /> },
+)
+const KickoffContent = dynamic(
+  () => import('./content/kickoff-content').then((module) => module.KickoffContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Kickoff..." /> },
+)
+const JdenStudiosContent = dynamic(
+  () => import('./content/jden-studios-content').then((module) => module.JdenStudiosContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading JDEN STUDIOS..." /> },
 )
 
 type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
@@ -357,6 +377,7 @@ export function Desktop() {
   const [blueOceanLaunchContext, setBlueOceanLaunchContext] =
     useState<BlueOceanLaunchContext>('desktop')
   const secretUnlocks = useSecretUnlocks()
+  const jdenLaunch = useJdenLaunch()
   const { preferences, preferencesLoaded, updatePreferences, resetWallpaper } =
     useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
   const soundEffects = useSoundEffects()
@@ -1132,7 +1153,10 @@ export function Desktop() {
   const commandRegistry = useMemo<JackOsCommand[]>(() => {
     const appIds: WindowId[] = [
       'home',
+      'jden-studios',
       'blue-ocean',
+      'pocket-pier',
+      'kickoff',
       'about',
       'projects',
       'certifications',
@@ -1149,6 +1173,15 @@ export function Desktop() {
     ]
     const appAliases: Partial<Record<WindowId, readonly string[]>> = {
       home: ['welcome', 'system', 'start'],
+      'jden-studios': [
+        'jden',
+        'jden studios',
+        'studio',
+        'independent studio',
+        'external system',
+        'client work',
+        'digital studio',
+      ],
       'blue-ocean': [
         '1984',
         'blue ocean',
@@ -1160,6 +1193,30 @@ export function Desktop() {
         'ai-assisted',
         'product development',
         'retro computing',
+      ],
+      'pocket-pier': [
+        'pocket pier',
+        'mobile game',
+        'godot',
+        'gdscript',
+        'ios',
+        'app store',
+        'pixel art',
+        'harbor',
+        'fishing',
+        'product development',
+      ],
+      kickoff: [
+        'kickoff',
+        'football',
+        'nfl',
+        'prediction',
+        'model',
+        'machine learning',
+        'ask kickoff',
+        'walk-forward',
+        'football intelligence',
+        'openai',
       ],
       about: ['about me', 'jack', 'bio'],
       certifications: ['credentials', 'certifications', 'certificates'],
@@ -1191,9 +1248,15 @@ export function Desktop() {
         subtitle:
           id === 'blue-ocean'
             ? 'Featured Experience / 31-stage interactive keynote'
-            : app.description
-              ? `Application / ${app.description}`
-              : 'Application',
+            : id === 'jden-studios'
+              ? 'System / independent digital studio'
+            : id === 'pocket-pier'
+              ? 'Featured Project / indie mobile game'
+              : id === 'kickoff'
+                ? 'Flagship Project / football intelligence platform'
+                : app.description
+                  ? `Application / ${app.description}`
+                  : 'Application',
         keywords: [app.title, id, ...(appAliases[id] ?? [])],
         Icon: app.Icon,
         tone: app.tone,
@@ -1203,6 +1266,12 @@ export function Desktop() {
             ? 'Open Recruiter Mode — guided professional overview'
             : id === 'blue-ocean'
               ? 'Open 1984 Blue Ocean — flagship guided interactive keynote'
+              : id === 'jden-studios'
+                ? 'Open JDEN STUDIOS — independent digital studio'
+              : id === 'pocket-pier'
+                ? 'Open Pocket Pier — JDen Studios mobile game, available on the App Store'
+              : id === 'kickoff'
+                ? 'Open Kickoff — flagship football intelligence platform'
               : undefined,
         action: () =>
           openWindow(
@@ -1232,8 +1301,19 @@ export function Desktop() {
         ...project.technologies,
         'projects',
       ],
-      Icon: WINDOW_APPS.projects.Icon,
-      action: () => openWindow('projects'),
+      Icon: project.internalApp ? WINDOW_APPS[project.internalApp].Icon : WINDOW_APPS.projects.Icon,
+      iconVisual: project.internalApp ? WINDOW_APPS[project.internalApp].iconVisual : undefined,
+      tone: project.internalApp ? WINDOW_APPS[project.internalApp].tone : undefined,
+      action: () => {
+        if (project.internalApp) {
+          openWindow(
+            project.internalApp,
+            project.internalApp === 'blue-ocean' ? { launchContext: 'search' } : undefined,
+          )
+          return
+        }
+        openWindow('projects')
+      },
     }))
 
     const credentialCommands = CREDENTIALS.map((credential) => ({
@@ -1311,6 +1391,18 @@ export function Desktop() {
 
     return [
       ...appCommands,
+      {
+        id: 'view-pocket-pier-app-store',
+        title: 'View Pocket Pier on the App Store',
+        subtitle: 'Official iOS listing',
+        keywords: ['pocket pier', 'app store', 'download', 'ios', 'jden studios', 'apple'],
+        Icon: WINDOW_APPS['pocket-pier'].Icon,
+        iconVisual: WINDOW_APPS['pocket-pier'].iconVisual,
+        ariaLabel: 'View Pocket Pier on the App Store (opens in a new tab)',
+        action: () => {
+          window.open(POCKET_PIER_APP_STORE_URL, '_blank', 'noopener,noreferrer')
+        },
+      },
       ...projectCommands,
       ...credentialCommands,
       ...recruiterSectionCommands,
@@ -1355,6 +1447,22 @@ export function Desktop() {
         keywords: ['projects', 'jack os', 'built', 'portfolio assistant'],
         Icon: WINDOW_APPS.assistant.Icon,
         action: () => openAssistant('What has Jack built?'),
+      },
+      {
+        id: 'ask-jd-kickoff',
+        title: 'Ask about Kickoff',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['kickoff', 'football', 'model', 'ask kickoff', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What is Kickoff?'),
+      },
+      {
+        id: 'ask-jd-pocket-pier',
+        title: 'Ask about Pocket Pier',
+        subtitle: 'J.D. topic shortcut',
+        keywords: ['pocket pier', 'app store', 'game', 'jden studios', 'portfolio assistant'],
+        Icon: WINDOW_APPS.assistant.Icon,
+        action: () => openAssistant('What is Pocket Pier?'),
       },
       {
         id: 'ask-jd-credentials',
@@ -1480,6 +1588,17 @@ export function Desktop() {
             onPresentationPowerDown={soundEffects.keynotePresentationPowerDown}
             onCompleted={handleBlueOceanCompleted}
             onPowerDown={handleBlueOceanPowerDown}
+          />
+        )
+      case 'pocket-pier':
+        return <PocketPierContent />
+      case 'kickoff':
+        return <KickoffContent />
+      case 'jden-studios':
+        return (
+          <JdenStudiosContent
+            onEnterStudio={jdenLaunch.launch}
+            onOpenPocketPier={() => openWindow('pocket-pier')}
           />
         )
       case 'about':
@@ -1612,7 +1731,7 @@ export function Desktop() {
         tabIndex={-1}
         wallpaperId={preferences.wallpaperId}
         unlockedSecretIds={secretUnlocks.unlockedIds}
-        className="relative min-h-[100dvh] pt-8"
+        className="relative min-h-[100dvh] pt-11 sm:pt-8"
         aria-label="Jack OS desktop"
         onContextMenu={handleDesktopContextMenu}
         onPointerDown={contextMenu ? () => closeContextMenu() : undefined}
@@ -1638,6 +1757,7 @@ export function Desktop() {
               <DesktopCalendar onOpenCalendar={() => undefined} />
             ) : null}
             <JdWidget onOpen={() => openAssistant()} />
+            <JdenDesktopArtifact onOpen={() => openWindow('jden-studios')} />
           </div>
         ) : null}
 
@@ -1675,6 +1795,20 @@ export function Desktop() {
               >
                 View Simple Mode
               </button>
+              <JdenWindowTrigger
+                onOpen={() => openWindow('jden-studios')}
+                className="os-border mt-3 flex min-h-11 items-center gap-2 bg-foreground px-3 py-2 text-primary-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:bg-background focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <JdenOwlMark size="menu" className="size-8 shrink-0" />
+                <span className="min-w-0 text-left">
+                  <span className="block font-pixel text-[8px] leading-relaxed">
+                    JDEN STUDIOS
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-snug opacity-80">
+                    Independent digital studio
+                  </span>
+                </span>
+              </JdenWindowTrigger>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-4">
               <DesktopIcon
@@ -1766,6 +1900,8 @@ export function Desktop() {
           earnedIds={earnedAchievementIds}
           onClose={() => setAchievementsPanelOpen(false)}
         />
+
+        <JdenTransitionOverlay active={jdenLaunch.active} />
 
         {copyStatus ? (
           <div

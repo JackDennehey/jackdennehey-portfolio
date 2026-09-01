@@ -4,15 +4,18 @@ import {
   JackAboutImageIcon,
   JackCredentialsImageIcon,
   JackGuestbookImageIcon,
+  JackPocketPierImageIcon,
   JackRoadmapImageIcon,
   JackResumeImageIcon,
   JackSecretsImageIcon,
+  JackJdenStudiosImageIcon,
 } from './app-image-icons'
 import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
   JackAssistantIcon,
   JackBlueOceanIcon,
   JackFirewallIcon,
+  JackKickoffIcon,
   JackMailIcon,
   JackProjectsIcon,
   JackRecruiterIcon,
@@ -24,6 +27,9 @@ import {
 export type WindowId =
   | 'home'
   | 'blue-ocean'
+  | 'pocket-pier'
+  | 'kickoff'
+  | 'jden-studios'
   | 'about'
   | 'projects'
   | 'certifications'
@@ -39,7 +45,7 @@ export type WindowId =
   | 'secrets'
 
 type IconType = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>
-export type AppTone = 'recruiter' | 'firewall' | 'blue-ocean'
+export type AppTone = 'recruiter' | 'firewall' | 'blue-ocean' | 'kickoff'
 export type IconVisual = 'image'
 
 export type WindowApp = {
@@ -71,6 +77,33 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 660,
     description: 'flagship interactive keynote',
     tone: 'blue-ocean',
+  },
+  'pocket-pier': {
+    id: 'pocket-pier',
+    title: 'Pocket Pier',
+    Icon: JackPocketPierImageIcon,
+    iconVisual: 'image',
+    width: 860,
+    height: 640,
+    description: 'indie mobile game',
+  },
+  kickoff: {
+    id: 'kickoff',
+    title: 'Kickoff',
+    Icon: JackKickoffIcon,
+    width: 900,
+    height: 680,
+    description: 'flagship football intelligence platform',
+    tone: 'kickoff',
+  },
+  'jden-studios': {
+    id: 'jden-studios',
+    title: 'JDEN STUDIOS',
+    Icon: JackJdenStudiosImageIcon,
+    iconVisual: 'image',
+    width: 640,
+    height: 600,
+    description: 'independent digital studio',
   },
   about: {
     id: 'about',
@@ -189,6 +222,9 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
 export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   home: 'home',
   'blue-ocean': '1984-blue-ocean',
+  'pocket-pier': 'pocket-pier',
+  kickoff: 'kickoff',
+  'jden-studios': 'jden-studios',
   about: 'about',
   projects: 'projects',
   certifications: 'credentials',
@@ -217,6 +253,10 @@ WINDOW_IDS_BY_HASH['recruiter-mode'] = 'recruiter'
 WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
 WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
 WINDOW_IDS_BY_HASH['blue-ocean'] = 'blue-ocean'
+WINDOW_IDS_BY_HASH.pocketpier = 'pocket-pier'
+WINDOW_IDS_BY_HASH.jden = 'jden-studios'
+WINDOW_IDS_BY_HASH.jdenstudios = 'jden-studios'
+WINDOW_IDS_BY_HASH['football-intelligence'] = 'kickoff'
 
 export function getWindowHash(id: WindowId) {
   return WINDOW_HASH_SLUGS[id]
@@ -247,6 +287,22 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
     Icon: JackBlueOceanIcon,
     description: 'flagship interactive keynote',
     tone: 'blue-ocean',
+  },
+  {
+    kind: 'window',
+    id: 'pocket-pier',
+    label: 'Pocket Pier',
+    Icon: JackPocketPierImageIcon,
+    iconVisual: 'image',
+    description: 'indie mobile game',
+  },
+  {
+    kind: 'window',
+    id: 'kickoff',
+    label: 'Kickoff',
+    Icon: JackKickoffIcon,
+    description: 'flagship football intelligence platform',
+    tone: 'kickoff',
   },
   {
     kind: 'window',

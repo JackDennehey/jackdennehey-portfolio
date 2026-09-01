@@ -1,6 +1,7 @@
 import type { InterfaceTheme } from '@/lib/interface-theme'
 import type { WindowId } from '../apps'
 import { BLUE_OCEAN_COPY } from '@/lib/blue-ocean'
+import { POCKET_PIER_APP_STORE_URL } from '@/lib/pocket-pier'
 
 export function HomeContent({
   onOpen,
@@ -116,12 +117,12 @@ export function HomeContent({
 
       <p className="text-sm leading-relaxed text-foreground text-pretty">
         {
-          "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, and building meaningful projects."
+          "I'm a business student passionate about technology, cybersecurity, networking, cloud computing, artificial intelligence, product development, and building meaningful projects."
         }
       </p>
       <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-        This website documents my professional journey, projects, credentials, and continuous
-        learning.
+        This website documents my professional journey, credentials, and flagship projects,
+        including Kickoff, Jack OS, and Pocket Pier.
       </p>
 
       <section className="os-border bg-secondary p-3">
@@ -156,8 +157,10 @@ export function HomeContent({
         </h3>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
+            ['kickoff', 'Open Kickoff'],
             ['firewall', 'Open Network Firewall'],
             ['timeline', 'Open Timeline'],
+            ['pocket-pier', 'Open Pocket Pier'],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -168,6 +171,14 @@ export function HomeContent({
               {label}
             </button>
           ))}
+          <a
+            href={POCKET_PIER_APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="os-border bg-card px-3 py-1.5 font-pixel text-[9px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            View Pocket Pier on App Store
+          </a>
           <button
             type="button"
             onClick={onAskAssistant}
