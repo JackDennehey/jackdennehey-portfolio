@@ -14,7 +14,9 @@ import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
   JackAssistantIcon,
   JackBlueOceanIcon,
+  JackDocumentIcon,
   JackFirewallIcon,
+  JackIdIcon,
   JackKickoffIcon,
   JackMailIcon,
   JackProjectsIcon,
@@ -30,8 +32,10 @@ export type WindowId =
   | 'pocket-pier'
   | 'kickoff'
   | 'jden-studios'
+  | 'portfolio'
   | 'about'
   | 'projects'
+  | 'case-study'
   | 'certifications'
   | 'recruiter'
   | 'resume'
@@ -60,12 +64,11 @@ export type WindowApp = {
   tone?: AppTone
   /** Shorter launcher label when the window title is too long for the desktop. */
   desktopLabel?: string
-  /** Search aliases for the command palette. */
+  /** Search aliases for Spotlight. */
   keywords?: readonly string[]
-  /** Command palette title. Defaults to `Open ${title}`. */
-  commandTitle?: string
-  commandSubtitle?: string
-  commandAriaLabel?: string
+  /** Spotlight title. Defaults to `Open ${title}`. */
+  spotlightTitle?: string
+  spotlightSubtitle?: string
   /** Recruiter/Firewall-style desktop auto-maximize. Ignored on mobile. */
   autoMaximize?: boolean
   /** Desktop minimum width. Clamped to the usable desktop. */
@@ -79,24 +82,24 @@ export type WindowApp = {
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   home: {
     id: 'home',
-    title: 'Welcome to Jack OS',
+    title: 'Welcome to JackOS',
     Icon: JackSystemIcon,
-    width: 460,
-    height: 480,
+    width: 480,
+    height: 540,
     description: 'first stops',
-    commandTitle: 'Open Welcome',
+    spotlightTitle: 'Open Welcome',
     keywords: ['welcome', 'system', 'start'],
   },
   'blue-ocean': {
     id: 'blue-ocean',
     title: '1984 Blue Ocean',
+    desktopLabel: 'Blue Ocean',
     Icon: JackBlueOceanIcon,
     width: 920,
     height: 660,
     description: 'flagship interactive keynote',
     tone: 'blue-ocean',
-    commandSubtitle: 'Featured Experience / 31-stage interactive keynote',
-    commandAriaLabel: 'Open 1984 Blue Ocean — flagship guided interactive keynote',
+    spotlightSubtitle: 'Featured Experience / 31-stage interactive keynote',
     keywords: [
       '1984',
       'blue ocean',
@@ -118,9 +121,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 860,
     height: 640,
     description: 'indie mobile game',
-    commandSubtitle: 'Featured Project / indie mobile game',
-    commandAriaLabel:
-      'Open Pocket Pier — JDen Studios mobile game, available on the App Store',
+    spotlightSubtitle: 'Featured Project / indie mobile game',
     keywords: [
       'pocket pier',
       'mobile game',
@@ -142,8 +143,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 680,
     description: 'flagship football intelligence platform',
     tone: 'kickoff',
-    commandSubtitle: 'Flagship Project / football intelligence platform',
-    commandAriaLabel: 'Open Kickoff — flagship football intelligence platform',
+    spotlightSubtitle: 'Flagship Project / football intelligence platform',
     keywords: [
       'kickoff',
       'football',
@@ -165,8 +165,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 640,
     height: 600,
     description: 'independent digital studio',
-    commandSubtitle: 'System / independent digital studio',
-    commandAriaLabel: 'Open JDEN STUDIOS — independent digital studio',
+    spotlightSubtitle: 'System / independent digital studio',
     keywords: [
       'jden',
       'jden studios',
@@ -175,6 +174,27 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
       'external system',
       'client work',
       'digital studio',
+    ],
+  },
+  portfolio: {
+    id: 'portfolio',
+    title: 'Portfolio',
+    Icon: JackIdIcon,
+    width: 760,
+    height: 640,
+    minWidth: 380,
+    minHeight: 420,
+    description: 'professional overview',
+    spotlightTitle: 'Open Portfolio',
+    spotlightSubtitle: "Conventional overview of Jack's work",
+    keywords: [
+      'portfolio',
+      'overview',
+      'about jack',
+      'featured work',
+      'experience',
+      'skills',
+      'resume',
     ],
   },
   about: {
@@ -195,6 +215,18 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 520,
     description: 'technical work',
   },
+  'case-study': {
+    id: 'case-study',
+    title: 'Case Study',
+    Icon: JackDocumentIcon,
+    width: 820,
+    height: 640,
+    minWidth: 380,
+    minHeight: 440,
+    description: 'project case studies',
+    spotlightTitle: 'Open Case Study',
+    keywords: ['case study', 'project', 'explore', 'writeup'],
+  },
   certifications: {
     id: 'certifications',
     title: 'Credentials',
@@ -208,13 +240,13 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   recruiter: {
     id: 'recruiter',
     title: 'Recruiter Mode',
+    desktopLabel: 'Recruiter',
     Icon: JackRecruiterIcon,
     width: 840,
     height: 640,
     description: 'guided professional overview',
     tone: 'recruiter',
     autoMaximize: true,
-    commandAriaLabel: 'Open Recruiter Mode — guided professional overview',
     keywords: ['corporate', 'professional', 'overview', 'recruiter mode'],
   },
   resume: {
@@ -223,20 +255,21 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     Icon: JackResumeImageIcon,
     iconVisual: 'image',
     width: 560,
-    height: 560,
+    height: 640,
     description: 'downloadable overview',
   },
   contact: {
     id: 'contact',
     title: 'Contact',
     Icon: JackMailIcon,
-    width: 420,
-    height: 520,
+    width: 460,
+    height: 580,
+    minWidth: 320,
     description: 'email and external links',
   },
   assistant: {
     id: 'assistant',
-    title: 'J.D. — Jack OS Assistant',
+    title: 'J.D. — JackOS Assistant',
     Icon: JackAssistantIcon,
     width: 560,
     height: 600,
@@ -266,6 +299,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   firewall: {
     id: 'firewall',
     title: 'Network Firewall',
+    desktopLabel: 'Firewall',
     Icon: JackFirewallIcon,
     width: 900,
     height: 660,
@@ -286,7 +320,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
   },
   roadmap: {
     id: 'roadmap',
-    title: 'ROADMAP.EXE — System Deployment Track',
+    title: 'Road Map',
     Icon: JackRoadmapImageIcon,
     iconVisual: 'image',
     width: 780,
@@ -322,8 +356,10 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   'pocket-pier': 'pocket-pier',
   kickoff: 'kickoff',
   'jden-studios': 'jden-studios',
+  portfolio: 'portfolio',
   about: 'about',
   projects: 'projects',
+  'case-study': 'case-study',
   certifications: 'credentials',
   recruiter: 'recruiter',
   resume: 'resume',
@@ -377,8 +413,24 @@ export function getDesktopAppLabel(id: WindowId) {
   return app.desktopLabel ?? app.title
 }
 
+/** Curated desktop dock pins. Metadata still comes from WINDOW_APPS. */
+export const DOCK_PINNED_APP_IDS = [
+  'portfolio',
+  'blue-ocean',
+  'pocket-pier',
+  'kickoff',
+  'recruiter',
+  'firewall',
+  'projects',
+] as const satisfies readonly WindowId[]
+
+export function isDockPinnedAppId(id: WindowId) {
+  return (DOCK_PINNED_APP_IDS as readonly string[]).includes(id)
+}
+
 /** Curated desktop/mobile launcher order. Home and JDEN live elsewhere in the shell. */
 export const DESKTOP_LAUNCHER_APP_IDS = [
+  'portfolio',
   'blue-ocean',
   'pocket-pier',
   'kickoff',
@@ -397,10 +449,11 @@ export const DESKTOP_LAUNCHER_APP_IDS = [
   'secrets',
 ] as const satisfies readonly WindowId[]
 
-/** Curated command-palette app order. */
-export const COMMAND_PALETTE_APP_IDS = [
+/** Curated Spotlight app order. */
+export const SPOTLIGHT_APP_IDS = [
   'home',
   'jden-studios',
+  'portfolio',
   'blue-ocean',
   'pocket-pier',
   'kickoff',

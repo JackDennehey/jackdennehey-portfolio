@@ -143,7 +143,7 @@ export function GuestbookAdmin() {
           </header>
           <form onSubmit={login} className="space-y-4 p-5">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Private moderation access for Jack OS.
+              Private moderation access for JackOS.
             </p>
             <label className="block space-y-1.5">
               <span className="font-pixel text-[8px] leading-relaxed">Email</span>

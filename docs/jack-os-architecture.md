@@ -1,8 +1,8 @@
-# Jack OS Architecture Notes
+# JackOS Architecture Notes
 
-Stable implementation notes after JackOS M2 (Window Manager). Keep this document focused on entry points and durable conventions rather than transient UI details.
+Stable implementation notes after JackOS M9 (recruiter surfaces). Keep this document focused on entry points and durable conventions rather than transient UI details.
 
-JackOS is an evolution of this repository, not a rewrite. Product name remains **JackOS**.
+JackOS is an evolution of this repository, not a rewrite. The product name is **JackOS**. “Jack OS” remains a spoken/search alias and appears in historical material (V1–V3B). Do not treat V3B as the current product label.
 
 ## System Map
 
@@ -15,13 +15,21 @@ JackOS
 |   |-- Window chrome                       components/os/os-window.tsx
 |   |-- App registry                        components/os/apps.tsx
 |   |-- Persistence catalog                 lib/os/storage.ts
-|   |-- Command palette app commands        components/os/build-app-commands.ts
+|   |-- Spotlight index                     lib/search/
 |
 |-- Shell
 |   |-- Desktop                             components/os/desktop.tsx
-|   |-- Menu bar / widgets / minimized strip
+|   |-- Mobile breakpoint                   components/os/use-mobile-breakpoint.ts
+|   |-- Mobile shell                        components/os/mobile/mobile-shell.tsx
+|   |-- Mobile home                         components/os/mobile/mobile-home.tsx
+|   |-- Mobile app header                   components/os/mobile/mobile-app-header.tsx
+|   |-- Mobile system panel                 components/os/mobile/mobile-system-panel.tsx
+|   |-- Menu bar                            components/os/menu-bar.tsx
+|   |-- Dock                                components/os/shell/dock.tsx
+|   |-- System status                       components/os/shell/system-status.tsx
+|   |-- System menu                         components/os/shell/system-menu.tsx
 |   |-- Context menu                        components/os/desktop-context-menu.tsx
-|   |-- Command palette                     components/os/command-palette.tsx
+|   |-- Spotlight                           components/os/spotlight/spotlight.tsx
 |   |-- Boot                                components/os/boot-screen.tsx
 |
 |-- Apps
@@ -29,33 +37,38 @@ JackOS
 |   |-- JDEN STUDIOS (system entity)        components/os/jden-launch.tsx
 |
 |-- Content
-    |-- Projects / about / credentials      lib/portfolio-data.ts
-    |-- Recruiter knowledge                 lib/portfolio-knowledge.ts
-    |-- Timeline                            lib/timeline-data.ts
-    |-- J.D. assistant                      lib/jd-assistant.ts
+    |-- Canonical portfolio facts             lib/portfolio/
+    |-- Project case studies                  lib/portfolio/case-studies/
+    |-- Compatibility adapters                lib/portfolio-data.ts, lib/portfolio-knowledge.ts
+    |-- Timeline                              lib/timeline-data.ts
+    |-- J.D. assistant                        lib/jd-assistant.ts
+    |-- SEO copy                              lib/portfolio/seo.ts via lib/site-metadata.ts
 ```
 
 ## Application Registry
 
 - Window applications are registered in `components/os/apps.tsx` through `WINDOW_APPS`.
-- Adding an app should start in `WINDOW_APPS` with id, title, icon, default size, description, keywords, and optional `autoMaximize` / `minWidth` / `minHeight` / `resizable` / `desktopLabel` / command-palette fields.
-- Desktop and mobile launcher order is `DESKTOP_LAUNCHER_APP_IDS`; `DESKTOP_ITEMS` is derived from that list plus GitHub/LinkedIn links.
-- Command-palette app rows are derived from `COMMAND_PALETTE_APP_IDS` via `buildAppOpenCommands`.
+- Adding an app should start in `WINDOW_APPS` with id, title, icon, default size, description, keywords, and optional `autoMaximize` / `minWidth` / `minHeight` / `resizable` / `desktopLabel` / Spotlight fields.
+- Desktop dock pins are `DOCK_PINNED_APP_IDS`. Pin IDs resolve through `WINDOW_APPS`; do not duplicate names or icons.
+- Desktop and mobile launcher order is `DESKTOP_LAUNCHER_APP_IDS`; `DESKTOP_ITEMS` is derived from that list plus GitHub/LinkedIn links. The desktop rail hides dock-pinned apps so the two launchers do not show the same list.
+- Spotlight app rows are derived from `SPOTLIGHT_APP_IDS` via `lib/search/build-index.ts`. There is no parallel command palette.
 - Hash routing is `WINDOW_HASH_SLUGS`, `getWindowHash`, and `getWindowIdFromHash`.
-- Home is launched from Welcome / first visit, not the desktop icon rail.
+- Project case studies use a single `case-study` window. Deep links are `#case-study/{projectId}` with `#project/{projectId}` as an alias. Existing product hashes (`#kickoff`, `#pocket-pier`, `#1984-blue-ocean`, `#portfolio`) still open those apps.
+- Home is launched from Welcome / first visit / system menu, not the desktop icon rail.
 - JDEN STUDIOS is a registered window plus a system-level desktop artifact; it is not a desktop launcher icon.
 
 ## Window Manager
 
 - Authoritative window lifecycle lives in `components/os/use-window-manager.ts`.
 - Geometry helpers, cascade, clamp, resize math, maximize bounds, stack z, and chrome metrics live in `lib/os/window-geometry.ts`.
-- `components/os/desktop.tsx` orchestrates the shell: boot, hash routing, command palette, Blue Ocean launch context, sounds, achievements, overlays, and `renderContent`. It does not own window mechanics.
-- `components/os/os-window.tsx` owns window chrome, title-bar dragging, desktop edge/corner resize hit targets, focus affordances, close/minimize/maximize controls, and mobile fullscreen presentation.
+- `components/os/desktop.tsx` orchestrates the shell: boot, hash routing, Spotlight, Blue Ocean launch context, sounds, achievements, overlays, and `renderContent`. It does not own window mechanics.
+- `components/os/os-window.tsx` owns desktop window chrome, title-bar dragging, edge/corner resize, focus affordances, and close/minimize/maximize. It is not mounted on mobile.
 - Recruiter Mode and Network Firewall auto-maximize on desktop through `WindowApp.autoMaximize`.
 - Windows are single-instance per `WindowId`. Minimized/maximized status is session-only.
-- Normal geometry (`x`, `y`, `width`, `height`) may be remembered in `jack-os:window-geometry.v1` after a completed move or resize, then clamped before reuse.
-- Desktop windows can be resized from edges and corners. Resize is disabled on the current `<=640px` fullscreen layout and while a window is maximized.
-- `components/os/minimized-window-strip.tsx` renders minimized windows from the central app registry.
+- Normal geometry (`x`, `y`, `width`, `height`) may be remembered in `jack-os:window-geometry.v1` after a completed desktop move or resize, then clamped before reuse. Mobile open/home must not persist phone-sized geometry.
+- `resetWindowLayout()` clears remembered geometry only and re-cascades currently open normal windows. Theme, wallpaper, achievements, and other preferences are left alone. It is desktop-only in the System menu.
+- Desktop windows can be resized from edges and corners. Resize is disabled while a window is maximized. Mobile does not present window chrome.
+- The desktop dock consumes Window Manager `windows` / `activeWindowId` rather than keeping a parallel running-app list.
 
 ## Persistence
 
@@ -67,10 +80,23 @@ JackOS
 
 ## Desktop Layout
 
-- Desktop widgets live on the left side in `components/os/desktop.tsx`: clock, calendar, and J.D.
-- Application icons live in a right-side launcher rail and keep the center of the wallpaper open as the workspace.
-- Mobile (`max-width: 640px`) uses the OS-style app grid only when no app window is open, and windows go fullscreen.
+- Menu bar shows JackOS identity, the active application name (or Desktop), JDEN, System, About, Simple, Search (Spotlight), Help, achievements, and real system status.
+- Desktop widgets live on the left side in `components/os/desktop.tsx`: clock, calendar, J.D., and the JDEN artifact.
+- The dock is the primary desktop launcher for pinned apps and currently running overflow apps. It is desktop-only; it is not mounted on mobile.
+- Remaining desktop icons live in a right-side rail (plus GitHub/LinkedIn) and keep the center of the wallpaper open as the workspace.
 - J.D. is available as a left widget and mobile launcher item; it is intentionally hidden from the desktop app rail.
+
+## Mobile Shell
+
+- Desktop JackOS is spatial (windows). Mobile JackOS is navigational (Home → fullscreen app → Home). Same product, two interaction modes.
+- Breakpoint: `JACK_OS_MOBILE_QUERY` in `components/os/use-mobile-breakpoint.ts` — `(max-width: 640px)` plus short landscape phone viewports `(max-height: 520px) and (max-width: 960px)`.
+- `desktop.tsx` owns session/hash/Window Manager/content. It renders `MobileShell` or the desktop tree; it does not mount OsWindow, dock, menu bar, rail, or context menu on mobile.
+- Home is a navigation flag. Returning Home does not close Window Manager windows, so desktop geometry survives a brief mobile viewport.
+- Mobile app surface shows one fullscreen app with a Home control. No drag, resize, minimize, maximize, or Close-as-window-chrome.
+- Mobile system panel reuses real M3 actions (Personalize, Theme, Sound, CRT, Welcome, Recruiter, Simple, Achievements, Restart) plus Spotlight. Reset Window Layout and window-count status are desktop-only.
+- Spotlight is the universal local search. Desktop: menu Search or Cmd/Ctrl+K. Mobile: Home Search and System → Spotlight. There is no parallel command palette.
+- Window Manager skips clamp/persist while mobile and does not restore minimized windows on mobile enter.
+- Viewport uses `viewportFit: 'cover'` and mobile chrome uses `100dvh` / `100svh` plus `env(safe-area-inset-*)`.
 
 ## Icon Registry
 
@@ -104,10 +130,54 @@ JackOS
 
 ## Shared Portfolio Data
 
-- Portfolio facts live in `lib/portfolio-data.ts`.
-- Recruiter-oriented sections and portfolio knowledge live in `lib/portfolio-knowledge.ts`.
-- The local J.D. assistant response engine lives in `lib/jd-assistant.ts`.
-- Timeline entries live in `lib/timeline-data.ts`.
+- Canonical portfolio facts live in `lib/portfolio/`.
+- `lib/portfolio/types.ts` defines profile, project, experience, education, skill, credential, and SEO types.
+- `lib/portfolio/projects.ts` is the first-class project catalog. Kickoff, Pocket Pier, and Blue Ocean keep product-specific presentation copy in their own modules and are referenced from the catalog.
+- Selectors and assistant/search formatters live in `lib/portfolio/selectors.ts` and `lib/portfolio/format.ts`. Integrity checks run when the catalog is imported.
+- `lib/portfolio-data.ts` is a compatibility adapter for existing consumers that still expect `PROJECTS[].title`.
+- Recruiter presentation plus derived knowledge live in `lib/portfolio-knowledge.ts`.
+- The local J.D. assistant response engine lives in `lib/jd-assistant.ts` and reads derived knowledge. J.D. is a guided portfolio Q&A layer, not a second search system and not a BOCH prototype.
+- Timeline entries live in `lib/timeline-data.ts` and resolve projects/credentials by canonical id.
+- Portfolio.app is registered as `portfolio` in `WINDOW_APPS`, hash `#portfolio`.
+- Project case studies live in `lib/portfolio/case-studies/` and render through `components/os/case-study/`. `caseStudyAvailable` is true only when a study record exists. Portfolio.app, Projects, Recruiter Mode, and Simple Mode open the same studies by canonical project id.
+
+## Recruiter Surfaces
+
+Two intentional paths share one content graph (`lib/portfolio`, case studies, Spotlight). Do not add `recruiter-data.ts`, `simple-mode-projects.ts`, or `jd-project-data.ts`.
+
+| Surface | Job |
+| --- | --- |
+| Welcome (`#` / Home) | Orientation: what this is, who Jack is, where to go. |
+| Portfolio.app (`#portfolio`) | Primary portfolio overview **inside** JackOS. |
+| Recruiter Mode (`#recruiter`) | Fast evidence brief. Same hashes for sections (`#recruiter/projects`). |
+| Simple Mode (`/simple`) | Conventional full-site experience without OS chrome. |
+| Resume.app (`#resume`) | Readable resume plus `/jack-dennehey-resume.txt` download. |
+| Contact (`#contact`) | Email, GitHub, LinkedIn, site identity. |
+| J.D. | Lightweight guided Q&A until a later standalone BOCH evaluation. |
+
+### Simple Mode lifecycle
+
+- Simple Mode is a **route**, not in-app window state. Opening it is `window.location.assign('/simple')` (full navigation).
+- Return to JackOS is `/`. Browser history is a normal page stack: `/` ↔ `/simple`.
+- Direct hashes into JackOS still work from Simple Mode (`/#portfolio`, `/#resume`, `/#contact`, `/#recruiter`, `/#case-study/{id}`).
+- `/simple` does not load the desktop shell. That is the performance boundary; do not rewrite architecture solely for theoretical bundle savings.
+
+## Spotlight
+
+- Local search only. No network, no query telemetry, no web search, no LLM.
+- Index sources: `WINDOW_APPS` / `SPOTLIGHT_APP_IDS`, canonical `lib/portfolio` records, case studies and sections, timeline, recruiter sections, real system commands, and project links. Small aliases live in `lib/search/aliases.ts` and are not a second content source.
+- Query and ranking live in `lib/search/query.ts` and `lib/search/score.ts`. The UI does not own matching.
+- Actions are typed (`open-app`, `open-case-study`, `open-case-study-section`, `open-portfolio-section`, `open-recruiter-section`, `open-external`, `system`). `desktop.tsx` routes them through existing open/navigation helpers.
+- Case-study section results open the study and scroll `getCaseStudySectionDomId(projectId, sectionId)` into view. They do not use JackOS hashes.
+- Adding searchable content: put facts in the canonical source. Rebuild is automatic on import. Integrity checks run when `lib/search` is imported.
+- Future BOCH should consume `querySpotlight` / `SpotlightAction` rather than scraping the UI.
+
+## System Actions
+
+- Spotlight system commands: Personalize, Ask J.D., Copy Email, View Achievements, Reset Window Layout, Restart Session.
+- Desktop System menu and mobile System panel expose the same real preferences (theme, sound, CRT, wallpaper/Personalize, Welcome, Recruiter, Simple, Achievements, Restart). Reset Window Layout is desktop-only.
+- Context menu repeats desktop workspace actions; it does not invent a second command surface.
+- Cmd/Ctrl+K and the menu Search control open Spotlight. There is no parallel command palette.
 
 ## Theme And CRT Behavior
 
@@ -122,8 +192,12 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 
 ## Known Scaling Limits (intentionally deferred)
 
-- `desktop.tsx` still coordinates shell concerns (boot, hash, command palette extras, content switch).
+- `desktop.tsx` still coordinates shell concerns (boot, hash, Spotlight extras, content switch).
 - Multi-instance application windows are not implemented.
-- Mobile is a compressed desktop, not a purpose-built shell.
-- Portfolio facts are duplicated across `portfolio-data`, `portfolio-knowledge`, `jd-assistant`, and SEO metadata.
+- Mobile has no running-app switcher; Home hides the current app without closing Window Manager state.
+- Product-specific Kickoff, Pocket Pier, and Blue Ocean copy remains beside the canonical project catalog by design.
+- About area essays and Recruiter/Simple Mode presentation copy remain app-specific.
 - `app/globals.css` and keynote CSS are large; visual identity should stay JackOS-native rather than a macOS/Windows clone.
+- Compatibility adapters `lib/portfolio-data.ts` and `lib/portfolio-knowledge.ts` remain until remaining consumers are migrated.
+- Sitemap `lastModified` is set only when `VERCEL_GIT_COMMIT_DATE` is present. There is no invented “last updated” date.
+- BOCH is gated on the standalone BOCH project. Files and Terminal remain future milestones, not M9 by default.

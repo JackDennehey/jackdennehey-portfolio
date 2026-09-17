@@ -106,6 +106,7 @@ export const viewport: Viewport = {
   themeColor: '#eae7df',
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
 }
 
 const themeInitScript = `
@@ -142,7 +143,7 @@ export default function RootLayout({
       </head>
       <body className="bg-background antialiased">
         <a href="#jack-os-desktop" className="skip-link">
-          Skip to Jack OS desktop
+          Skip to JackOS desktop
         </a>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

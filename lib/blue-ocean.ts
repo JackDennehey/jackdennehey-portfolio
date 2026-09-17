@@ -9,6 +9,7 @@ export type BlueOceanLaunchContext =
   | 'recruiter'
   | 'simple'
   | 'projects'
+  | 'case-study'
   | 'search'
   | 'ask-jd'
 

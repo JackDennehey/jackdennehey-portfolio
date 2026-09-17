@@ -101,7 +101,7 @@ export function JdenDestinationLink({
   children,
   className,
   onLaunch,
-  ariaLabel = 'Enter JDEN STUDIOS, opens jdenstudios.com and leaves Jack OS',
+  ariaLabel = 'Enter JDEN STUDIOS, opens jdenstudios.com and leaves JackOS',
 }: {
   children: ReactNode
   className?: string

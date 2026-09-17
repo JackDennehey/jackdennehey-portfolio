@@ -30,7 +30,7 @@ export function KickoffContent() {
             <ExternalLink aria-hidden className="size-3" />
           </a>
           <p className="self-center text-xs leading-relaxed text-muted-foreground">
-            Opens the live product in a new tab and leaves Jack OS.
+            Opens the live product in a new tab and leaves JackOS.
           </p>
         </div>
         <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

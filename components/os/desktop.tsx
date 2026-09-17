@@ -21,11 +21,13 @@ import {
   WINDOW_APPS,
   getWindowHash,
   getWindowIdFromHash,
+  isDockPinnedAppId,
   isWindowId,
   type WindowId,
 } from './apps'
-import { buildAppOpenCommands } from './build-app-commands'
 import { useWindowManager } from './use-window-manager'
+import { useJackOsMobileBreakpoint } from './use-mobile-breakpoint'
+import { MobileShell } from './mobile/mobile-shell'
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
@@ -33,16 +35,15 @@ import { JdWidget } from './jd-widget'
 import { useDesktopPreferences } from './use-desktop-preferences'
 import { useHourlyChime } from './use-hourly-chime'
 import { WallpaperManager } from './wallpaper-manager'
-import { CommandPalette, type JackOsCommand } from './command-palette'
+import { Spotlight } from './spotlight/spotlight'
 import { JdenDesktopArtifact } from './jden-desktop-artifact'
 import {
-  JdenOwlMark,
   JdenTransitionOverlay,
-  JdenWindowTrigger,
   useJdenLaunch,
 } from './jden-launch'
 import { HomeContent } from './content/home-content'
 import { AboutContent } from './content/about-content'
+import { PortfolioContent } from './content/portfolio-content'
 import { ProjectsContent } from './content/projects-content'
 import { CertificationsContent } from './content/certifications-content'
 import { ResumeContent } from './content/resume-content'
@@ -53,22 +54,32 @@ import { RecruiterModeContent } from './content/recruiter-mode-content'
 import { JdAssistantContent } from './content/jd-assistant-content'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
-import { MinimizedWindowStrip } from './minimized-window-strip'
+import { JackOsDock } from './shell/dock'
 import { useSecretUnlocks } from './use-secret-unlocks'
 import {
   getSecretDefinition,
   type SecretId,
 } from '@/lib/secrets'
 import {
-  CURRENT_WALLPAPERS,
   DEFAULT_WALLPAPER_ID,
   getWallpaperAsset,
   isHiddenWallpaper,
 } from '@/lib/wallpapers'
-import { CONTACT, CREDENTIALS, PROJECTS } from '@/lib/portfolio-data'
-import { POCKET_PIER_APP_STORE_URL } from '@/lib/pocket-pier'
+import { CONTACT } from '@/lib/portfolio-data'
 import {
-  RECRUITER_SECTIONS,
+  getCaseStudyHash,
+  getProjectById,
+  isCaseStudyProjectId,
+  parseCaseStudyHash,
+  type CaseStudyOrigin,
+  type CaseStudyProjectId,
+} from '@/lib/portfolio'
+import {
+  type PortfolioSectionId,
+  type SpotlightAction,
+  type SpotlightEntry,
+} from '@/lib/search'
+import {
   isRecruiterSectionId,
   type RecruiterSectionId,
 } from '@/lib/portfolio-knowledge'
@@ -82,7 +93,6 @@ import {
   type JackOsInteractiveAppId,
 } from '@/lib/achievements'
 import { WINDOW_CLOSE_DURATION_MS } from '@/lib/os/window-geometry'
-import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
 import {
   readBlueOceanCompleted,
   type BlueOceanLaunchContext,
@@ -120,6 +130,11 @@ const KickoffContent = dynamic(
   () => import('./content/kickoff-content').then((module) => module.KickoffContent),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading Kickoff..." /> },
 )
+const CaseStudyContent = dynamic(
+  () =>
+    import('./case-study/case-study-content').then((module) => module.CaseStudyContent),
+  { ssr: false, loading: () => <LazyWindowLoading label="Loading Case Study..." /> },
+)
 const JdenStudiosContent = dynamic(
   () => import('./content/jden-studios-content').then((module) => module.JdenStudiosContent),
   { ssr: false, loading: () => <LazyWindowLoading label="Loading JDEN STUDIOS..." /> },
@@ -129,16 +144,17 @@ type OpenWindowOptions = {
   playSound?: boolean
   updateHash?: boolean
   launchContext?: BlueOceanLaunchContext
+  caseStudyProjectId?: CaseStudyProjectId
 }
 type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
-const CONTEXT_MENU_HEIGHT = 92
+const CONTEXT_MENU_HEIGHT = 176
 const COPY_CONFIRMATION_DURATION_MS = 2200
 const ACHIEVEMENT_NOTICE_DURATION_MS = 3200
 const DESKTOP_ICON_DEFAULT_ROWS = 7
 const DESKTOP_ICON_TOP_OFFSET = 44
-const DESKTOP_ICON_BOTTOM_PADDING = 28
+const DESKTOP_ICON_BOTTOM_PADDING = 100
 const DESKTOP_ICON_ROW_HEIGHT = 78
 const DESKTOP_ICON_ROW_GAP = 10
 
@@ -177,6 +193,21 @@ function syncWindowHash(id: WindowId, mode: 'push' | 'replace' = 'push') {
   writeHashSlug(getWindowHash(id), mode)
 }
 
+function clearHashSlug(mode: 'push' | 'replace' = 'push') {
+  if (typeof window === 'undefined') return
+
+  const nextUrl = `${window.location.pathname}${window.location.search}`
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  if (current === nextUrl || current === `${nextUrl}#`) return
+
+  if (mode === 'replace') {
+    window.history.replaceState(null, '', nextUrl)
+    return
+  }
+
+  window.history.pushState(null, '', nextUrl)
+}
+
 function getRecruiterSectionFromHash(hash: string): RecruiterSectionId | null {
   const slug = hash.replace(/^#/, '').trim().toLowerCase()
   if (slug === 'recruiter') return 'overview'
@@ -189,6 +220,16 @@ function getRecruiterSectionFromHash(hash: string): RecruiterSectionId | null {
 
 function getRecruiterHash(section: RecruiterSectionId) {
   return section === 'overview' ? 'recruiter' : `recruiter/${section}`
+}
+
+function isUnrecognizedJackOsHash(hash: string) {
+  const slug = hash.replace(/^#/, '').trim()
+  if (!slug) return false
+  return !(
+    parseCaseStudyHash(hash) ||
+    getRecruiterSectionFromHash(hash) ||
+    getWindowIdFromHash(hash)
+  )
 }
 
 function isInteractiveAppId(id: WindowId): id is JackOsInteractiveAppId {
@@ -214,15 +255,25 @@ export function Desktop() {
   const router = useRouter()
   const [booted, setBooted] = useState(false)
   const [scanlines, setScanlines] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useJackOsMobileBreakpoint()
+  const [mobileHome, setMobileHome] = useState(true)
+  const [mobileSystemPanelOpen, setMobileSystemPanelOpen] = useState(false)
   const [desktopIconRows, setDesktopIconRows] = useState(DESKTOP_ICON_DEFAULT_ROWS)
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [systemMenuOpen, setSystemMenuOpen] = useState(false)
+  const [spotlightOpen, setSpotlightOpen] = useState(false)
   const [achievementsPanelOpen, setAchievementsPanelOpen] = useState(false)
   const [earnedAchievementIds, setEarnedAchievementIds] = useState<JackOsAchievementId[]>([])
   const [uptimeSeconds, setUptimeSeconds] = useState(0)
-  const [uiActivity, setUiActivity] = useState(8)
   const [recruiterSection, setRecruiterSection] = useState<RecruiterSectionId>('overview')
+  const [caseStudyProjectId, setCaseStudyProjectId] = useState<CaseStudyProjectId>('jackos')
+  const [caseStudyOrigin, setCaseStudyOrigin] = useState<CaseStudyOrigin>('hash')
+  const [caseStudyFocusSectionId, setCaseStudyFocusSectionId] = useState<string | null>(null)
+  const [caseStudyFocusNonce, setCaseStudyFocusNonce] = useState(0)
+  const [portfolioFocusSectionId, setPortfolioFocusSectionId] = useState<PortfolioSectionId | null>(
+    null,
+  )
+  const [portfolioFocusNonce, setPortfolioFocusNonce] = useState(0)
   const [assistantSeedPrompt, setAssistantSeedPrompt] = useState<{
     question: string
     nonce: number
@@ -257,6 +308,7 @@ export function Desktop() {
     maximizeWindow: maximizeManagedWindow,
     restoreWindow: restoreManagedWindow,
     restoreAllMinimized: restoreAllManagedMinimized,
+    resetWindowLayout: resetManagedWindowLayout,
     moveWindow,
     resizeWindow,
     commitGeometry,
@@ -267,7 +319,6 @@ export function Desktop() {
   const copyStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const achievementNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const firstBootAchievementTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const uiActivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hadActiveWindow = useRef(false)
   const blueOceanLaunchContextRef = useRef<BlueOceanLaunchContext>('desktop')
 
@@ -305,14 +356,6 @@ export function Desktop() {
       document.removeEventListener('visibilitychange', updateUptime)
     }
   }, [booted])
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 640px)')
-    const update = () => setIsMobile(mq.matches)
-    update()
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
-  }, [])
 
   useEffect(() => {
     const updateDesktopIconRows = () => {
@@ -362,17 +405,6 @@ export function Desktop() {
     [soundEffects],
   )
 
-  const bumpUiActivity = useCallback((amount = 16) => {
-    setUiActivity((current) => Math.min(99, Math.max(12, current + amount)))
-    if (uiActivityTimer.current) {
-      clearTimeout(uiActivityTimer.current)
-    }
-    uiActivityTimer.current = setTimeout(() => {
-      setUiActivity((current) => Math.max(8, Math.round(current * 0.45)))
-      uiActivityTimer.current = null
-    }, 1400)
-  }, [])
-
   useEffect(() => {
     if (!booted) return
     firstBootAchievementTimer.current = setTimeout(() => {
@@ -418,7 +450,13 @@ export function Desktop() {
       }
 
       const existing = getWindow(id)
-      if (id === 'recruiter' && options.updateHash !== false) {
+      if (id === 'case-study') {
+        const nextProjectId = options.caseStudyProjectId ?? caseStudyProjectId
+        setCaseStudyProjectId(nextProjectId)
+        if (options.updateHash !== false) {
+          writeHashSlug(getCaseStudyHash(nextProjectId))
+        }
+      } else if (id === 'recruiter' && options.updateHash !== false) {
         if (!existing) {
           setRecruiterSection('overview')
         }
@@ -428,11 +466,12 @@ export function Desktop() {
       }
 
       const result = openManagedWindow(id)
+      setMobileHome(false)
+      setMobileSystemPanelOpen(false)
       if (!result?.isNew || options.playSound === false) return
 
       soundEffects.appOpen()
       recordInteractiveAppOpen(id)
-      bumpUiActivity()
       if (id === 'recruiter') {
         showAchievement('recruiter-mode-opened')
       }
@@ -444,10 +483,10 @@ export function Desktop() {
       }
     },
     [
-      bumpUiActivity,
       getWindow,
       openManagedWindow,
       recruiterSection,
+      caseStudyProjectId,
       recordInteractiveAppOpen,
       refreshBlueOceanState,
       showAchievement,
@@ -458,19 +497,16 @@ export function Desktop() {
   const closeWindow = useCallback((id: WindowId) => {
     if (!closeManagedWindow(id)) return
     soundEffects.windowClose()
-    bumpUiActivity(10)
-  }, [bumpUiActivity, closeManagedWindow, soundEffects])
+  }, [closeManagedWindow, soundEffects])
 
   const minimizeWindow = useCallback((id: WindowId) => {
     if (!minimizeManagedWindow(id)) return
-    bumpUiActivity(8)
     focusDesktop()
-  }, [bumpUiActivity, focusDesktop, minimizeManagedWindow])
+  }, [focusDesktop, minimizeManagedWindow])
 
   const restoreWindow = useCallback((id: WindowId) => {
     if (!restoreManagedWindow(id)) return
-    bumpUiActivity(8)
-  }, [bumpUiActivity, restoreManagedWindow])
+  }, [restoreManagedWindow])
 
   const restoreBlueOceanOrigin = useCallback(() => {
     refreshBlueOceanState()
@@ -479,6 +515,7 @@ export function Desktop() {
       welcome: 'home',
       recruiter: 'recruiter',
       projects: 'projects',
+      'case-study': 'case-study',
       'ask-jd': 'assistant',
     }
     const origin = originByContext[context]
@@ -496,12 +533,29 @@ export function Desktop() {
         } else {
           focusWindow(origin)
         }
+        if (isMobile) {
+          setMobileHome(false)
+          syncWindowHash(origin)
+        }
+        return
+      }
+      if (isMobile) {
+        openWindow(origin)
         return
       }
     }
 
+    if (isMobile) {
+      setMobileHome(true)
+      setMobileSystemPanelOpen(false)
+      setSpotlightOpen(false)
+      clearHashSlug()
+      focusDesktop()
+      return
+    }
+
     focusDesktop()
-  }, [focusDesktop, focusWindow, getWindow, refreshBlueOceanState, restoreWindow, router])
+  }, [focusDesktop, focusWindow, getWindow, isMobile, openWindow, refreshBlueOceanState, restoreWindow, router])
 
   const handleBlueOceanCompleted = useCallback(() => {
     setBlueOceanCompleted(true)
@@ -516,27 +570,54 @@ export function Desktop() {
   const restoreAllMinimized = useCallback(() => {
     if (minimizedWindows.length === 0) return
     restoreAllManagedMinimized()
-    bumpUiActivity(10)
-  }, [bumpUiActivity, minimizedWindows.length, restoreAllManagedMinimized])
+  }, [minimizedWindows.length, restoreAllManagedMinimized])
 
   const maximizeWindow = useCallback((id: WindowId) => {
-    if (!maximizeManagedWindow(id)) return
-    bumpUiActivity(8)
-  }, [bumpUiActivity, maximizeManagedWindow])
+    maximizeManagedWindow(id)
+  }, [maximizeManagedWindow])
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
     focusDesktop()
   }, [focusDesktop])
 
-  const openCommandPalette = useCallback(() => {
-    setContextMenu(null)
-    setCommandPaletteOpen(true)
+  const closeSystemMenu = useCallback(() => {
+    setSystemMenuOpen(false)
   }, [])
 
-  const closeCommandPalette = useCallback(() => {
-    setCommandPaletteOpen(false)
+  const toggleSystemMenu = useCallback(() => {
+    setContextMenu(null)
+    setSpotlightOpen(false)
+    setSystemMenuOpen((open) => !open)
   }, [])
+
+  const openSpotlight = useCallback(() => {
+    setContextMenu(null)
+    setSystemMenuOpen(false)
+    setMobileSystemPanelOpen(false)
+    setSpotlightOpen(true)
+  }, [])
+
+  const closeSpotlight = useCallback(() => {
+    setSpotlightOpen(false)
+  }, [])
+
+  const closeMobileSystemPanel = useCallback(() => {
+    setMobileSystemPanelOpen(false)
+  }, [])
+
+  const toggleMobileSystemPanel = useCallback(() => {
+    setSpotlightOpen(false)
+    setMobileSystemPanelOpen((open) => !open)
+  }, [])
+
+  const goMobileHome = useCallback(() => {
+    setMobileHome(true)
+    setMobileSystemPanelOpen(false)
+    setSpotlightOpen(false)
+    clearHashSlug()
+    focusDesktop()
+  }, [focusDesktop])
 
   const openPersonalize = useCallback(() => {
     openWindow('wallpapers')
@@ -556,6 +637,31 @@ export function Desktop() {
       setRecruiterSection(section)
       writeHashSlug(getRecruiterHash(section))
       openWindow('recruiter', { playSound: false, updateHash: false })
+    },
+    [openWindow],
+  )
+
+  const openCaseStudy = useCallback(
+    (projectId: string, origin: CaseStudyOrigin = 'portfolio', sectionId?: string) => {
+      if (!isCaseStudyProjectId(projectId)) return
+      setCaseStudyProjectId(projectId)
+      setCaseStudyOrigin(origin)
+      setCaseStudyFocusSectionId(sectionId ?? null)
+      if (sectionId) {
+        setCaseStudyFocusNonce((current) => current + 1)
+      }
+      writeHashSlug(getCaseStudyHash(projectId))
+      openWindow('case-study', {
+        updateHash: false,
+        caseStudyProjectId: projectId,
+      })
+    },
+    [openWindow],
+  )
+
+  const returnFromCaseStudy = useCallback(
+    (target: 'portfolio' | 'projects') => {
+      openWindow(target)
     },
     [openWindow],
   )
@@ -635,7 +741,8 @@ export function Desktop() {
         return
       }
 
-      setCommandPaletteOpen(false)
+      setSpotlightOpen(false)
+      setSystemMenuOpen(false)
       setContextMenu({
         x: Math.max(8, Math.min(event.clientX, window.innerWidth - CONTEXT_MENU_WIDTH - 8)),
         y: Math.max(40, Math.min(event.clientY, window.innerHeight - CONTEXT_MENU_HEIGHT - 8)),
@@ -649,18 +756,49 @@ export function Desktop() {
       if (!booted) return
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        openCommandPalette()
+        openSpotlight()
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [booted, openCommandPalette])
+  }, [booted, openSpotlight])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSystemPanelOpen(false)
+      return
+    }
+    closeSystemMenu()
+    closeContextMenu()
+    const visible = windows.some(
+      (windowRecord) => windowRecord.status !== 'minimized' && windowRecord.status !== 'closing',
+    )
+    setMobileHome(!visible)
+    // Breakpoint crossing only: Home is a navigation flag, not derived from open windows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeContextMenu, closeSystemMenu, isMobile])
 
   useEffect(() => {
     if (!booted || !preferencesLoaded || handledInitialHash.current) return
 
     handledInitialHash.current = true
+    if (isUnrecognizedJackOsHash(window.location.hash)) {
+      clearHashSlug('replace')
+    }
+
+    const caseStudyHashProject = parseCaseStudyHash(window.location.hash)
+    if (caseStudyHashProject) {
+      setCaseStudyProjectId(caseStudyHashProject)
+      setCaseStudyOrigin('hash')
+      openWindow('case-study', {
+        playSound: false,
+        updateHash: false,
+        caseStudyProjectId: caseStudyHashProject,
+      })
+      return
+    }
+
     const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
     if (recruiterHashSection) {
       setRecruiterSection(recruiterHashSection)
@@ -692,6 +830,27 @@ export function Desktop() {
     const onHashChange = () => {
       if (!booted) return
 
+      if (isUnrecognizedJackOsHash(window.location.hash)) {
+        clearHashSlug('replace')
+        if (isMobile) {
+          setMobileHome(true)
+          setMobileSystemPanelOpen(false)
+        }
+        return
+      }
+
+      const caseStudyHashProject = parseCaseStudyHash(window.location.hash)
+      if (caseStudyHashProject) {
+        setCaseStudyProjectId(caseStudyHashProject)
+        setCaseStudyOrigin('hash')
+        openWindow('case-study', {
+          playSound: false,
+          updateHash: false,
+          caseStudyProjectId: caseStudyHashProject,
+        })
+        return
+      }
+
       const recruiterHashSection = getRecruiterSectionFromHash(window.location.hash)
       if (recruiterHashSection) {
         setRecruiterSection(recruiterHashSection)
@@ -702,6 +861,12 @@ export function Desktop() {
       const hashWindow = getWindowIdFromHash(window.location.hash)
       if (hashWindow) {
         openWindow(hashWindow, { playSound: false, updateHash: false })
+        return
+      }
+
+      if (isMobile) {
+        setMobileHome(true)
+        setMobileSystemPanelOpen(false)
       }
     }
 
@@ -711,7 +876,7 @@ export function Desktop() {
       window.removeEventListener('hashchange', onHashChange)
       window.removeEventListener('popstate', onHashChange)
     }
-  }, [booted, openWindow])
+  }, [booted, isMobile, openWindow])
 
   useEffect(() => {
     return () => {
@@ -723,9 +888,6 @@ export function Desktop() {
       }
       if (firstBootAchievementTimer.current) {
         clearTimeout(firstBootAchievementTimer.current)
-      }
-      if (uiActivityTimer.current) {
-        clearTimeout(uiActivityTimer.current)
       }
     }
   }, [])
@@ -743,26 +905,91 @@ export function Desktop() {
     focusDesktop()
   }, [activeWindowId, focusDesktop, windows])
 
-  // Escape closes the top-most window.
+  // Escape closes shell menus first, then returns Home on mobile or closes the top window on desktop.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (contextMenu || commandPaletteOpen) return
+      if (e.key !== 'Escape') return
+      if (isMobile) {
+        if (mobileSystemPanelOpen) {
+          e.preventDefault()
+          closeMobileSystemPanel()
+          return
+        }
+        if (contextMenu || spotlightOpen) return
+        if (!mobileHome) {
+          e.preventDefault()
+          goMobileHome()
+        }
+        return
+      }
+      if (systemMenuOpen) {
+        e.preventDefault()
+        closeSystemMenu()
+        return
+      }
+      if (contextMenu || spotlightOpen) return
       const visibleOrder = order.filter((id) => {
         const windowRecord = getWindow(id)
         return windowRecord && windowRecord.status !== 'minimized'
       })
-      if (e.key === 'Escape' && visibleOrder.length > 0) {
+      if (visibleOrder.length > 0) {
         closeWindow(visibleOrder[visibleOrder.length - 1]!)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [commandPaletteOpen, contextMenu, closeWindow, getWindow, order])
+  }, [
+    closeMobileSystemPanel,
+    closeSystemMenu,
+    closeWindow,
+    spotlightOpen,
+    contextMenu,
+    getWindow,
+    goMobileHome,
+    isMobile,
+    mobileHome,
+    mobileSystemPanelOpen,
+    order,
+    systemMenuOpen,
+  ])
+
+  useEffect(() => {
+    if (!systemMenuOpen) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof HTMLElement)) return
+      if (target.closest('#jackos-system-menu, [aria-controls="jackos-system-menu"]')) return
+      closeSystemMenu()
+    }
+
+    window.addEventListener('pointerdown', onPointerDown)
+    return () => window.removeEventListener('pointerdown', onPointerDown)
+  }, [closeSystemMenu, systemMenuOpen])
 
   const topId = activeWindowId
+  const mobileAppId = useMemo(() => {
+    if (mobileHome) return undefined
+    if (topId) {
+      const active = getWindow(topId)
+      if (active && active.status !== 'minimized' && active.status !== 'closing') {
+        return topId
+      }
+    }
+    const visible = windows.filter(
+      (windowRecord) => windowRecord.status !== 'minimized' && windowRecord.status !== 'closing',
+    )
+    return visible[visible.length - 1]?.id
+  }, [getWindow, mobileHome, topId, windows])
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
   const desktopIconItems = useMemo(
-    () => desktopItems.filter((item) => !(item.kind === 'window' && item.id === 'assistant')),
+    () =>
+      desktopItems.filter((item) => {
+        if (item.kind !== 'window') return true
+        if (item.id === 'assistant') return false
+        if (isDockPinnedAppId(item.id)) return false
+        return true
+      }),
     [desktopItems],
   )
   const desktopIconGridStyle = useMemo(
@@ -773,9 +1000,9 @@ export function Desktop() {
     [desktopIconRows],
   )
   const uptimeLabel = formatUptime(uptimeSeconds)
-  const recruiterVisible = windows.some(
-    (w) => w.id === 'recruiter' && w.status !== 'minimized',
-  )
+  const recruiterVisible = isMobile
+    ? mobileAppId === 'recruiter'
+    : windows.some((w) => w.id === 'recruiter' && w.status !== 'minimized')
   const effectiveScanlines = scanlines && !recruiterVisible
 
   const minimizeActiveWindow = useCallback(() => {
@@ -784,287 +1011,158 @@ export function Desktop() {
     }
   }, [minimizeWindow, topId])
 
-  const commandRegistry = useMemo<JackOsCommand[]>(() => {
-    const appCommands = buildAppOpenCommands(openWindow)
+  const handleDockSelect = useCallback(
+    (id: WindowId) => {
+      closeSystemMenu()
+      closeContextMenu()
+      const existing = getWindow(id)
+      if (!existing || existing.status === 'closing') {
+        openWindow(id)
+        return
+      }
+      if (existing.status === 'minimized') {
+        restoreWindow(id)
+        return
+      }
+      focusWindow(id)
+    },
+    [closeContextMenu, closeSystemMenu, focusWindow, getWindow, openWindow, restoreWindow],
+  )
 
-    const timelineEntryCommands = TIMELINE_ENTRIES.map((entry) => ({
-      id: `timeline-${entry.id}`,
-      title: entry.title,
-      subtitle: `Timeline / ${entry.category}`,
-      keywords: [entry.title, entry.summary, entry.category, 'timeline', 'history', 'milestone'],
-      Icon: WINDOW_APPS.timeline.Icon,
-      action: () => openWindow('timeline'),
-    }))
+  const resetWindowLayout = useCallback(() => {
+    resetManagedWindowLayout()
+    showCopyStatus('Window layout reset')
+  }, [resetManagedWindowLayout, showCopyStatus])
 
-    const projectCommands = PROJECTS.map((project) => ({
-      id: `project-${project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-      title: project.title,
-      subtitle: project.status ? `Project / ${project.status}` : 'Project',
-      keywords: [
-        project.title,
-        project.description,
-        project.status ?? '',
-        ...project.technologies,
-        'projects',
-      ],
-      Icon: project.internalApp ? WINDOW_APPS[project.internalApp].Icon : WINDOW_APPS.projects.Icon,
-      iconVisual: project.internalApp ? WINDOW_APPS[project.internalApp].iconVisual : undefined,
-      tone: project.internalApp ? WINDOW_APPS[project.internalApp].tone : undefined,
-      action: () => {
-        if (project.internalApp) {
+  const restartJackOsSession = useCallback(() => {
+    window.location.reload()
+  }, [])
+
+  const extraSpotlightEntries = useMemo<SpotlightEntry[]>(
+    () =>
+      secretUnlocks.unlockedIds
+        .map((secretId) => getSecretDefinition(secretId))
+        .filter((secret): secret is NonNullable<typeof secret> => Boolean(secret))
+        .map((secret) => ({
+          id: `secret:${secret.id}`,
+          kind: 'system',
+          title: `Find ${secret.wallpaperTitle} in Wallpapers`,
+          subtitle: 'Hidden file recovered',
+          keywords: [secret.wallpaperTitle, 'hidden wallpaper', 'exclusive'],
+          aliases: [],
+          searchableText: secret.wallpaperTitle,
+          action: { type: 'open-app', appId: 'wallpapers' },
+          iconAppId: 'wallpapers',
+        })),
+    [secretUnlocks.unlockedIds],
+  )
+
+  const disabledSpotlightIds = useMemo(() => {
+    const ids: string[] = []
+    if (minimizedWindows.length === 0) ids.push('system:restore-minimized')
+    if (!topId || isMobile) ids.push('system:minimize-active')
+    return ids
+  }, [isMobile, minimizedWindows.length, topId])
+
+  const executeSpotlightAction = useCallback(
+    (action: SpotlightAction) => {
+      switch (action.type) {
+        case 'open-app':
           openWindow(
-            project.internalApp,
-            project.internalApp === 'blue-ocean' ? { launchContext: 'search' } : undefined,
+            action.appId,
+            action.appId === 'blue-ocean' ? { launchContext: 'search' } : undefined,
           )
           return
-        }
-        openWindow('projects')
-      },
-    }))
-
-    const credentialCommands = CREDENTIALS.map((credential) => ({
-      id: `credential-${credential.id}`,
-      title: credential.title,
-      subtitle: `${credential.issuer} / ${credential.status}`,
-      keywords: [
-        credential.title,
-        credential.issuer,
-        credential.status,
-        credential.summary,
-        'credentials',
-        'certifications',
-      ],
-      Icon: WINDOW_APPS.certifications.Icon,
-      iconVisual: WINDOW_APPS.certifications.iconVisual,
-      action: () => openWindow('certifications'),
-    }))
-
-    const recruiterSectionCommands = RECRUITER_SECTIONS.map((section) => ({
-      id: `recruiter-section-${section.id}`,
-      title: `Recruiter: ${section.label}`,
-      subtitle: 'Guided overview section',
-      keywords: ['recruiter', 'overview', section.label, section.id],
-      Icon: WINDOW_APPS.recruiter.Icon,
-      tone: WINDOW_APPS.recruiter.tone,
-      action: () => selectRecruiterSection(section.id),
-    }))
-
-    const wallpaperCommands = CURRENT_WALLPAPERS.map((wallpaper) => ({
-      id: `wallpaper-${wallpaper.id}`,
-      title: wallpaper.displayName,
-      subtitle: 'Wallpaper / open gallery',
-      keywords: [
-        wallpaper.displayName,
-        wallpaper.description,
-        wallpaper.id,
-        'wallpaper',
-        'personalize',
-        'background',
-      ],
-      Icon: WINDOW_APPS.wallpapers.Icon,
-      action: () => openWindow('wallpapers'),
-    }))
-
-    const firewallHelpCommands = [
-      'allow vs block',
-      'inbound and outbound',
-      'ports and protocols',
-      'rule priority',
-      'sample network traffic',
-      'beginner guide',
-      'packet inspector',
-      'firewall certified',
-    ].map((topic) => ({
-      id: `firewall-help-${topic.replace(/\s+/g, '-')}`,
-      title: `Firewall Help: ${topic}`,
-      subtitle: 'Network Firewall',
-      keywords: [topic, 'firewall', 'network', 'security', 'traffic'],
-      Icon: WINDOW_APPS.firewall.Icon,
-      action: () => openWindow('firewall'),
-    }))
-
-    const unlockedSecretCommands = secretUnlocks.unlockedIds
-      .map((secretId) => getSecretDefinition(secretId))
-      .filter((secret): secret is NonNullable<typeof secret> => Boolean(secret))
-      .map((secret) => ({
-        id: `find-${secret.id}`,
-        title: `Find ${secret.wallpaperTitle} in Wallpapers`,
-        subtitle: 'Hidden file recovered',
-        keywords: [secret.wallpaperTitle, 'hidden wallpaper', 'exclusive'],
-        Icon: WINDOW_APPS.wallpapers.Icon,
-        action: () => openWindow('wallpapers'),
-      }))
-
-    return [
-      ...appCommands,
-      {
-        id: 'view-pocket-pier-app-store',
-        title: 'View Pocket Pier on the App Store',
-        subtitle: 'Official iOS listing',
-        keywords: ['pocket pier', 'app store', 'download', 'ios', 'jden studios', 'apple'],
-        Icon: WINDOW_APPS['pocket-pier'].Icon,
-        iconVisual: WINDOW_APPS['pocket-pier'].iconVisual,
-        ariaLabel: 'View Pocket Pier on the App Store (opens in a new tab)',
-        action: () => {
-          window.open(POCKET_PIER_APP_STORE_URL, '_blank', 'noopener,noreferrer')
-        },
-      },
-      ...projectCommands,
-      ...credentialCommands,
-      ...recruiterSectionCommands,
-      ...timelineEntryCommands,
-      ...wallpaperCommands,
-      ...firewallHelpCommands,
-      {
-        id: 'return-to-jack-os',
-        title: 'Return to Jack OS Desktop',
-        subtitle: 'Focus desktop workspace',
-        keywords: ['return to jack os', 'desktop', 'home', 'workspace', 'back'],
-        action: focusDesktop,
-      },
-      {
-        id: 'view-achievements',
-        title: 'View Achievements',
-        subtitle: `${earnedAchievementIds.length}/${JACK_OS_ACHIEVEMENT_REGISTRY.length} unlocked`,
-        keywords: ['achievements', 'progress', 'trophies', 'completed', 'milestones'],
-        action: () => setAchievementsPanelOpen(true),
-      },
-      {
-        id: 'open-simple-mode',
-        title: 'Open Simple Mode',
-        subtitle: 'Professional portfolio view',
-        keywords: ['simple', 'plain portfolio', 'professional view', 'resume view', 'recruiter'],
-        Icon: WINDOW_APPS.recruiter.Icon,
-        tone: WINDOW_APPS.recruiter.tone,
-        action: openSimpleMode,
-      },
-      {
-        id: 'ask-jd',
-        title: 'Ask J.D.',
-        subtitle: 'Portfolio Assistant',
-        keywords: ['assistant', 'jd', 'question', 'ask'],
-        Icon: WINDOW_APPS.assistant.Icon,
-        action: () => openAssistant(),
-      },
-      {
-        id: 'ask-jd-projects',
-        title: 'Ask about projects',
-        subtitle: 'J.D. topic shortcut',
-        keywords: ['projects', 'jack os', 'built', 'portfolio assistant'],
-        Icon: WINDOW_APPS.assistant.Icon,
-        action: () => openAssistant('What has Jack built?'),
-      },
-      {
-        id: 'ask-jd-kickoff',
-        title: 'Ask about Kickoff',
-        subtitle: 'J.D. topic shortcut',
-        keywords: ['kickoff', 'football', 'model', 'ask kickoff', 'portfolio assistant'],
-        Icon: WINDOW_APPS.assistant.Icon,
-        action: () => openAssistant('What is Kickoff?'),
-      },
-      {
-        id: 'ask-jd-pocket-pier',
-        title: 'Ask about Pocket Pier',
-        subtitle: 'J.D. topic shortcut',
-        keywords: ['pocket pier', 'app store', 'game', 'jden studios', 'portfolio assistant'],
-        Icon: WINDOW_APPS.assistant.Icon,
-        action: () => openAssistant('What is Pocket Pier?'),
-      },
-      {
-        id: 'ask-jd-credentials',
-        title: 'Ask about credentials',
-        subtitle: 'J.D. topic shortcut',
-        keywords: ['credentials', 'certifications', 'earned', 'portfolio assistant'],
-        Icon: WINDOW_APPS.assistant.Icon,
-        action: () => openAssistant('What credentials has Jack earned?'),
-      },
-      {
-        id: 'copy-email',
-        title: 'Copy Email',
-        subtitle: CONTACT.email,
-        keywords: ['email', 'contact', 'copy', 'gmail'],
-        Icon: WINDOW_APPS.contact.Icon,
-        action: copyEmailToClipboard,
-      },
-      {
-        id: 'toggle-theme',
-        title: 'Toggle Light/Dark Theme',
-        subtitle: `Current: ${theme}`,
-        keywords: ['theme', 'light', 'dark'],
-        action: toggleTheme,
-      },
-      {
-        id: 'toggle-scanlines',
-        title: 'Toggle CRT Lines',
-        subtitle: scanlines ? 'Currently On' : 'Currently Off',
-        keywords: ['crt', 'scanlines', 'lines'],
-        action: () => setScanlines((value) => !value),
-      },
-      {
-        id: 'toggle-sound-effects',
-        title: 'Toggle Sound Effects',
-        subtitle: soundEffects.soundEffectsEnabled ? 'Currently On' : 'Currently Off',
-        keywords: ['sound', 'audio', 'effects'],
-        action: () =>
-          soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled),
-      },
-      {
-        id: 'toggle-hourly-chime',
-        title: 'Toggle Hourly Chime',
-        subtitle: preferences.hourlyChime ? 'Currently On' : 'Currently Off',
-        keywords: ['hourly', 'chime', 'clock', 'ambience'],
-        action: () => updatePreferences({ hourlyChime: !preferences.hourlyChime }),
-      },
-      {
-        id: 'open-wallpapers-system',
-        title: 'Open Wallpapers',
-        subtitle: 'Personalization',
-        keywords: ['personalize', 'wallpaper', 'background'],
-        Icon: WINDOW_APPS.wallpapers.Icon,
-        action: () => openWindow('wallpapers'),
-      },
-      {
-        id: 'restore-all-minimized',
-        title: 'Restore all minimized windows',
-        subtitle:
-          minimizedWindows.length > 0
-            ? `${minimizedWindows.length} minimized`
-            : 'No minimized windows',
-        keywords: ['restore', 'windows', 'minimized'],
-        disabled: minimizedWindows.length === 0,
-        action: restoreAllMinimized,
-      },
-      {
-        id: 'minimize-active-window',
-        title: 'Minimize active window',
-        subtitle: topId ? WINDOW_APPS[topId].title : 'No active window',
-        keywords: ['minimize', 'active', 'window'],
-        disabled: !topId || isMobile,
-        action: minimizeActiveWindow,
-      },
-      ...unlockedSecretCommands,
-    ]
-  }, [
-    copyEmailToClipboard,
-    earnedAchievementIds.length,
-    focusDesktop,
-    isMobile,
-    minimizedWindows.length,
-    minimizeActiveWindow,
-    openAssistant,
-    openSimpleMode,
-    openWindow,
-    preferences.hourlyChime,
-    restoreAllMinimized,
-    scanlines,
-    selectRecruiterSection,
-    secretUnlocks.unlockedIds,
-    soundEffects,
-    theme,
-    toggleTheme,
-    topId,
-    updatePreferences,
-  ])
+        case 'open-case-study':
+          openCaseStudy(action.projectId, 'search')
+          return
+        case 'open-case-study-section':
+          openCaseStudy(action.projectId, 'search', action.sectionId)
+          return
+        case 'open-portfolio-section':
+          setPortfolioFocusSectionId(action.sectionId)
+          setPortfolioFocusNonce((current) => current + 1)
+          openWindow('portfolio')
+          return
+        case 'open-recruiter-section':
+          if (isRecruiterSectionId(action.sectionId)) {
+            selectRecruiterSection(action.sectionId)
+          }
+          return
+        case 'open-external':
+          window.open(action.href, '_blank', 'noopener,noreferrer')
+          return
+        case 'system':
+          switch (action.command) {
+            case 'personalize':
+              openPersonalize()
+              return
+            case 'reset-layout':
+              resetWindowLayout()
+              return
+            case 'simple-mode':
+              openSimpleMode()
+              return
+            case 'restart':
+              restartJackOsSession()
+              return
+            case 'toggle-theme':
+              toggleTheme()
+              return
+            case 'toggle-scanlines':
+              setScanlines((value) => !value)
+              return
+            case 'toggle-sound':
+              soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
+              return
+            case 'toggle-hourly-chime':
+              updatePreferences({ hourlyChime: !preferences.hourlyChime })
+              return
+            case 'view-achievements':
+              setAchievementsPanelOpen(true)
+              return
+            case 'copy-email':
+              void copyEmailToClipboard()
+              return
+            case 'restore-minimized':
+              restoreAllMinimized()
+              return
+            case 'minimize-active':
+              minimizeActiveWindow()
+              return
+            case 'focus-desktop':
+              if (isMobile) {
+                goMobileHome()
+                return
+              }
+              focusDesktop()
+              return
+            case 'ask-jd':
+              openAssistant()
+          }
+      }
+    },
+    [
+      copyEmailToClipboard,
+      focusDesktop,
+      goMobileHome,
+      isMobile,
+      minimizeActiveWindow,
+      openAssistant,
+      openCaseStudy,
+      openPersonalize,
+      openSimpleMode,
+      openWindow,
+      preferences.hourlyChime,
+      resetWindowLayout,
+      restartJackOsSession,
+      restoreAllMinimized,
+      selectRecruiterSection,
+      soundEffects,
+      toggleTheme,
+      updatePreferences,
+    ],
+  )
 
   const renderContent = (id: WindowId, active = true) => {
     switch (id) {
@@ -1074,14 +1172,7 @@ export function Desktop() {
             onOpen={openWindow}
             onOpenBlueOcean={() => openWindow('blue-ocean', { launchContext: 'welcome' })}
             onResumeBlueOcean={() => openWindow('blue-ocean', { launchContext: 'welcome' })}
-            onAskAssistant={() => openAssistant()}
             onOpenSimpleMode={openSimpleMode}
-            theme={theme}
-            soundEffectsEnabled={soundEffects.soundEffectsEnabled}
-            hourlyChimeEnabled={preferences.hourlyChime}
-            scanlines={scanlines}
-            achievementCount={earnedAchievementIds.length}
-            achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
             blueOceanCanResume={blueOceanCanResume}
             blueOceanCompleted={blueOceanCompleted}
           />
@@ -1107,6 +1198,15 @@ export function Desktop() {
             onOpenPocketPier={() => openWindow('pocket-pier')}
           />
         )
+      case 'portfolio':
+        return (
+          <PortfolioContent
+            onOpen={openWindow}
+            onOpenCaseStudy={(projectId) => openCaseStudy(projectId, 'portfolio')}
+            focusSectionId={portfolioFocusSectionId}
+            focusNonce={portfolioFocusNonce}
+          />
+        )
       case 'about':
         return <AboutContent onOpen={openWindow} />
       case 'projects':
@@ -1118,6 +1218,26 @@ export function Desktop() {
                 windowId === 'blue-ocean' ? { launchContext: 'projects' } : undefined,
               )
             }
+            onOpenCaseStudy={(projectId) => openCaseStudy(projectId, 'projects')}
+          />
+        )
+      case 'case-study':
+        return (
+          <CaseStudyContent
+            projectId={caseStudyProjectId}
+            origin={caseStudyOrigin}
+            focusSectionId={caseStudyFocusSectionId}
+            focusNonce={caseStudyFocusNonce}
+            onOpenApp={(windowId) =>
+              openWindow(
+                windowId,
+                windowId === 'blue-ocean' ? { launchContext: 'case-study' } : undefined,
+              )
+            }
+            onOpenCaseStudy={(nextProjectId, nextOrigin) =>
+              openCaseStudy(nextProjectId, nextOrigin ?? 'next')
+            }
+            onReturn={returnFromCaseStudy}
           />
         )
       case 'certifications':
@@ -1133,8 +1253,8 @@ export function Desktop() {
                 windowId === 'blue-ocean' ? { launchContext: 'recruiter' } : undefined,
               )
             }
+            onOpenCaseStudy={(projectId) => openCaseStudy(projectId, 'portfolio')}
             onCopyEmail={copyEmailToClipboard}
-            onAskAssistant={() => openAssistant()}
             onOpenSimpleMode={openSimpleMode}
           />
         )
@@ -1212,231 +1332,223 @@ export function Desktop() {
         />
       ) : null}
 
-      <MenuBar
-        onOpen={openWindow}
-        scanlines={scanlines}
-        onToggleScanlines={() => setScanlines((s) => !s)}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        soundEffectsEnabled={soundEffects.soundEffectsEnabled}
-        onToggleSoundEffects={() =>
-          soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
-        }
-        onOpenCommandPalette={openCommandPalette}
-        onOpenSimpleMode={openSimpleMode}
-        achievementCount={earnedAchievementIds.length}
-        achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
-        onOpenAchievements={() => setAchievementsPanelOpen(true)}
-        uptimeLabel={uptimeLabel}
-        openWindowCount={visibleWindows.length}
-        uiActivity={uiActivity}
-      />
+      {isMobile ? (
+        <MobileShell
+          wallpaperId={preferences.wallpaperId}
+          unlockedSecretIds={secretUnlocks.unlockedIds}
+          atHome={mobileHome}
+          activeAppId={mobileAppId}
+          appContent={mobileAppId ? renderContent(mobileAppId, true) : null}
+          systemPanelOpen={mobileSystemPanelOpen}
+          theme={theme}
+          soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+          scanlines={scanlines}
+          titleOverride={
+            mobileAppId === 'case-study'
+              ? (getProjectById(caseStudyProjectId)?.name ?? 'Case Study')
+              : undefined
+          }
+          onGoHome={goMobileHome}
+          onOpenApp={openWindow}
+          onToggleSystemPanel={toggleMobileSystemPanel}
+          onCloseSystemPanel={closeMobileSystemPanel}
+          onPersonalize={openPersonalize}
+          onToggleTheme={toggleTheme}
+          onToggleSoundEffects={() =>
+            soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
+          }
+          onToggleScanlines={() => setScanlines((s) => !s)}
+          onOpenWelcome={() => openWindow('home')}
+          onOpenRecruiter={() => openWindow('recruiter')}
+          onOpenSimpleMode={openSimpleMode}
+          onOpenAchievements={() => setAchievementsPanelOpen(true)}
+          onRestartSession={restartJackOsSession}
+          onOpenSpotlight={openSpotlight}
+        />
+      ) : (
+        <>
+          <MenuBar
+            onOpen={openWindow}
+            activeWindowId={topId}
+            scanlines={scanlines}
+            onToggleScanlines={() => setScanlines((s) => !s)}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            soundEffectsEnabled={soundEffects.soundEffectsEnabled}
+            onToggleSoundEffects={() =>
+              soundEffects.setSoundEffectsEnabled(!soundEffects.soundEffectsEnabled)
+            }
+            onOpenSpotlight={openSpotlight}
+            onOpenSimpleMode={openSimpleMode}
+            achievementCount={earnedAchievementIds.length}
+            achievementTotal={JACK_OS_ACHIEVEMENT_REGISTRY.length}
+            onOpenAchievements={() => setAchievementsPanelOpen(true)}
+            uptimeLabel={uptimeLabel}
+            openWindowCount={visibleWindows.length}
+            systemMenuOpen={systemMenuOpen}
+            onToggleSystemMenu={toggleSystemMenu}
+            onCloseSystemMenu={closeSystemMenu}
+            onResetWindowLayout={resetWindowLayout}
+            onRestartSession={restartJackOsSession}
+          />
 
-      <WallpaperManager
-        id="jack-os-desktop"
-        tabIndex={-1}
-        wallpaperId={preferences.wallpaperId}
-        unlockedSecretIds={secretUnlocks.unlockedIds}
-        className="relative min-h-[100dvh] pt-11 sm:pt-8"
-        aria-label="Jack OS desktop"
-        onContextMenu={handleDesktopContextMenu}
-        onPointerDown={contextMenu ? () => closeContextMenu() : undefined}
-      >
-        {/* Desktop watermark */}
-        <p
-          aria-hidden
-          className="pointer-events-none absolute bottom-4 left-4 max-w-xs font-pixel text-[9px] leading-relaxed text-muted-foreground/60"
-        >
-          Jack OS V3B
-          <br />
-          {isMobile ? 'Tap an icon to open' : 'Double-click icons to open'}
-        </p>
-
-        {/* Desktop widgets */}
-        {!isMobile && booted ? (
-          <div
-            data-desktop-interactive="true"
-            className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
+          <WallpaperManager
+            id="jack-os-desktop"
+            tabIndex={-1}
+            wallpaperId={preferences.wallpaperId}
+            unlockedSecretIds={secretUnlocks.unlockedIds}
+            className="relative min-h-[100dvh] pt-8"
+            aria-label="JackOS desktop"
+            onContextMenu={handleDesktopContextMenu}
+            onPointerDown={
+              contextMenu || systemMenuOpen
+                ? () => {
+                    closeContextMenu()
+                    closeSystemMenu()
+                  }
+                : undefined
+            }
           >
-            {preferences.showClock ? <DesktopClock /> : null}
-            {preferences.showCalendar ? (
-              <DesktopCalendar onOpenCalendar={() => undefined} />
+            <p
+              aria-hidden
+              className="pointer-events-none absolute bottom-24 left-4 max-w-xs font-pixel text-[9px] leading-relaxed text-muted-foreground/60"
+            >
+              JackOS
+              <br />
+              {windows.length === 0 ? 'Desktop ready' : 'Double-click icons to open'}
+            </p>
+
+            {booted ? (
+              <div
+                data-desktop-interactive="true"
+                className="absolute left-4 top-12 z-[2] flex w-[178px] flex-col gap-3"
+              >
+                {preferences.showClock ? <DesktopClock /> : null}
+                {preferences.showCalendar ? (
+                  <DesktopCalendar onOpenCalendar={() => undefined} />
+                ) : null}
+                <JdWidget onOpen={() => openAssistant()} />
+                <JdenDesktopArtifact onOpen={() => openWindow('jden-studios')} />
+              </div>
             ) : null}
-            <JdWidget onOpen={() => openAssistant()} />
-            <JdenDesktopArtifact onOpen={() => openWindow('jden-studios')} />
-          </div>
-        ) : null}
 
-        {/* Desktop icons */}
-        {!isMobile ? (
-          <div
-            className="desktop-icon-grid absolute right-7 top-11"
-            style={desktopIconGridStyle}
-          >
-            {desktopIconItems.map((item) => (
-              <DesktopIcon
-                key={item.id}
-                item={item}
-                variant="desktop"
-                onOpenWindow={openWindow}
-              />
-            ))}
-          </div>
-        ) : null}
-
-        {/* Mobile: OS-style app grid (only when nothing is open) */}
-        {isMobile && visibleWindows.length === 0 ? (
-          <div className="animate-fade-in px-5 pb-24 pt-6">
-            <div className="os-border bg-paper/70 p-4">
-              <p className="font-pixel text-[10px] leading-relaxed text-foreground">
-                Welcome to Jack OS
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Tap an app to explore Jack Dennehey&apos;s work.
-              </p>
-              <button
-                type="button"
-                onClick={openSimpleMode}
-                className="os-border mt-3 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-              >
-                View Simple Mode
-              </button>
-              <JdenWindowTrigger
-                onOpen={() => openWindow('jden-studios')}
-                className="os-border mt-3 flex min-h-11 items-center gap-2 bg-foreground px-3 py-2 text-primary-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:bg-background focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <JdenOwlMark size="menu" className="size-8 shrink-0" />
-                <span className="min-w-0 text-left">
-                  <span className="block font-pixel text-[8px] leading-relaxed">
-                    JDEN STUDIOS
-                  </span>
-                  <span className="mt-0.5 block text-[11px] leading-snug opacity-80">
-                    Independent digital studio
-                  </span>
-                </span>
-              </JdenWindowTrigger>
-            </div>
-            <div className="mt-6 grid grid-cols-3 gap-4">
-              <DesktopIcon
-                item={{ kind: 'window', id: 'home', label: 'Home', Icon: WINDOW_APPS.home.Icon }}
-                variant="mobile"
-                onOpenWindow={openWindow}
-              />
-              {desktopItems.map((item) => (
+            <div
+              className="desktop-icon-grid absolute right-7 top-11"
+              style={desktopIconGridStyle}
+            >
+              {desktopIconItems.map((item) => (
                 <DesktopIcon
                   key={item.id}
                   item={item}
-                  variant="mobile"
+                  variant="desktop"
                   onOpenWindow={openWindow}
                 />
               ))}
             </div>
-          </div>
-        ) : null}
 
-        {/* Windows */}
-        {windows.map((w) => {
-          const app = WINDOW_APPS[w.id]
-          return (
-            <OsWindow
-              key={w.id}
-              app={app}
-              x={w.x}
-              y={w.y}
-              width={w.width}
-              height={w.height}
-              z={getStackZ(w.id)}
-              status={w.status}
-              focused={topId === w.id}
-              isMobile={isMobile}
-              onFocus={() => {
-                if (w.status !== 'closing' && w.status !== 'minimized') {
-                  focusWindow(w.id)
-                }
-              }}
-              onClose={() =>
-                w.id === 'blue-ocean' ? handleBlueOceanPowerDown() : closeWindow(w.id)
-              }
-              onMinimize={() => minimizeWindow(w.id)}
-              onMaximize={() => maximizeWindow(w.id)}
-              onMove={(x, y) => moveWindow(w.id, x, y)}
-              onResize={(handle, start, dx, dy) => resizeWindow(w.id, handle, start, dx, dy)}
-              onGeometryCommit={() => commitGeometry(w.id)}
-            >
-              {renderContent(w.id, w.status !== 'minimized' && w.status !== 'closing')}
-            </OsWindow>
-          )
-        })}
+            {windows.map((w) => {
+              const app =
+                w.id === 'case-study'
+                  ? {
+                      ...WINDOW_APPS['case-study'],
+                      title: getProjectById(caseStudyProjectId)?.name ?? 'Case Study',
+                    }
+                  : WINDOW_APPS[w.id]
+              return (
+                <OsWindow
+                  key={w.id}
+                  app={app}
+                  x={w.x}
+                  y={w.y}
+                  width={w.width}
+                  height={w.height}
+                  z={getStackZ(w.id)}
+                  status={w.status}
+                  focused={topId === w.id}
+                  isMobile={false}
+                  onFocus={() => {
+                    if (w.status !== 'closing' && w.status !== 'minimized') {
+                      focusWindow(w.id)
+                    }
+                  }}
+                  onClose={() =>
+                    w.id === 'blue-ocean' ? handleBlueOceanPowerDown() : closeWindow(w.id)
+                  }
+                  onMinimize={() => minimizeWindow(w.id)}
+                  onMaximize={() => maximizeWindow(w.id)}
+                  onMove={(x, y) => moveWindow(w.id, x, y)}
+                  onResize={(handle, start, dx, dy) => resizeWindow(w.id, handle, start, dx, dy)}
+                  onGeometryCommit={() => commitGeometry(w.id)}
+                >
+                  {renderContent(w.id, w.status !== 'minimized' && w.status !== 'closing')}
+                </OsWindow>
+              )
+            })}
 
-        {!isMobile ? (
-          <MinimizedWindowStrip
-            windows={minimizedWindows.map((w) => WINDOW_APPS[w.id])}
-            onRestore={(id) => restoreWindow(id)}
-          />
-        ) : null}
+            <JackOsDock
+              windows={windows}
+              activeWindowId={topId}
+              onSelect={handleDockSelect}
+            />
 
-        {/* Mobile: home indicator to close current app */}
-        {isMobile && visibleWindows.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => topId && closeWindow(topId)}
-            className="fixed inset-x-0 bottom-0 z-[60] flex h-12 items-center justify-center border-t-2 border-border bg-paper font-pixel text-[9px] leading-none text-foreground"
-          >
-            ◄ Close
-          </button>
-        ) : null}
+            {contextMenu ? (
+              <DesktopContextMenu
+                x={contextMenu.x}
+                y={contextMenu.y}
+                onClose={closeContextMenu}
+                onPersonalize={openPersonalize}
+                onOpenWelcome={() => openWindow('home')}
+                onResetWindowLayout={resetWindowLayout}
+                onResetWallpaper={resetWallpaper}
+              />
+            ) : null}
+          </WallpaperManager>
+        </>
+      )}
 
-        {contextMenu ? (
-          <DesktopContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onClose={closeContextMenu}
-            onPersonalize={openPersonalize}
-            onResetWallpaper={resetWallpaper}
-          />
-        ) : null}
+      <Spotlight
+        open={spotlightOpen}
+        extraEntries={extraSpotlightEntries}
+        disabledIds={disabledSpotlightIds}
+        onClose={closeSpotlight}
+        onAction={executeSpotlightAction}
+        compact={isMobile}
+      />
 
-        <CommandPalette
-          open={commandPaletteOpen}
-          commands={commandRegistry}
-          onClose={closeCommandPalette}
-        />
+      <AchievementsPanel
+        open={achievementsPanelOpen}
+        earnedIds={earnedAchievementIds}
+        onClose={() => setAchievementsPanelOpen(false)}
+      />
 
-        <AchievementsPanel
-          open={achievementsPanelOpen}
-          earnedIds={earnedAchievementIds}
-          onClose={() => setAchievementsPanelOpen(false)}
-        />
+      <JdenTransitionOverlay active={jdenLaunch.active} />
 
-        <JdenTransitionOverlay active={jdenLaunch.active} />
+      {copyStatus ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-desktop-interactive="true"
+          className="fixed bottom-24 right-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground os-shadow"
+        >
+          {copyStatus}
+        </div>
+      ) : null}
 
-        {copyStatus ? (
-          <div
-            role="status"
-            aria-live="polite"
-            data-desktop-interactive="true"
-            className="fixed bottom-16 right-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground os-shadow"
-          >
-            {copyStatus}
-          </div>
-        ) : null}
-
-        {achievementNotice ? (
-          <div
-            role="status"
-            aria-live="polite"
-            data-desktop-interactive="true"
-            className="achievement-notice fixed bottom-16 left-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 text-foreground os-shadow"
-          >
-            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-              {achievementNotice.title}
-            </p>
-            <p className="font-pixel text-[10px] leading-relaxed text-foreground">
-              {achievementNotice.message}
-            </p>
-          </div>
-        ) : null}
-      </WallpaperManager>
+      {achievementNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-desktop-interactive="true"
+          className="achievement-notice fixed bottom-24 left-4 z-[80] max-w-[calc(100vw-2rem)] os-border bg-paper px-3 py-2 text-foreground os-shadow"
+        >
+          <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+            {achievementNotice.title}
+          </p>
+          <p className="font-pixel text-[10px] leading-relaxed text-foreground">
+            {achievementNotice.message}
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }

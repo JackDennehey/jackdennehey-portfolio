@@ -16,7 +16,8 @@ export const DESKTOP_EDGE_PADDING = 8
 export const MENU_BAR_HEIGHT = 32
 export const MIN_VISIBLE_TITLEBAR_WIDTH = 128
 export const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
-export const DESKTOP_BOTTOM_SAFE_AREA = 72
+export const DESKTOP_DOCK_HEIGHT = 64
+export const DESKTOP_BOTTOM_SAFE_AREA = 88
 export const MAXIMIZED_MARGIN = 8
 export const INITIAL_WINDOW_CASCADE_STEP = 28
 export const INITIAL_WINDOW_CASCADE_SLOTS = 5
@@ -159,7 +160,10 @@ export function getMaximizedGeometry(): WindowGeometry {
     x: MAXIMIZED_MARGIN,
     y: MENU_BAR_HEIGHT + MAXIMIZED_MARGIN,
     width: Math.max(320, window.innerWidth - MAXIMIZED_MARGIN * 2),
-    height: Math.max(260, window.innerHeight - MENU_BAR_HEIGHT - MAXIMIZED_MARGIN * 2),
+    height: Math.max(
+      260,
+      window.innerHeight - MENU_BAR_HEIGHT - MAXIMIZED_MARGIN - DESKTOP_BOTTOM_SAFE_AREA,
+    ),
   }
 }
 

@@ -6,7 +6,7 @@ import { STARTUP_AUDIO_DURATION_MS } from './use-sound-effects'
 const STARTUP_COMPLETE_BUFFER_MS = 120
 
 function getStartupMessage(progress: number) {
-  if (progress < 0.18) return 'Jack OS'
+  if (progress < 0.18) return 'JackOS'
   if (progress < 0.42) return 'Checking desktop'
   if (progress < 0.72) return 'Loading preferences'
   if (progress < 0.96) return 'Preparing windows'
@@ -53,7 +53,7 @@ export function BootScreen({
   }, [onPowerOn, started])
 
   const progress = Math.min(1, elapsed / STARTUP_AUDIO_DURATION_MS)
-  const message = started ? getStartupMessage(progress) : 'Jack OS'
+  const message = started ? getStartupMessage(progress) : 'JackOS'
   const complete = progress >= 0.98
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function BootScreen({
   return (
     <div
       role="status"
-      aria-label="Starting Jack OS"
+      aria-label="Starting JackOS"
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background paper-texture ${
         complete ? 'animate-crt-off' : ''
       }`}

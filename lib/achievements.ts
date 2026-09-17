@@ -37,7 +37,7 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   {
     id: 'first-boot',
     title: 'System Online',
-    description: 'Started Jack OS for the first time on this device.',
+    description: 'Started JackOS for the first time on this device.',
   },
   {
     id: 'recruiter-mode-opened',
@@ -62,7 +62,7 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   {
     id: 'timeline-opened',
     title: 'History Loaded',
-    description: 'Opened the Jack OS Timeline.',
+    description: 'Opened the JackOS Timeline.',
   },
   {
     id: 'jd-first-question',
@@ -77,7 +77,7 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   {
     id: 'secret-discovered',
     title: 'Hidden File Found',
-    description: 'Discovered a hidden part of Jack OS.',
+    description: 'Discovered a hidden part of JackOS.',
     lockedDescription: 'Requirement hidden.',
     secret: true,
   },

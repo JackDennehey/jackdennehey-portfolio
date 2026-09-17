@@ -32,7 +32,7 @@ export function JdenStudiosContent({
         </div>
       </section>
 
-      <section className="os-border bg-card p-3" aria-label="Jack OS to JDEN STUDIOS relationship">
+      <section className="os-border bg-card p-3" aria-label="JackOS to JDEN STUDIOS relationship">
         <ol className="grid gap-2">
           {JDEN_STUDIOS_COPY.relationship.map((item, index) => (
             <li key={item.label}>

@@ -211,7 +211,7 @@ export function OsWindow({
     width,
     maxWidth: 'calc(100vw - 24px)',
     height,
-    maxHeight: 'calc(100vh - 56px)',
+    maxHeight: 'calc(100vh - 120px)',
     zIndex: Math.max(0, z),
     display: status === 'minimized' ? 'none' : undefined,
   }

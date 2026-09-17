@@ -6,6 +6,7 @@ import {
   INTERESTS,
   PROJECTS,
 } from '@/lib/portfolio-data'
+import { PROFILE } from '@/lib/portfolio'
 import {
   SITE_AUTHOR,
   SITE_DESCRIPTION,
@@ -37,9 +38,8 @@ const personJsonLd = {
   name: SITE_AUTHOR,
   url: SITE_PAGE_URL,
   email: `mailto:${CONTACT.email}`,
-  jobTitle: 'Business Student',
-  description:
-    'Penn State Brandywine business student focused on cybersecurity, networking, cloud computing, artificial intelligence, business, and product development.',
+  jobTitle: PROFILE.role,
+  description: PROFILE.summary,
   sameAs: [CONTACT.linkedin, CONTACT.github],
   mainEntityOfPage: {
     '@id': `${SITE_PAGE_URL}#profile`,
@@ -107,11 +107,12 @@ const jackOsJsonLd = {
   },
   description: SITE_DESCRIPTION,
   featureList: [
+    'Portfolio.app professional overview',
     'Network Firewall packet simulation',
     'Recruiter Mode guided professional overview',
     'Timeline of education, credentials, and projects',
     'Road Map of confirmed professional goals',
-    'Local Jack OS achievement milestones',
+    'Local JackOS achievement milestones',
     'Simple Mode professional portfolio view',
     'Reviewed public Guestbook',
     'Interactive desktop portfolio interface',
@@ -132,9 +133,8 @@ function SeoContent() {
     <div id="portfolio-content" className="sr-only">
       <h1>Jack Dennehey — Business Student at Penn State Brandywine</h1>
       <p>
-        Jack Dennehey is a business student at Penn State Brandywine passionate about
-        technology, cybersecurity, networking, cloud computing, artificial intelligence, and
-        product development.
+        {PROFILE.summary} {PROFILE.shortIntro} Portfolio.app is the overview inside JackOS. Simple
+        Mode is the conventional full-site reading. Recruiter Mode is the short evidence brief.
       </p>
 
       <h2>Interests</h2>
@@ -161,8 +161,12 @@ function SeoContent() {
         ))}
       </ul>
 
-      <h2>Interactive Jack OS Applications</h2>
+      <h2>Interactive JackOS Applications</h2>
       <ul>
+        <li>
+          Portfolio.app: a conventional professional overview of Jack&apos;s background, featured
+          work, experience, skills, education, credentials, and contact information.
+        </li>
         <li>
           Kickoff: a football intelligence platform with a walk-forward prediction model, historical
           evaluation, structured research tools, and a live public deployment.
@@ -173,8 +177,8 @@ function SeoContent() {
           explanations. It does not inspect visitor devices or display real IP addresses.
         </li>
         <li>
-          Recruiter Mode: a guided professional overview designed for fast access to Jack&apos;s
-          education, credentials, projects, skills, and contact information.
+          Recruiter Mode: a short evidence brief covering Jack&apos;s strongest work, education,
+          credentials, skills, resume, and contact.
         </li>
         <li>
           Timeline: a structured history of Jack&apos;s education, credentials, projects, and current
@@ -185,11 +189,10 @@ function SeoContent() {
           professional direction without unsupported percentages or dates.
         </li>
         <li>
-          Achievements: local browser milestones for meaningful Jack OS interactions.
+          Achievements: local browser milestones for meaningful JackOS interactions.
         </li>
         <li>
-          Simple Mode: a conventional professional portfolio view using the same verified content
-          as Jack OS.
+          Simple Mode: JackOS without the desktop metaphor, using the same verified facts.
         </li>
         <li>
           Guestbook: a reviewed visitor message system with moderation before public display.
@@ -202,8 +205,8 @@ function SeoContent() {
 
       <h2>Recruiter Access</h2>
       <p>
-        Recruiter Mode provides a fast guided overview of Jack&apos;s education, credentials,
-        technical direction, featured projects, resume access, and contact workflow.
+        Recruiter Mode is the short evidence brief. Simple Mode is the conventional portfolio
+        without the desktop. Resume.app and Contact are one click away from Welcome.
       </p>
 
       <h2>Credentials</h2>

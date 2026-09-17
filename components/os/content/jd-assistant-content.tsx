@@ -142,8 +142,7 @@ export function JdAssistantContent({
               Local Portfolio Assistant
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground text-pretty">
-              Ask about Jack&apos;s education, credentials, projects, Kickoff, 1984 Blue Ocean, Pocket Pier,
-              skills, or professional direction.
+              Guided portfolio Q&amp;A for Jack&apos;s public work, resume, and contact.
             </p>
           </div>
         </div>
@@ -222,7 +221,7 @@ export function JdAssistantContent({
           onKeyDown={onInputKeyDown}
           rows={3}
           spellCheck={false}
-          placeholder="Ask about Kickoff, projects, Pocket Pier, Blue Ocean, credentials, or contact..."
+          placeholder="Ask who Jack is, where the resume is, or how to contact him..."
           className="w-full resize-none os-border bg-card px-3 py-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
         />
         {inputNotice ? (
@@ -261,15 +260,15 @@ function AssistantActionButton({
   onCopyEmail: () => void
 }) {
   if (action.type === 'external') {
+    const sameTab = action.href.startsWith('/') && !action.href.startsWith('//')
     return (
       <a
         href={action.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="os-border inline-flex items-center gap-1.5 bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+        {...(sameTab ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
+        className="os-border inline-flex min-h-11 items-center gap-1.5 bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
       >
         <span>{action.label}</span>
-        <ExternalLink aria-hidden className="size-3" />
+        {sameTab ? null : <ExternalLink aria-hidden className="size-3" />}
       </a>
     )
   }

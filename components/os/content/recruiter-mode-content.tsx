@@ -1,15 +1,27 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Copy, ExternalLink, Mail } from 'lucide-react'
+import { Copy, Download, ExternalLink, Mail } from 'lucide-react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
 import type { WindowId } from '../apps'
 import {
-  PORTFOLIO_KNOWLEDGE,
+  EDUCATION,
+  PROFILE,
+  PROJECTS,
+  SKILL_GROUPS,
+  getCompletedCredentials,
+  getInProgressCredentials,
+  getPlannedCredentials,
+  getProjectById,
+  getFeaturedProjects,
+  getProjectEvidence,
+  type Credential,
+  type ResolvedProjectAction,
+} from '@/lib/portfolio'
+import {
   RECRUITER_SECTIONS,
   type RecruiterSectionId,
 } from '@/lib/portfolio-knowledge'
-import { BLUE_OCEAN_COPY } from '@/lib/blue-ocean'
 import { GithubIcon, LinkedinIcon } from '@/components/os/brand-icons'
 import { cn } from '@/lib/utils'
 
@@ -17,8 +29,8 @@ type Props = {
   activeSection: RecruiterSectionId
   onSectionChange: (section: RecruiterSectionId) => void
   onOpen: (id: WindowId) => void
+  onOpenCaseStudy: (projectId: string) => void
   onCopyEmail: () => void
-  onAskAssistant: () => void
   onOpenSimpleMode: () => void
 }
 
@@ -28,8 +40,8 @@ export function RecruiterModeContent({
   activeSection,
   onSectionChange,
   onOpen,
+  onOpenCaseStudy,
   onCopyEmail,
-  onAskAssistant,
   onOpenSimpleMode,
 }: Props) {
   const activeIndex = RECRUITER_SECTIONS.findIndex((section) => section.id === activeSection)
@@ -57,7 +69,7 @@ export function RecruiterModeContent({
     <div className="recruiter-mode-shell mx-auto grid min-h-full w-full max-w-[1180px] gap-5 md:grid-cols-[210px_minmax(0,1fr)]">
       <nav aria-label="Recruiter Mode sections" className="min-w-0">
         <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-          Guided Overview
+          Evidence brief
         </p>
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1 md:block md:space-y-1 md:overflow-visible md:pb-0">
           {RECRUITER_SECTIONS.map((item, index) => {
@@ -69,7 +81,7 @@ export function RecruiterModeContent({
                 onClick={() => onSectionChange(item.id)}
                 aria-current={selected ? 'step' : undefined}
                 className={cn(
-                  'os-border flex min-w-[11rem] items-center gap-2 bg-card px-2.5 py-2 text-left font-pixel text-[8px] leading-relaxed text-foreground transition-colors focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none md:w-full md:min-w-0',
+                  'os-border flex min-h-11 min-w-[11rem] items-center gap-2 bg-card px-2.5 py-2 text-left font-pixel text-[8px] leading-relaxed text-foreground transition-colors focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none md:min-h-0 md:w-full md:min-w-0',
                   selected
                     ? 'border-[var(--credential-gold)] bg-secondary outline outline-2 outline-offset-[-5px] outline-[var(--credential-gold-muted)]'
                     : 'hover:bg-foreground hover:text-primary-foreground',
@@ -120,8 +132,8 @@ export function RecruiterModeContent({
         <RecruiterSection
           section={section.id}
           onOpen={onOpen}
+          onOpenCaseStudy={onOpenCaseStudy}
           onCopyEmail={onCopyEmail}
-          onAskAssistant={onAskAssistant}
           onOpenSimpleMode={onOpenSimpleMode}
           onContinue={() => onSectionChange('education')}
         />
@@ -131,7 +143,7 @@ export function RecruiterModeContent({
             type="button"
             onClick={goToPrevious}
             disabled={safeIndex === 0}
-            className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
+            className="os-border min-h-11 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
           >
             Back
           </button>
@@ -139,7 +151,7 @@ export function RecruiterModeContent({
             type="button"
             onClick={goToNext}
             disabled={safeIndex === RECRUITER_SECTIONS.length - 1}
-            className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
+            className="os-border min-h-11 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none disabled:cursor-default disabled:bg-secondary disabled:text-muted-foreground"
           >
             Next
           </button>
@@ -152,15 +164,15 @@ export function RecruiterModeContent({
 function RecruiterSection({
   section,
   onOpen,
+  onOpenCaseStudy,
   onCopyEmail,
-  onAskAssistant,
   onOpenSimpleMode,
   onContinue,
 }: {
   section: RecruiterSectionId
   onOpen: (id: WindowId) => void
+  onOpenCaseStudy: (projectId: string) => void
   onCopyEmail: () => void
-  onAskAssistant: () => void
   onOpenSimpleMode: () => void
   onContinue: () => void
 }) {
@@ -169,7 +181,7 @@ function RecruiterSection({
       return (
         <OverviewSection
           onOpen={onOpen}
-          onAskAssistant={onAskAssistant}
+          onOpenCaseStudy={onOpenCaseStudy}
           onOpenSimpleMode={onOpenSimpleMode}
           onContinue={onContinue}
         />
@@ -183,70 +195,148 @@ function RecruiterSection({
     case 'skills':
       return <SkillsSection />
     case 'contact':
-      return <ContactSection onCopyEmail={onCopyEmail} />
+      return <ContactSection onOpen={onOpen} onCopyEmail={onCopyEmail} />
   }
 }
 
 function OverviewSection({
   onOpen,
-  onAskAssistant,
+  onOpenCaseStudy,
   onOpenSimpleMode,
   onContinue,
 }: {
   onOpen: (id: WindowId) => void
-  onAskAssistant: () => void
+  onOpenCaseStudy: (projectId: string) => void
   onOpenSimpleMode: () => void
   onContinue: () => void
 }) {
+  const featured = getFeaturedProjects()
+
   return (
     <div className="space-y-4">
       <InfoBlock>
-        {PORTFOLIO_KNOWLEDGE.person.overview} Jack OS was created as an interactive
-        alternative to a traditional portfolio, combining professional content with a retro desktop
-        experience.
+        {PROFILE.shortIntro} {PROFILE.opportunityStatement}
       </InfoBlock>
       <div className="grid gap-3 sm:grid-cols-2">
-        <FactCard label="Current Focus" value="Business studies at Penn State Brandywine" />
-        <FactCard label="Foundation" value="Cybersecurity, networking, and hands-on projects" />
+        <FactCard label="Current focus" value="Business studies at Penn State Brandywine" />
+        <FactCard
+          label="Public work"
+          value="Kickoff, Pocket Pier, JackOS, and 1984 Blue Ocean"
+        />
       </div>
-      <article className="os-border bg-card p-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-              Featured Case Study
-            </p>
-            <h4 className="mt-1 font-pixel text-[10px] leading-relaxed text-foreground">
-              {BLUE_OCEAN_COPY.title}
-            </h4>
-          </div>
-          <span className="os-border shrink-0 bg-secondary px-2 py-1 font-pixel text-[7px] leading-none text-muted-foreground">
-            31 stages
-          </span>
-        </div>
-        <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
-          {BLUE_OCEAN_COPY.recruiterSummary}
-        </p>
-        <div className="mt-3">
-          <ActionRow>
-            <ActionButton onClick={() => onOpen('blue-ocean')}>
-              View the Keynote
-            </ActionButton>
-            <ActionButton onClick={onContinue}>
-              Continue Recruiter Mode
-            </ActionButton>
-          </ActionRow>
-        </div>
-      </article>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {featured.map((project) => (
+          <EvidenceCard
+            key={project.id}
+            projectId={project.id}
+            onOpen={onOpen}
+            onOpenCaseStudy={onOpenCaseStudy}
+          />
+        ))}
+      </div>
       <ActionRow>
-        <ActionButton onClick={() => onOpen('about')}>View About</ActionButton>
-        <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
-        <ActionButton onClick={() => onOpen('projects')}>View Projects</ActionButton>
-        <ActionButton onClick={() => onOpen('timeline')}>View Timeline</ActionButton>
-        <ActionButton onClick={() => onOpen('contact')}>Contact Jack</ActionButton>
-        <ActionButton onClick={onOpenSimpleMode}>View Simple Mode</ActionButton>
-        <ActionButton onClick={onAskAssistant}>Ask J.D.</ActionButton>
+        <ActionButton onClick={() => onOpen('resume')}>Open Resume</ActionButton>
+        <ActionLink href="/jack-dennehey-resume.txt" Icon={Download} download>
+          Download Resume
+        </ActionLink>
+        <ActionButton onClick={() => onOpen('contact')}>Contact</ActionButton>
+        <ActionButton onClick={onOpenSimpleMode}>Simple Mode</ActionButton>
+        <ActionButton onClick={onContinue}>Continue</ActionButton>
       </ActionRow>
     </div>
+  )
+}
+
+function EvidenceCard({
+  projectId,
+  onOpen,
+  onOpenCaseStudy,
+}: {
+  projectId: string
+  onOpen: (id: WindowId) => void
+  onOpenCaseStudy: (projectId: string) => void
+}) {
+  const project = getProjectById(projectId)
+  if (!project) return null
+  const evidence = getProjectEvidence(project)
+
+  return (
+    <article className="os-border bg-card p-3">
+      {evidence.label ? (
+        <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
+          {evidence.label}
+        </p>
+      ) : null}
+      <h4 className="mt-1 font-pixel text-[11px] leading-relaxed text-foreground">
+        {evidence.name}
+      </h4>
+      <dl className="mt-2 space-y-1.5 text-[14px] leading-6 text-muted-foreground">
+        <EvidenceField term="What" definition={evidence.what} />
+        {evidence.role ? <EvidenceField term="Role" definition={evidence.role} /> : null}
+        {evidence.result ? <EvidenceField term="Result" definition={evidence.result} /> : null}
+      </dl>
+      {evidence.technologies.length > 0 ? (
+        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={`${evidence.name} technologies`}>
+          {evidence.technologies.map((tech) => (
+            <li
+              key={tech}
+              className="border border-border/40 bg-secondary px-1.5 py-0.5 text-[11px] font-medium text-foreground"
+            >
+              {tech}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {evidence.actions.length > 0 ? (
+        <div className="mt-3">
+          <ActionRow>
+            {evidence.actions.map((action) => (
+              <ProofAction
+                key={`${action.kind}-${action.kind === 'external' ? action.href : action.kind === 'case-study' ? action.projectId : action.appId}`}
+                action={action}
+                onOpen={onOpen}
+                onOpenCaseStudy={onOpenCaseStudy}
+              />
+            ))}
+          </ActionRow>
+        </div>
+      ) : null}
+    </article>
+  )
+}
+
+function EvidenceField({ term, definition }: { term: string; definition: string }) {
+  return (
+    <div>
+      <dt className="font-semibold text-foreground">{term}</dt>
+      <dd className="text-pretty">{definition}</dd>
+    </div>
+  )
+}
+
+function ProofAction({
+  action,
+  onOpen,
+  onOpenCaseStudy,
+}: {
+  action: ResolvedProjectAction
+  onOpen: (id: WindowId) => void
+  onOpenCaseStudy: (projectId: string) => void
+}) {
+  if (action.kind === 'case-study') {
+    return (
+      <ActionButton onClick={() => onOpenCaseStudy(action.projectId)}>{action.label}</ActionButton>
+    )
+  }
+  if (action.kind === 'internal-app') {
+    return (
+      <ActionButton onClick={() => onOpen(action.appId as WindowId)}>{action.label}</ActionButton>
+    )
+  }
+  return (
+    <ActionLink href={action.href} Icon={ExternalLink}>
+      {action.label}
+    </ActionLink>
   )
 }
 
@@ -259,22 +349,20 @@ function EducationSection() {
         Competency earned with Honors.
       </InfoBlock>
       <div className="grid gap-3">
-        {[...PORTFOLIO_KNOWLEDGE.education.current, ...PORTFOLIO_KNOWLEDGE.education.prior].map(
-          (item) => (
-            <article key={item.school} className="os-border bg-card p-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
-                  {item.school}
-                </h4>
-                <span className="text-xs font-medium text-muted-foreground">{item.period}</span>
-              </div>
-              <p className="mt-1 text-sm font-semibold text-foreground">{item.degree}</p>
-              <p className="mt-1 text-[15px] leading-7 text-muted-foreground text-pretty">
-                {item.detail}
-              </p>
-            </article>
-          ),
-        )}
+        {EDUCATION.map((item) => (
+          <article key={item.id} className="os-border bg-card p-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
+                {item.school}
+              </h4>
+              <span className="text-xs font-medium text-muted-foreground">{item.period}</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-foreground">{item.program}</p>
+            <p className="mt-1 text-[15px] leading-7 text-muted-foreground text-pretty">
+              {item.detail}
+            </p>
+          </article>
+        ))}
       </div>
     </div>
   )
@@ -283,12 +371,9 @@ function EducationSection() {
 function CredentialsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
   return (
     <div className="space-y-4">
-      <CredentialGroup title="Completed" credentials={PORTFOLIO_KNOWLEDGE.credentials.completed} />
-      <CredentialGroup
-        title="In Progress"
-        credentials={PORTFOLIO_KNOWLEDGE.credentials.inProgress}
-      />
-      <CredentialGroup title="Planned" credentials={PORTFOLIO_KNOWLEDGE.credentials.planned} />
+      <CredentialGroup title="Completed" credentials={getCompletedCredentials()} />
+      <CredentialGroup title="In Progress" credentials={getInProgressCredentials()} />
+      <CredentialGroup title="Planned" credentials={getPlannedCredentials()} />
       <ActionRow>
         <ActionButton onClick={() => onOpen('certifications')}>Open Credentials</ActionButton>
       </ActionRow>
@@ -297,93 +382,36 @@ function CredentialsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
 }
 
 function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
-  const featuredProject = PORTFOLIO_KNOWLEDGE.projects.featured
-  const kickoff = PORTFOLIO_KNOWLEDGE.projects.kickoff
-  const otherProjects = PORTFOLIO_KNOWLEDGE.projects.all.filter(
-    (project) => project.title !== 'Portfolio Website' && project.title !== kickoff.title,
-  )
+  const otherProjects = PROJECTS.filter((project) => !project.featured)
 
   return (
     <div className="space-y-4">
-      <article className="os-border bg-card p-3">
-        <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-          Flagship Product
-        </p>
-        <h4 className="mt-1 font-pixel text-[11px] leading-relaxed text-foreground">
-          {kickoff.title}
-        </h4>
-        <p className="mt-1 text-xs font-medium text-muted-foreground">{kickoff.subtitle}</p>
-        <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
-          {kickoff.shortDescription} {kickoff.modelVersion} was evaluated on{' '}
-          {kickoff.evaluation.sample} at {kickoff.evaluation.accuracy} straight-up accuracy. A
-          simple entering-record baseline reached {kickoff.evaluation.baseline} on the same sample.
-        </p>
-        <ActionRow>
-          <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
-          <ActionLink href={kickoff.url} Icon={ExternalLink}>
-            Launch Kickoff
-          </ActionLink>
-        </ActionRow>
-      </article>
-
-      <article className="os-border bg-card p-3">
-        <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
-          Primary Project
-        </p>
-        <h4 className="mt-1 font-pixel text-[11px] leading-relaxed text-foreground">
-          Jack OS
-        </h4>
-        <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
-          {featuredProject.description}
-        </p>
-        <ul className="mt-3 grid gap-1.5 text-[15px] leading-7 text-muted-foreground sm:grid-cols-2">
-          {PORTFOLIO_KNOWLEDGE.projects.jackOsSystems.map((system) => (
-            <li key={system} className="flex min-w-0 gap-2">
-              <span aria-hidden className="mt-2 size-1.5 shrink-0 bg-current" />
-              <span className="min-w-0 capitalize">{system}</span>
-            </li>
-          ))}
-        </ul>
-      </article>
-
+      <InfoBlock>
+        Kickoff, Pocket Pier, JackOS, and 1984 Blue Ocean are on Overview with proof actions. This
+        section is the remaining public work.
+      </InfoBlock>
       <div className="grid gap-3 sm:grid-cols-2">
         {otherProjects.map((project) => (
-          <article key={project.title} className="os-border bg-card p-3">
+          <article key={project.id} className="os-border bg-card p-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
-                {project.title}
+                {project.name}
               </h4>
-              {project.status ? (
+              {project.statusLabel ? (
                 <span className="text-xs font-medium text-muted-foreground">
-                  {project.status}
+                  {project.statusLabel}
                 </span>
               ) : null}
             </div>
             <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
-              {project.description}
+              {project.shortDescription}
             </p>
           </article>
         ))}
       </div>
-
       <ActionRow>
         <ActionButton onClick={() => onOpen('projects')}>Open Projects</ActionButton>
-        <ActionButton onClick={() => onOpen('kickoff')}>Open Kickoff</ActionButton>
-        <ActionButton onClick={() => onOpen('pocket-pier')}>Open Pocket Pier</ActionButton>
-        <ActionLink href={PORTFOLIO_KNOWLEDGE.projects.pocketPier.url} Icon={ExternalLink}>
-          View on App Store
-        </ActionLink>
-        <ActionButton onClick={() => onOpen('firewall')}>Open Firewall Simulation</ActionButton>
-        {featuredProject.github ? (
-          <ActionLink href={featuredProject.github} Icon={GithubIcon}>
-            View Jack OS Source
-          </ActionLink>
-        ) : null}
-        {featuredProject.demo ? (
-          <ActionLink href={featuredProject.demo} Icon={ExternalLink}>
-            Visit Live Project
-          </ActionLink>
-        ) : null}
+        <ActionButton onClick={() => onOpen('portfolio')}>Open Portfolio</ActionButton>
       </ActionRow>
     </div>
   )
@@ -392,59 +420,75 @@ function ProjectsSection({ onOpen }: { onOpen: (id: WindowId) => void }) {
 function SkillsSection() {
   return (
     <div className="space-y-4">
-      <InfoBlock>{PORTFOLIO_KNOWLEDGE.person.professionalDirection}</InfoBlock>
+      <InfoBlock>
+        Skills are grouped by work already in this portfolio, not as a dump of every technology
+        name.
+      </InfoBlock>
       <div className="grid gap-3 sm:grid-cols-2">
-        {PORTFOLIO_KNOWLEDGE.skills.areas.map((area) => (
-          <div key={area} className="os-border bg-card p-3">
-            <p className="font-pixel text-[9px] leading-relaxed text-foreground">{area}</p>
-          </div>
-        ))}
+        {SKILL_GROUPS.map((group) => {
+          const related = (group.relatedProjectIds ?? [])
+            .map((id) => getProjectById(id)?.name)
+            .filter((name): name is string => Boolean(name))
+          return (
+            <article key={group.id} className="os-border bg-card p-3">
+              <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
+                {group.group}
+              </h4>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {group.items.map((item) => (
+                  <li
+                    key={item}
+                    className="border border-border/40 bg-secondary px-1.5 py-0.5 text-[11px] font-medium text-foreground"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              {related.length > 0 ? (
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Seen in {related.join(', ')}
+                </p>
+              ) : null}
+            </article>
+          )
+        })}
       </div>
-      <section className="os-border bg-secondary p-3">
-        <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">
-          How the areas connect
-        </h4>
-        <p className="mt-2 text-[15px] leading-7 text-muted-foreground text-pretty">
-          {PORTFOLIO_KNOWLEDGE.career.businessTechnology}
-        </p>
-      </section>
     </div>
   )
 }
 
-function ContactSection({ onCopyEmail }: { onCopyEmail: () => void }) {
+function ContactSection({
+  onOpen,
+  onCopyEmail,
+}: {
+  onOpen: (id: WindowId) => void
+  onCopyEmail: () => void
+}) {
   return (
     <div className="space-y-4">
-      <InfoBlock>
-        {PORTFOLIO_KNOWLEDGE.career.opportunityStatement}
-      </InfoBlock>
+      <InfoBlock>{PROFILE.opportunityStatement}</InfoBlock>
       <div className="os-border bg-card p-3">
-        <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">
-          Email
-        </p>
+        <p className="font-pixel text-[9px] leading-relaxed text-muted-foreground">Email</p>
         <p className="mt-1 break-all text-sm font-semibold text-foreground">
-          {PORTFOLIO_KNOWLEDGE.contact.email}
+          {PROFILE.contact.email}
         </p>
       </div>
       <ActionRow>
-        <ActionLink
-          href={`mailto:${PORTFOLIO_KNOWLEDGE.contact.email}`}
-          external={false}
-          Icon={Mail}
-        >
+        <ActionButton onClick={() => onOpen('resume')}>Open Resume</ActionButton>
+        <ActionLink href="/jack-dennehey-resume.txt" Icon={Download} download>
+          Download Resume
+        </ActionLink>
+        <ActionLink href={`mailto:${PROFILE.contact.email}`} external={false} Icon={Mail}>
           Send Email
         </ActionLink>
         <ActionButton onClick={onCopyEmail} Icon={Copy}>
           Copy Email
         </ActionButton>
-        <ActionLink href={PORTFOLIO_KNOWLEDGE.contact.linkedin} Icon={LinkedinIcon}>
+        <ActionLink href={PROFILE.contact.linkedin} Icon={LinkedinIcon}>
           LinkedIn
         </ActionLink>
-        <ActionLink href={PORTFOLIO_KNOWLEDGE.contact.github} Icon={GithubIcon}>
+        <ActionLink href={PROFILE.contact.github} Icon={GithubIcon}>
           GitHub
-        </ActionLink>
-        <ActionLink href={PORTFOLIO_KNOWLEDGE.contact.portfolio} Icon={ExternalLink}>
-          Portfolio URL
         </ActionLink>
       </ActionRow>
     </div>
@@ -456,8 +500,9 @@ function CredentialGroup({
   credentials,
 }: {
   title: string
-  credentials: typeof PORTFOLIO_KNOWLEDGE.credentials.all
+  credentials: readonly Credential[]
 }) {
+  if (credentials.length === 0) return null
   return (
     <section className="space-y-2">
       <h4 className="font-pixel text-[9px] leading-relaxed text-foreground">{title}</h4>
@@ -532,7 +577,7 @@ function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className="os-border inline-flex items-center gap-1.5 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+      className="os-border inline-flex min-h-11 items-center gap-1.5 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
     >
       {Icon ? <Icon aria-hidden className="size-3.5" /> : null}
       <span>{children}</span>
@@ -545,21 +590,24 @@ function ActionLink({
   href,
   Icon,
   external = true,
+  download = false,
 }: {
   children: string
   href: string
   Icon: IconType
   external?: boolean
+  download?: boolean
 }) {
   return (
     <a
       href={href}
-      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className="os-border inline-flex items-center gap-1.5 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+      {...(download ? { download: true } : {})}
+      {...(external && !download ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className="os-border inline-flex min-h-11 items-center gap-1.5 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
     >
       <Icon aria-hidden className="size-3.5" />
       <span>{children}</span>
-      {external ? <ExternalLink aria-hidden className="size-3" /> : null}
+      {external && !download ? <ExternalLink aria-hidden className="size-3" /> : null}
     </a>
   )
 }

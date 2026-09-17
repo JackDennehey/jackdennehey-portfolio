@@ -42,7 +42,7 @@ export function AchievementsPanel({ open, earnedIds, onClose }: AchievementsPane
       data-desktop-interactive="true"
       className="fixed right-3 top-10 z-[85] w-[min(420px,calc(100vw-1.5rem))] os-border bg-paper text-foreground os-shadow-lg"
       role="dialog"
-      aria-label="Jack OS achievements"
+      aria-label="JackOS achievements"
     >
       <header className="flex items-center gap-2 border-b-2 border-border bg-titlebar px-3 py-2 text-titlebar-foreground">
         <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ export function AchievementsPanel({ open, earnedIds, onClose }: AchievementsPane
 
       <div className="max-h-[min(70dvh,520px)] overflow-y-auto p-3">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Local Jack OS milestones saved on this browser.
+          Local JackOS milestones saved on this browser.
         </p>
         <div className="mt-3 h-3 os-border bg-secondary p-0.5" aria-hidden>
           <div

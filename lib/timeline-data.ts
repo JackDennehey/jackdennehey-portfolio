@@ -20,6 +20,7 @@ export type TimelineActionTarget =
   | 'firewall'
   | 'roadmap'
   | 'contact'
+  | 'portfolio'
 
 export type TimelineAction = {
   label: string
@@ -56,9 +57,9 @@ const ciscoCredential = CREDENTIALS.find((credential) => credential.id === 'cisc
 const azureCredential = CREDENTIALS.find(
   (credential) => credential.id === 'microsoft-azure-ai-fundamentals',
 )
-const jackOsProject = PROJECTS.find((project) => project.title === 'Portfolio Website')
-const pocketPierProject = PROJECTS.find((project) => project.title === 'Pocket Pier')
-const kickoffProject = PROJECTS.find((project) => project.title === KICKOFF_COPY.title)
+const jackOsProject = PROJECTS.find((project) => project.id === 'jackos')
+const pocketPierProject = PROJECTS.find((project) => project.id === 'pocket-pier')
+const kickoffProject = PROJECTS.find((project) => project.id === 'kickoff')
 
 export const TIMELINE_CATEGORIES: readonly TimelineCategory[] = [
   'Education',
@@ -196,7 +197,10 @@ export const TIMELINE_ENTRIES: readonly TimelineEntry[] = [
           label: 'Visit Portfolio',
           href: `https://${CONTACT.domain}`,
         },
-    action: { label: 'Open Projects', target: 'projects' },
+    actions: [
+      { label: 'Open Portfolio', target: 'portfolio' },
+      { label: 'Open Projects', target: 'projects' },
+    ],
   },
   {
     id: 'dccc-cybersecurity-honors',

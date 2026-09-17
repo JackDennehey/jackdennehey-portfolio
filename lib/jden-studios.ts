@@ -9,7 +9,7 @@ export const JDEN_STUDIOS_COPY = {
     'JDEN Studios is an independent digital studio founded by Jack Dennehey, focused on shipping finished digital products and building professional websites for businesses.',
   relationship: [
     {
-      label: 'JACK OS',
+      label: 'JackOS',
       detail: 'Personal identity, portfolio, experiments, and technical work.',
     },
     {
@@ -42,6 +42,6 @@ export const JDEN_STUDIOS_COPY = {
     ['Released Product', 'Pocket Pier'],
   ] as const,
   enterLabel: 'Enter JDEN STUDIOS ↗',
-  enterHint: 'Opens the independent JDEN Studios website and leaves Jack OS.',
+  enterHint: 'Opens the independent JDEN Studios website and leaves JackOS.',
   pocketPierLabel: 'View Pocket Pier',
 } as const

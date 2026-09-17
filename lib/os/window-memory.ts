@@ -2,6 +2,7 @@ import { isWindowId, type WindowId } from '@/components/os/apps'
 import {
   JACK_OS_STORAGE_KEYS,
   readLocalStorageItem,
+  removeLocalStorageItem,
   writeLocalStorageItem,
 } from './storage'
 import { clampWindowGeometry, type WindowGeometry } from './window-geometry'
@@ -62,8 +63,12 @@ function readStoredWindowGeometryFile(): StoredWindowGeometryFile {
   }
 }
 
+export function readRememberedWindowGeometryUnclamped(id: WindowId): WindowGeometry | null {
+  return readStoredWindowGeometryFile().windows[id] ?? null
+}
+
 export function readRememberedWindowGeometry(id: WindowId): WindowGeometry | null {
-  const stored = readStoredWindowGeometryFile().windows[id]
+  const stored = readRememberedWindowGeometryUnclamped(id)
   if (!stored) return null
   return clampWindowGeometry(id, stored)
 }
@@ -84,4 +89,8 @@ export function writeRememberedWindowGeometry(id: WindowId, geometry: WindowGeom
 
   current.windows[id] = next
   writeLocalStorageItem(WINDOW_GEOMETRY_STORAGE_KEY, JSON.stringify(current))
+}
+
+export function clearRememberedWindowGeometry() {
+  removeLocalStorageItem(WINDOW_GEOMETRY_STORAGE_KEY)
 }

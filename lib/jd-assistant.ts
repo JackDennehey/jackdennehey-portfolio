@@ -11,10 +11,12 @@ export type AssistantWindowTarget =
   | 'pocket-pier'
   | 'kickoff'
   | 'jden-studios'
+  | 'portfolio'
   | 'about'
   | 'projects'
   | 'certifications'
   | 'contact'
+  | 'resume'
   | 'recruiter'
   | 'timeline'
   | 'guestbook'
@@ -101,17 +103,13 @@ type IntentDefinition = {
 }
 
 export const JD_ASSISTANT_INTRO =
-  "Hello, I'm J.D., Jack OS's Local Portfolio Assistant. Ask me about Jack's education, credentials, projects, Kickoff, 1984 Blue Ocean, Pocket Pier, skills, or professional direction."
+  "Hello, I'm J.D. I answer questions about Jack's public work: education, credentials, Kickoff, Pocket Pier, JackOS, 1984 Blue Ocean, resume, and contact. I am a guided portfolio layer, not a general assistant."
 
 export const JD_SUGGESTED_PROMPTS = [
+  'Who is Jack?',
   'What is Kickoff?',
-  'What is 1984 Blue Ocean?',
   'What is Pocket Pier?',
-  'What has Jack built?',
-  'What is JDen Studios?',
-  'What credentials has Jack earned?',
-  'What is Jack studying?',
-  'What is on the Road Map?',
+  'Where is the resume?',
   'How can I contact Jack?',
 ] as const
 
@@ -207,6 +205,11 @@ const LAUNCH_KICKOFF: AssistantAction = {
   label: 'Launch Kickoff',
   href: KICKOFF_URL,
 }
+const OPEN_PORTFOLIO: AssistantAction = {
+  type: 'open',
+  label: 'Open Portfolio',
+  target: 'portfolio',
+}
 const OPEN_ABOUT: AssistantAction = { type: 'open', label: 'Open About', target: 'about' }
 const OPEN_PROJECTS: AssistantAction = {
   type: 'open',
@@ -219,6 +222,12 @@ const OPEN_CREDENTIALS: AssistantAction = {
   target: 'certifications',
 }
 const OPEN_CONTACT: AssistantAction = { type: 'open', label: 'Open Contact', target: 'contact' }
+const OPEN_RESUME: AssistantAction = { type: 'open', label: 'Open Resume', target: 'resume' }
+const OPEN_SIMPLE: AssistantAction = {
+  type: 'external',
+  label: 'Open Simple Mode',
+  href: '/simple',
+}
 const OPEN_TIMELINE: AssistantAction = { type: 'open', label: 'Open Timeline', target: 'timeline' }
 const OPEN_GUESTBOOK: AssistantAction = {
   type: 'open',
@@ -745,7 +754,7 @@ const INTENTS: readonly IntentDefinition[] = [
   },
   {
     intent: 'resume',
-    phrases: ['public resume', 'resume', 'cv'],
+    phrases: ['public resume', 'resume', 'cv', 'download resume', 'open resume'],
     keywords: { resume: 8, cv: 8 },
     priority: 9,
   },
@@ -953,16 +962,15 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
     case 'resume':
       return {
         intent,
-        content:
-          `${PORTFOLIO_KNOWLEDGE.resume.message} The best next steps are Projects, Credentials, Contact, or the guided Recruiter Mode overview.`,
-        actions: [OPEN_RECRUITER, OPEN_PROJECTS, OPEN_CREDENTIALS, OPEN_CONTACT],
+        content: PORTFOLIO_KNOWLEDGE.resume.message,
+        actions: [OPEN_RESUME, OPEN_SIMPLE, OPEN_RECRUITER, OPEN_PORTFOLIO],
       }
     case 'introduction':
       return {
         intent,
         content:
-          `${PORTFOLIO_KNOWLEDGE.person.overview} Jack OS presents that information as a retro desktop instead of a static portfolio page.`,
-        actions: [OPEN_RECRUITER, OPEN_ABOUT],
+          `${PORTFOLIO_KNOWLEDGE.person.overview} JackOS is the interactive desktop. Simple Mode is the conventional reading. Recruiter Mode is the short evidence brief.`,
+        actions: [OPEN_PORTFOLIO, OPEN_SIMPLE, OPEN_RECRUITER, OPEN_RESUME],
       }
     case 'education':
     case 'penn-state':
@@ -1025,7 +1033,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          `The Road Map is Jack OS's central source for confirmed professional direction. It lists status labels rather than fabricated dates or percentages: ${roadmapSummary()}.`,
+          `The Road Map is JackOS's central source for confirmed professional direction. It lists status labels rather than fabricated dates or percentages: ${roadmapSummary()}.`,
         actions: [OPEN_ROADMAP, OPEN_CREDENTIALS, OPEN_PROJECTS, OPEN_TIMELINE],
       }
     case 'cybersecurity':
@@ -1073,15 +1081,15 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'Front-end development shows up most clearly in Jack OS itself and in Kickoff. Both use React, Next.js, TypeScript, and Tailwind CSS, with Jack OS presenting professional work as an interactive desktop and Kickoff shipping as a public football intelligence product.',
+          'Front-end development shows up most clearly in JackOS itself and in Kickoff. Both use React, Next.js, TypeScript, and Tailwind CSS, with JackOS presenting professional work as an interactive desktop and Kickoff shipping as a public football intelligence product.',
         actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
       }
     case 'project-list':
       return {
         intent,
         content:
-          'The public flagship work includes Kickoff, Jack OS, and Pocket Pier. Kickoff is a deployed football intelligence platform with a walk-forward prediction model and Ask Kickoff research tools. Jack OS is the operating-system-inspired portfolio and includes 1984 Blue Ocean, a 31-stage interactive keynote. Pocket Pier is an independent mobile game under JDen Studios, now available on the App Store. Other listed work includes Azure AI Projects and Networking Labs.',
-        actions: [OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS, OPEN_GITHUB],
+          'The public flagship work includes Kickoff, JackOS, and Pocket Pier. Kickoff is a deployed football intelligence platform with a walk-forward prediction model and Ask Kickoff research tools. JackOS is the operating-system-inspired portfolio and includes 1984 Blue Ocean, a 31-stage interactive keynote. Pocket Pier is an independent mobile game under JDen Studios, now available on the App Store. Other listed work includes Azure AI Projects and Networking Labs. Portfolio.app is the conventional overview of that work.',
+        actions: [OPEN_PORTFOLIO, OPEN_KICKOFF, OPEN_BLUE_OCEAN, OPEN_POCKET_PIER, VIEW_POCKET_PIER_APP_STORE, OPEN_PROJECTS, OPEN_GITHUB],
       }
     case 'pocket-pier':
       return {
@@ -1115,7 +1123,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'I can open the Kickoff project window inside Jack OS. It covers the model, Ask Kickoff architecture, evaluation, engineering, production controls, and a launch link to the live site.',
+          'I can open the Kickoff project window inside JackOS. It covers the model, Ask Kickoff architecture, evaluation, engineering, production controls, and a launch link to the live site.',
         actions: [OPEN_KICKOFF, LAUNCH_KICKOFF],
       }
     case 'kickoff-model':
@@ -1136,14 +1144,14 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'JDEN STUDIOS is an independent digital studio founded by Jack Dennehey. Jack OS is Jack\'s personal portfolio environment. JDEN STUDIOS is the studio for commercial work and finished releases. Pocket Pier is currently the studio\'s released product. Kickoff is a personal Jack OS project, not a JDEN product. The studio website is jdenstudios.com.',
+          'JDEN STUDIOS is an independent digital studio founded by Jack Dennehey. JackOS is Jack\'s personal portfolio environment. JDEN STUDIOS is the studio for commercial work and finished releases. Pocket Pier is currently the studio\'s released product. Kickoff is a personal JackOS project, not a JDEN product. The studio website is jdenstudios.com.',
         actions: [OPEN_JDEN, OPEN_POCKET_PIER, ENTER_JDEN],
       }
     case 'blue-ocean':
       return {
         intent,
         content:
-          `${BLUE_OCEAN_COPY.title} is the flagship Jack OS V3B interactive keynote. ${BLUE_OCEAN_COPY.shortDescription} It lives inside Jack OS as a normal window or in Presentation Mode, and supports keyboard navigation, reduced motion, and session resume. It has 31 stages across five chapters rather than a traditional static slide deck.`,
+          `${BLUE_OCEAN_COPY.title} is an interactive keynote inside JackOS. ${BLUE_OCEAN_COPY.shortDescription} It can run as a normal window or in Presentation Mode, with keyboard navigation, reduced motion, and session resume. It has 31 stages across five chapters rather than a static slide deck.`,
         actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
       }
     case 'blue-ocean-authorship':
@@ -1157,42 +1165,42 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'You should watch 1984 Blue Ocean if you want the clearest proof of how Jack thinks. It connects business strategy, technical communication, AI-assisted product development, and Jack OS itself into one guided case study. For recruiters, it is one of the fastest ways to see his product judgment and ability to bridge business and technical work.',
+          'You should watch 1984 Blue Ocean if you want the clearest proof of how Jack thinks. It connects business strategy, technical communication, AI-assisted product development, and JackOS itself into one guided case study.',
         actions: [OPEN_BLUE_OCEAN, OPEN_RECRUITER, OPEN_PROJECTS],
       }
     case 'blue-ocean-launch':
       return {
         intent,
         content:
-          'I can open 1984 Blue Ocean from here. It will start at the cover, and if this browser has a valid keynote session, the keynote window will offer Resume Presentation. Presentation Mode is the best viewing experience, but the normal Jack OS window works for previewing it.',
+          'I can open 1984 Blue Ocean from here. It will start at the cover, and if this browser has a valid keynote session, the keynote window will offer Resume Presentation. Presentation Mode is the best viewing experience, but the normal JackOS window works for previewing it.',
         actions: [OPEN_BLUE_OCEAN],
       }
     case 'jack-os':
       return {
         intent,
         content:
-          "Jack OS is Jack's interactive portfolio, built as an original retro desktop experience rather than a conventional resume page. It organizes About, Projects, Credentials, Contact, Wallpapers, Secrets, Recruiter Mode, J.D., and the 1984 Blue Ocean keynote as apps inside one interface.",
-        actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_RECRUITER],
+          "JackOS is Jack's interactive portfolio: a retro desktop with windows, a dock, and a purpose-built mobile shell. Portfolio.app is the overview inside the system. Simple Mode is the conventional full-site reading. Recruiter Mode is the short evidence brief.",
+        actions: [OPEN_PORTFOLIO, OPEN_SIMPLE, OPEN_RECRUITER, OPEN_BLUE_OCEAN],
       }
     case 'jack-os-technologies':
       return {
         intent,
         content:
-          `Jack OS is built with ${PORTFOLIO_KNOWLEDGE.projects.featured.technologies.join(', ')}. Across the project list, public technologies include ${uniqueTechnologies().join(', ')}.`,
+          `JackOS is built with ${PORTFOLIO_KNOWLEDGE.projects.featured.technologies.join(', ')}. Across the project list, public technologies include ${uniqueTechnologies().join(', ')}.`,
         actions: [OPEN_PROJECTS, OPEN_GITHUB],
       }
     case 'jack-os-features':
       return {
         intent,
         content:
-          `Technically, Jack OS is interesting because it includes ${PORTFOLIO_KNOWLEDGE.projects.jackOsSystems.join(', ')}, Timeline, Guestbook, and a simulated Network Firewall. The work is also iterative: each phase adds polish while preserving the retro desktop identity.`,
+          `Technically, JackOS is interesting because it includes ${PORTFOLIO_KNOWLEDGE.projects.jackOsSystems.join(', ')}, Timeline, Guestbook, and a simulated Network Firewall. The work is iterative: each phase adds polish while preserving the retro desktop identity.`,
         actions: [OPEN_BLUE_OCEAN, OPEN_PROJECTS, OPEN_TIMELINE, OPEN_FIREWALL, OPEN_RECRUITER],
       }
     case 'timeline':
       return {
         intent,
         content:
-          "Timeline is the Jack OS system-history app. It presents Jack's public education, credentials, projects, and portfolio milestones as expandable entries rather than a conventional resume timeline.",
+          "Timeline is the JackOS system-history app. It presents Jack's public education, credentials, projects, and portfolio milestones as expandable entries rather than a conventional resume timeline.",
         actions: [OPEN_TIMELINE, OPEN_RECRUITER],
       }
     case 'guestbook':
@@ -1213,15 +1221,15 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          `Achievements are local Jack OS milestones saved in this browser. Public milestones include ${publicAchievementTitles()}. Secret-related requirements stay hidden, and achievements do not affect app access or portfolio content.`,
+          `Achievements are local JackOS milestones saved in this browser. Public milestones include ${publicAchievementTitles()}. Secret-related requirements stay hidden, and achievements do not affect app access or portfolio content.`,
         actions: [OPEN_RECRUITER, OPEN_FIREWALL, OPEN_TIMELINE, OPEN_ROADMAP],
       }
     case 'simple-mode':
       return {
         intent,
         content:
-          'Simple Mode is a conventional professional portfolio view for visitors who want a fast, readable overview without the retro desktop. It uses the same verified Jack OS portfolio data and is not a separate website.',
-        actions: [OPEN_RECRUITER, OPEN_PROJECTS, OPEN_CREDENTIALS, OPEN_CONTACT],
+          'Simple Mode is the conventional full-site portfolio for visitors who do not want the desktop metaphor. It uses the same verified facts as JackOS. Return to JackOS from the top-right control. Inside JackOS, Portfolio.app is the equivalent overview.',
+        actions: [OPEN_SIMPLE, OPEN_PORTFOLIO, OPEN_RECRUITER, OPEN_RESUME],
       }
     case 'v3a':
       return {
@@ -1234,7 +1242,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          'From Simple Mode, use the persistent Return to Jack OS V3B control at the top right. Returning preserves local Jack OS preferences such as wallpaper, theme, achievements, and sound settings.',
+          'From Simple Mode, use Return to JackOS at the top right. Returning preserves local JackOS preferences such as wallpaper, theme, achievements, and sound settings.',
         actions: [OPEN_RECRUITER],
       }
     case 'github':
@@ -1274,15 +1282,12 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
     case 'navigation':
       return {
         intent,
-        content: `${PORTFOLIO_KNOWLEDGE.career.navigationSummary} Timeline shows milestones, Guestbook accepts reviewed visitor messages, and Network Firewall demonstrates sample traffic rules with a stronger packet inspector.`,
+        content: `${PORTFOLIO_KNOWLEDGE.career.navigationSummary}`,
         actions: [
+          OPEN_PORTFOLIO,
+          OPEN_SIMPLE,
           OPEN_RECRUITER,
-          OPEN_BLUE_OCEAN,
-          OPEN_TIMELINE,
-          OPEN_PROJECTS,
-          OPEN_CREDENTIALS,
-          OPEN_GUESTBOOK,
-          OPEN_FIREWALL,
+          OPEN_RESUME,
           OPEN_CONTACT,
           COPY_EMAIL,
         ],
@@ -1291,7 +1296,7 @@ function getResponse(intent: AssistantIntent): AssistantResponse {
       return {
         intent,
         content:
-          "I'm designed to answer questions about Jack's professional portfolio. Try asking about his projects, credentials, education, technical background, or current goals.",
+          "I'm designed to answer questions about Jack's public portfolio. Try asking who Jack is, what Kickoff or Pocket Pier is, where the resume is, or how to contact him.",
         actions: [OPEN_RECRUITER],
       }
   }

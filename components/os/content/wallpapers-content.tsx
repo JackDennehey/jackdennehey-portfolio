@@ -130,7 +130,7 @@ export function WallpapersContent({
               onClick={setWallpaper}
               disabled={!canSetWallpaper || isActiveWallpaper}
               className={cn(
-                'os-border px-3 py-2 text-center font-pixel text-[8px] leading-relaxed transition-colors focus-visible:outline-none',
+                'os-border min-h-11 px-3 py-2 text-center font-pixel text-[8px] leading-relaxed transition-colors focus-visible:outline-none',
                 canSetWallpaper && !isActiveWallpaper
                   ? 'bg-card text-foreground hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground'
                   : 'cursor-default bg-secondary text-muted-foreground',

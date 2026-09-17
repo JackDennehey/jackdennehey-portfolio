@@ -7,6 +7,8 @@ type DesktopContextMenuProps = {
   y: number
   onClose: () => void
   onPersonalize: () => void
+  onOpenWelcome: () => void
+  onResetWindowLayout: () => void
   onResetWallpaper: () => void
 }
 
@@ -15,6 +17,8 @@ export function DesktopContextMenu({
   y,
   onClose,
   onPersonalize,
+  onOpenWelcome,
+  onResetWindowLayout,
   onResetWallpaper,
 }: DesktopContextMenuProps) {
   useEffect(() => {
@@ -47,7 +51,29 @@ export function DesktopContextMenu({
       >
         Personalize...
       </button>
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          onOpenWelcome()
+          onClose()
+        }}
+        className="block w-full px-3 py-2 text-left transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+      >
+        Welcome
+      </button>
       <span aria-hidden className="my-1 block border-t-2 border-border" />
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          onResetWindowLayout()
+          onClose()
+        }}
+        className="block w-full px-3 py-2 text-left transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+      >
+        Reset Window Layout
+      </button>
       <button
         type="button"
         role="menuitem"

@@ -72,6 +72,15 @@ export function JackDocumentIcon(props: IconProps) {
   )
 }
 
+export function JackSearchIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="M16 16l4 4" />
+    </JackIcon>
+  )
+}
+
 export function JackMailIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

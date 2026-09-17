@@ -83,7 +83,9 @@ export function DesktopIcon({
   )
 
   const className =
-    'group flex w-20 flex-col items-center gap-1 rounded-sm p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
+    variant === 'mobile'
+      ? 'group flex min-h-16 w-full flex-col items-center gap-1.5 rounded-sm p-2 outline-none select-none touch-manipulation focus-visible:ring-2 focus-visible:ring-ring'
+      : 'group flex w-20 flex-col items-center gap-1 rounded-sm p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
 
   if (item.kind === 'link') {
     return (

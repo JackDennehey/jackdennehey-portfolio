@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   isWindowId,
   shouldAutoMaximizeWindow,
+  WINDOW_APPS,
   type WindowId,
 } from './apps'
 import {
@@ -21,7 +22,9 @@ import {
   type WindowGeometry,
 } from '@/lib/os/window-geometry'
 import {
+  clearRememberedWindowGeometry,
   readRememberedWindowGeometry,
+  readRememberedWindowGeometryUnclamped,
   writeRememberedWindowGeometry,
 } from '@/lib/os/window-memory'
 
@@ -30,7 +33,14 @@ export type WindowManagerOpenResult = {
   isNew: boolean
 }
 
-function getOpenGeometry(id: WindowId, cascadeCount: number): WindowGeometry {
+function getOpenGeometry(id: WindowId, cascadeCount: number, isMobile: boolean): WindowGeometry {
+  if (isMobile) {
+    const remembered = readRememberedWindowGeometryUnclamped(id)
+    if (remembered) return remembered
+    const app = WINDOW_APPS[id]
+    return { x: 80, y: 60, width: app.width, height: app.height }
+  }
+
   const remembered = readRememberedWindowGeometry(id)
   if (remembered) return remembered
   return getInitialWindowGeometry(id, cascadeCount)
@@ -89,7 +99,9 @@ export function useWindowManager(isMobile: boolean) {
           const restoredGeometry =
             restoredStatus === 'maximized'
               ? getMaximizedGeometry()
-              : clampWindowGeometry(id, existing.normal)
+              : isMobile
+                ? existing.normal
+                : clampWindowGeometry(id, existing.normal)
 
           patchWindow(id, (windowRecord) => ({
             ...windowRecord,
@@ -119,7 +131,7 @@ export function useWindowManager(isMobile: boolean) {
         return { id, isNew: false }
       }
 
-      const normalGeometry = getOpenGeometry(id, cascadeCount.current)
+      const normalGeometry = getOpenGeometry(id, cascadeCount.current, isMobile)
       const geometry = shouldAutoMaximizeWindow(id, isMobile)
         ? getMaximizedGeometry()
         : normalGeometry
@@ -208,10 +220,11 @@ export function useWindowManager(isMobile: boolean) {
   )
 
   const commitGeometry = useCallback((id: WindowId) => {
+    if (isMobile) return
     const target = windowsRef.current.find((windowRecord) => windowRecord.id === id)
     if (!target || target.status === 'closing') return
     persistNormalGeometry(target)
-  }, [])
+  }, [isMobile])
 
   const minimizeWindow = useCallback((id: WindowId) => {
     const target = windowsRef.current.find((windowRecord) => windowRecord.id === id)
@@ -310,13 +323,51 @@ export function useWindowManager(isMobile: boolean) {
       normal,
       status: 'maximized',
     }))
-    persistNormalGeometry({ ...target, normal })
+    if (!isMobile) persistNormalGeometry({ ...target, normal })
     focusWindow(id)
     return true
-  }, [focusWindow, patchWindow])
+  }, [focusWindow, isMobile, patchWindow])
+
+  const resetWindowLayout = useCallback(() => {
+    clearRememberedWindowGeometry()
+    cascadeCount.current = 0
+
+    let cascadeIndex = 0
+    commit(
+      windowsRef.current.map((windowRecord) => {
+        if (windowRecord.status === 'closing') return windowRecord
+
+        const nextNormal = getInitialWindowGeometry(windowRecord.id, cascadeIndex)
+        cascadeIndex += 1
+
+        if (windowRecord.status === 'minimized') {
+          return {
+            ...windowRecord,
+            normal: nextNormal,
+          }
+        }
+
+        if (windowRecord.status === 'maximized') {
+          return {
+            ...windowRecord,
+            ...getMaximizedGeometry(),
+            normal: nextNormal,
+          }
+        }
+
+        return {
+          ...windowRecord,
+          ...nextNormal,
+          normal: nextNormal,
+        }
+      }),
+    )
+  }, [commit])
 
   useEffect(() => {
     const onResize = () => {
+      if (isMobile) return
+
       commit(
         windowsRef.current.map((windowRecord) => {
           if (windowRecord.status === 'maximized') {
@@ -340,32 +391,22 @@ export function useWindowManager(isMobile: boolean) {
 
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [commit])
+  }, [commit, isMobile])
 
   useEffect(() => {
-    if (!isMobile) return
-
-    const minimizedWindows = windowsRef.current.filter(
-      (windowRecord) => windowRecord.status === 'minimized',
-    )
-    if (minimizedWindows.length === 0) return
-
+    if (isMobile) return
     commit(
-      windowsRef.current.map((windowRecord) =>
-        windowRecord.status === 'minimized'
-          ? {
-              ...windowRecord,
-              ...clampWindowGeometry(windowRecord.id, windowRecord.normal),
-              status: 'open',
-              restoreStatus: undefined,
-            }
-          : windowRecord,
-      ),
+      windowsRef.current.map((windowRecord) => {
+        if (windowRecord.status === 'maximized') {
+          return { ...windowRecord, ...getMaximizedGeometry() }
+        }
+        if (windowRecord.status === 'minimized' || windowRecord.status === 'closing') {
+          return windowRecord
+        }
+        const geometry = clampWindowGeometry(windowRecord.id, windowRecord.normal)
+        return { ...windowRecord, ...geometry, normal: windowRecord.normal }
+      }),
     )
-    setOrder((prev) => [
-      ...prev.filter((id) => !minimizedWindows.some((windowRecord) => windowRecord.id === id)),
-      ...minimizedWindows.map((windowRecord) => windowRecord.id),
-    ])
   }, [commit, isMobile])
 
   useEffect(() => {
@@ -404,6 +445,7 @@ export function useWindowManager(isMobile: boolean) {
     maximizeWindow,
     restoreWindow,
     restoreAllMinimized,
+    resetWindowLayout,
     moveWindow,
     resizeWindow,
     commitGeometry,

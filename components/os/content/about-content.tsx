@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { WindowId } from '../apps'
+import { PROFILE } from '@/lib/portfolio'
 import { cn } from '@/lib/utils'
 
 type AboutArea = {
@@ -141,7 +142,7 @@ const ABOUT_AREAS: AboutArea[] = [
       'Connecting new concepts to existing knowledge',
     ],
     context:
-      'Jack OS is an example of that process. It began as a portfolio concept and has grown through repeated design, accessibility, audio, state-management, and content improvements. Each phase gives me a more complete understanding of how a real project evolves.',
+      'JackOS is an example of that process. It began as a portfolio concept and has grown through repeated design, accessibility, audio, state-management, and content improvements. Each phase gives me a more complete understanding of how a real project evolves.',
     action: {
       label: 'View Projects',
       target: 'projects',
@@ -171,19 +172,25 @@ export function AboutContent({ onOpen }: { onOpen: (id: WindowId) => void }) {
           {'// currently'}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-foreground text-pretty">
-          I&apos;m currently studying{' '}
-          <strong className="font-semibold">Business at Penn State Brandywine</strong>, building on
-          a cybersecurity education and a growing foundation in networking, cloud computing, and
-          artificial intelligence. I&apos;m most interested in the point where technology stops being
+          {PROFILE.summary} I&apos;m most interested in the point where technology stops being
           theoretical and starts solving real problems.
         </p>
-        <button
-          type="button"
-          onClick={() => onOpen('recruiter')}
-          className="os-border mt-3 bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
-        >
-          Open Recruiter Mode
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onOpen('portfolio')}
+            className="os-border bg-foreground px-3 py-2 font-pixel text-[8px] leading-relaxed text-primary-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:bg-card focus-visible:text-foreground focus-visible:outline-none"
+          >
+            Open Portfolio
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpen('recruiter')}
+            className="os-border bg-card px-3 py-2 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+          >
+            Open Recruiter Mode
+          </button>
+        </div>
       </section>
 
       <section>
@@ -207,7 +214,7 @@ export function AboutContent({ onOpen }: { onOpen: (id: WindowId) => void }) {
         <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
           I&apos;m building a path that connects business judgment with technical understanding.
           Whether I&apos;m studying network behavior, exploring cloud and AI platforms, or developing
-          a project like Jack OS, I learn best by turning ideas into something functional,
+          a project like JackOS, I learn best by turning ideas into something functional,
           testable, and useful.
         </p>
       </section>

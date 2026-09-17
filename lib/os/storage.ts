@@ -115,7 +115,7 @@ export const JACK_OS_STORAGE_CATALOG: readonly {
     key: JACK_OS_STORAGE_KEYS.windowGeometry,
     area: 'local',
     persistAcrossSessions: true,
-    notes: 'Normal window x/y/width/height after user move or resize. Clamped on read.',
+    notes: 'Normal window x/y/width/height after user move or resize. Clamped on read. Reset Window Layout clears this key only.',
   },
 ] as const
 
@@ -142,6 +142,17 @@ export function writeLocalStorageItem(key: string, value: string): boolean {
 
   try {
     window.localStorage.setItem(key, value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function removeLocalStorageItem(key: string): boolean {
+  if (!canUseLocalStorage()) return false
+
+  try {
+    window.localStorage.removeItem(key)
     return true
   } catch {
     return false
