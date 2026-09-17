@@ -3,8 +3,8 @@
  *
  * Keep existing key strings stable. New durable preferences should be added
  * here rather than inventing ad hoc localStorage names inside components.
- * Scanlines and window geometry are session UI state and are intentionally
- * not persisted.
+ * Scanlines, z-order, and minimized/maximized status are session UI state.
+ * Normal window x/y/width/height may be persisted separately.
  */
 export const JACK_OS_STORAGE_KEYS = {
   desktopPreferences: 'jack-os.desktop-preferences.v1',
@@ -18,6 +18,7 @@ export const JACK_OS_STORAGE_KEYS = {
   blueOceanCompleted: 'jack-os:1984-blue-ocean:v1:completed',
   blueOceanSession: 'jack-os:blue-ocean-session.v1',
   guestbookAdminToken: 'jack-os:guestbook-admin-token',
+  windowGeometry: 'jack-os:window-geometry.v1',
 } as const
 
 export type JackOsStorageKey =
@@ -108,6 +109,13 @@ export const JACK_OS_STORAGE_CATALOG: readonly {
     area: 'session',
     persistAcrossSessions: false,
     notes: 'Guestbook admin auth token. Session only. Do not persist.',
+  },
+  {
+    name: 'windowGeometry',
+    key: JACK_OS_STORAGE_KEYS.windowGeometry,
+    area: 'local',
+    persistAcrossSessions: true,
+    notes: 'Normal window x/y/width/height after user move or resize. Clamped on read.',
   },
 ] as const
 

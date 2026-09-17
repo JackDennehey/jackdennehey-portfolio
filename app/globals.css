@@ -180,6 +180,10 @@
       height 160ms ease,
       opacity 80ms linear;
   }
+  .os-window-frame[data-window-interacting='true'] {
+    transition: none;
+    user-select: none;
+  }
   .os-window-active {
     opacity: 1;
     transition: opacity 80ms linear;

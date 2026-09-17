@@ -1,6 +1,6 @@
 # Jack OS Architecture Notes
 
-Stable implementation notes after JackOS M1 (System Audit & Foundation). Keep this document focused on entry points and durable conventions rather than transient UI details.
+Stable implementation notes after JackOS M2 (Window Manager). Keep this document focused on entry points and durable conventions rather than transient UI details.
 
 JackOS is an evolution of this repository, not a rewrite. Product name remains **JackOS**.
 
@@ -10,7 +10,8 @@ JackOS is an evolution of this repository, not a rewrite. Product name remains *
 JackOS
 |-- System
 |   |-- Window geometry + chrome constants  lib/os/window-geometry.ts
-|   |-- Window lifecycle                    components/os/desktop.tsx
+|   |-- Window manager                      components/os/use-window-manager.ts
+|   |-- Remembered window geometry          lib/os/window-memory.ts
 |   |-- Window chrome                       components/os/os-window.tsx
 |   |-- App registry                        components/os/apps.tsx
 |   |-- Persistence catalog                 lib/os/storage.ts
@@ -37,7 +38,7 @@ JackOS
 ## Application Registry
 
 - Window applications are registered in `components/os/apps.tsx` through `WINDOW_APPS`.
-- Adding an app should start in `WINDOW_APPS` with id, title, icon, default size, description, keywords, and optional `autoMaximize` / `desktopLabel` / command-palette fields.
+- Adding an app should start in `WINDOW_APPS` with id, title, icon, default size, description, keywords, and optional `autoMaximize` / `minWidth` / `minHeight` / `resizable` / `desktopLabel` / command-palette fields.
 - Desktop and mobile launcher order is `DESKTOP_LAUNCHER_APP_IDS`; `DESKTOP_ITEMS` is derived from that list plus GitHub/LinkedIn links.
 - Command-palette app rows are derived from `COMMAND_PALETTE_APP_IDS` via `buildAppOpenCommands`.
 - Hash routing is `WINDOW_HASH_SLUGS`, `getWindowHash`, and `getWindowIdFromHash`.
@@ -46,11 +47,14 @@ JackOS
 
 ## Window Manager
 
-- Geometry, cascade, clamp, maximize bounds, and chrome metrics live in `lib/os/window-geometry.ts`.
-- `components/os/desktop.tsx` still owns open/close/focus/z-order/minimize/maximize/restore, hash opening, boot, command registration, and `renderContent`.
-- `components/os/os-window.tsx` owns window chrome, title-bar dragging, focus affordances, close/minimize/maximize controls, and mobile fullscreen presentation.
+- Authoritative window lifecycle lives in `components/os/use-window-manager.ts`.
+- Geometry helpers, cascade, clamp, resize math, maximize bounds, stack z, and chrome metrics live in `lib/os/window-geometry.ts`.
+- `components/os/desktop.tsx` orchestrates the shell: boot, hash routing, command palette, Blue Ocean launch context, sounds, achievements, overlays, and `renderContent`. It does not own window mechanics.
+- `components/os/os-window.tsx` owns window chrome, title-bar dragging, desktop edge/corner resize hit targets, focus affordances, close/minimize/maximize controls, and mobile fullscreen presentation.
 - Recruiter Mode and Network Firewall auto-maximize on desktop through `WindowApp.autoMaximize`.
-- Windows are single-instance per `WindowId`. Positions are session-only. User resize is not implemented yet.
+- Windows are single-instance per `WindowId`. Minimized/maximized status is session-only.
+- Normal geometry (`x`, `y`, `width`, `height`) may be remembered in `jack-os:window-geometry.v1` after a completed move or resize, then clamped before reuse.
+- Desktop windows can be resized from edges and corners. Resize is disabled on the current `<=640px` fullscreen layout and while a window is maximized.
 - `components/os/minimized-window-strip.tsx` renders minimized windows from the central app registry.
 
 ## Persistence
@@ -58,7 +62,7 @@ JackOS
 - Canonical keys and helpers live in `lib/os/storage.ts`.
 - Domain modules re-export the same key strings so existing imports keep working.
 - Do not invent new localStorage keys inside components. Add them to the catalog first.
-- Intentionally **not** persisted: CRT scanlines, window positions/sizes/z-order, boot state.
+- Intentionally **not** persisted: CRT scanlines, z-order, minimized/maximized status, boot state, launch context.
 - Guestbook admin token and Blue Ocean in-progress session are sessionStorage only.
 
 ## Desktop Layout
@@ -118,8 +122,8 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 
 ## Known Scaling Limits (intentionally deferred)
 
-- `desktop.tsx` still coordinates too many shell concerns (boot, hash, WM lifecycle, command palette extras, content switch).
-- Window resize, remembered positions, and multi-instance apps are not implemented.
+- `desktop.tsx` still coordinates shell concerns (boot, hash, command palette extras, content switch).
+- Multi-instance application windows are not implemented.
 - Mobile is a compressed desktop, not a purpose-built shell.
 - Portfolio facts are duplicated across `portfolio-data`, `portfolio-knowledge`, `jd-assistant`, and SEO metadata.
 - `app/globals.css` and keynote CSS are large; visual identity should stay JackOS-native rather than a macOS/Windows clone.

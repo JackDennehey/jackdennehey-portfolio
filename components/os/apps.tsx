@@ -68,6 +68,12 @@ export type WindowApp = {
   commandAriaLabel?: string
   /** Recruiter/Firewall-style desktop auto-maximize. Ignored on mobile. */
   autoMaximize?: boolean
+  /** Desktop minimum width. Clamped to the usable desktop. */
+  minWidth?: number
+  /** Desktop minimum height. Clamped to the usable desktop. */
+  minHeight?: number
+  /** Desktop windows are resizable unless this is false. Ignored on mobile. */
+  resizable?: boolean
 }
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {

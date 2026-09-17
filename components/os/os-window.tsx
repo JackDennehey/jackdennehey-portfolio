@@ -4,16 +4,15 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-  useCallback,
   useEffect,
   useRef,
+  useState,
 } from 'react'
 import { type WindowApp } from './apps'
 import {
-  DESKTOP_BOTTOM_TITLEBAR_MARGIN,
-  DESKTOP_EDGE_PADDING,
-  MENU_BAR_HEIGHT,
-  MIN_VISIBLE_TITLEBAR_WIDTH,
+  isWindowResizable,
+  type ResizeHandle,
+  type WindowGeometry,
 } from '@/lib/os/window-geometry'
 
 type Props = {
@@ -32,7 +31,24 @@ type Props = {
   onMinimize: () => void
   onMaximize: () => void
   onMove: (x: number, y: number) => void
+  onResize: (handle: ResizeHandle, start: WindowGeometry, dx: number, dy: number) => void
+  onGeometryCommit: () => void
 }
+
+const RESIZE_HANDLES: readonly {
+  handle: ResizeHandle
+  className: string
+  cursor: CSSProperties['cursor']
+}[] = [
+  { handle: 'n', className: 'left-10 right-16 top-0 h-1.5', cursor: 'ns-resize' },
+  { handle: 's', className: 'left-3 right-3 bottom-0 h-1.5', cursor: 'ns-resize' },
+  { handle: 'e', className: 'top-8 bottom-3 right-0 w-1.5', cursor: 'ew-resize' },
+  { handle: 'w', className: 'top-8 bottom-3 left-0 w-1.5', cursor: 'ew-resize' },
+  { handle: 'ne', className: 'top-0 right-0 size-3', cursor: 'nesw-resize' },
+  { handle: 'nw', className: 'top-0 left-0 size-3', cursor: 'nwse-resize' },
+  { handle: 'se', className: 'bottom-0 right-0 size-3', cursor: 'nwse-resize' },
+  { handle: 'sw', className: 'bottom-0 left-0 size-3', cursor: 'nesw-resize' },
+]
 
 export function OsWindow({
   app,
@@ -50,75 +66,142 @@ export function OsWindow({
   onMinimize,
   onMaximize,
   onMove,
+  onResize,
+  onGeometryCommit,
 }: Props) {
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
+  const resizeRef = useRef<{
+    handle: ResizeHandle
+    start: WindowGeometry
+    pointerX: number
+    pointerY: number
+  } | null>(null)
   const frame = useRef<number | null>(null)
   const onMoveRef = useRef(onMove)
+  const onResizeRef = useRef(onResize)
+  const onGeometryCommitRef = useRef(onGeometryCommit)
+  const tracking = useRef(false)
+  const listenersRef = useRef<{
+    onPointerMove: (e: PointerEvent) => void
+    finish: () => void
+  }>({
+    onPointerMove: () => {},
+    finish: () => {},
+  })
+  const [interacting, setInteracting] = useState(false)
 
   useEffect(() => {
     onMoveRef.current = onMove
   }, [onMove])
 
-  const onPointerMove = useCallback(
-    (e: PointerEvent) => {
-      if (!dragRef.current) return
-      const nextX = e.clientX - dragRef.current.dx
-      const nextY = e.clientY - dragRef.current.dy
+  useEffect(() => {
+    onResizeRef.current = onResize
+  }, [onResize])
+
+  useEffect(() => {
+    onGeometryCommitRef.current = onGeometryCommit
+  }, [onGeometryCommit])
+
+  useEffect(() => {
+    const finish = () => {
+      if (!tracking.current) return
+      tracking.current = false
+      dragRef.current = null
+      resizeRef.current = null
+      if (frame.current) {
+        cancelAnimationFrame(frame.current)
+        frame.current = null
+      }
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', finish)
+      window.removeEventListener('pointercancel', finish)
+      window.removeEventListener('blur', finish)
+      setInteracting(false)
+      onGeometryCommitRef.current()
+    }
+
+    function onPointerMove(e: PointerEvent) {
+      if (dragRef.current) {
+        const nextX = e.clientX - dragRef.current.dx
+        const nextY = e.clientY - dragRef.current.dy
+        if (frame.current) cancelAnimationFrame(frame.current)
+        frame.current = requestAnimationFrame(() => {
+          onMoveRef.current(nextX, nextY)
+          frame.current = null
+        })
+        return
+      }
+
+      if (!resizeRef.current) return
+      const { handle, start, pointerX, pointerY } = resizeRef.current
+      const dx = e.clientX - pointerX
+      const dy = e.clientY - pointerY
       if (frame.current) cancelAnimationFrame(frame.current)
       frame.current = requestAnimationFrame(() => {
-        const minX = DESKTOP_EDGE_PADDING
-        const minY = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
-        const maxX = Math.max(
-          minX,
-          window.innerWidth - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, app.width),
-        )
-        const maxY = Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
-        onMoveRef.current(
-          Math.min(Math.max(nextX, minX), maxX),
-          Math.min(Math.max(nextY, minY), maxY),
-        )
+        onResizeRef.current(handle, start, dx, dy)
         frame.current = null
       })
-    },
-    [app.width],
-  )
-
-  const stopDrag = useCallback(() => {
-    dragRef.current = null
-    if (frame.current) {
-      cancelAnimationFrame(frame.current)
-      frame.current = null
     }
-    window.removeEventListener('pointermove', onPointerMove)
-    window.removeEventListener('pointerup', stopDrag)
-    window.removeEventListener('pointercancel', stopDrag)
-    window.removeEventListener('blur', stopDrag)
-  }, [onPointerMove])
 
-  useEffect(() => stopDrag, [stopDrag])
+    listenersRef.current = { onPointerMove, finish }
+
+    return () => {
+      if (tracking.current) {
+        finish()
+      } else {
+        window.removeEventListener('pointermove', onPointerMove)
+        window.removeEventListener('pointerup', finish)
+        window.removeEventListener('pointercancel', finish)
+        window.removeEventListener('blur', finish)
+      }
+      if (frame.current) {
+        cancelAnimationFrame(frame.current)
+        frame.current = null
+      }
+    }
+  }, [])
+
+  const startTracking = () => {
+    if (tracking.current) return
+    tracking.current = true
+    window.addEventListener('pointermove', listenersRef.current.onPointerMove)
+    window.addEventListener('pointerup', listenersRef.current.finish)
+    window.addEventListener('pointercancel', listenersRef.current.finish)
+    window.addEventListener('blur', listenersRef.current.finish)
+    setInteracting(true)
+  }
+
+  const canMove =
+    !isMobile && status !== 'closing' && status !== 'minimized' && status !== 'maximized'
+  const canResize =
+    canMove && isWindowResizable(app.id, isMobile) && status !== 'opening'
 
   const startDrag = (e: ReactPointerEvent) => {
-    if (
-      isMobile ||
-      status === 'closing' ||
-      status === 'minimized' ||
-      status === 'maximized' ||
-      e.button !== 0
-    ) return
+    if (!canMove || e.button !== 0) return
     e.preventDefault()
-    e.currentTarget.setPointerCapture?.(e.pointerId)
     onFocus()
     dragRef.current = { dx: e.clientX - x, dy: e.clientY - y }
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', stopDrag)
-    window.addEventListener('pointercancel', stopDrag)
-    window.addEventListener('blur', stopDrag)
+    startTracking()
+  }
+
+  const startResize = (handle: ResizeHandle) => (e: ReactPointerEvent) => {
+    if (!canResize || e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    onFocus()
+    resizeRef.current = {
+      handle,
+      start: { x, y, width, height },
+      pointerX: e.clientX,
+      pointerY: e.clientY,
+    }
+    startTracking()
   }
 
   const mobileStyle: CSSProperties = {
     position: 'fixed',
     inset: 0,
-    top: MENU_BAR_HEIGHT,
+    top: 32,
     zIndex: z,
   }
   const desktopStyle: CSSProperties = {
@@ -128,12 +211,10 @@ export function OsWindow({
     width,
     maxWidth: 'calc(100vw - 24px)',
     height,
-    maxHeight: `calc(100vh - ${MENU_BAR_HEIGHT + 24}px)`,
+    maxHeight: 'calc(100vh - 56px)',
     zIndex: Math.max(0, z),
     display: status === 'minimized' ? 'none' : undefined,
   }
-  const titlebarDraggable =
-    !isMobile && status !== 'closing' && status !== 'minimized' && status !== 'maximized'
   const titlebarControlClass =
     'grid size-4 place-items-center border-2 border-current bg-transparent font-pixel text-[8px] leading-none transition-colors hover:border-border hover:bg-transparent focus-visible:border-border focus-visible:outline-none disabled:cursor-default disabled:opacity-60'
 
@@ -146,6 +227,7 @@ export function OsWindow({
       data-window-id={app.id}
       data-window-status={status}
       data-window-focused={focused ? 'true' : 'false'}
+      data-window-interacting={interacting ? 'true' : 'false'}
       style={isMobile ? mobileStyle : desktopStyle}
       onPointerDown={status === 'closing' || status === 'minimized' ? undefined : onFocus}
       className={`os-window-frame flex flex-col overflow-hidden bg-paper os-border ${
@@ -162,12 +244,11 @@ export function OsWindow({
             : 'os-window-inactive os-shadow'
       }`}
     >
-      {/* Title bar */}
       <header
         onPointerDown={startDrag}
         onDoubleClick={isMobile || status === 'closing' ? undefined : onMaximize}
         className={`flex h-8 shrink-0 select-none items-center gap-2 border-b-2 border-border px-2 ${
-          titlebarDraggable ? 'cursor-grab active:cursor-grabbing' : ''
+          canMove ? 'cursor-grab active:cursor-grabbing' : ''
         } ${focused ? 'bg-titlebar text-titlebar-foreground' : 'bg-secondary text-muted-foreground'}`}
       >
         <button
@@ -275,13 +356,24 @@ export function OsWindow({
         ) : null}
       </header>
 
-      {/* Body */}
       <div
         data-window-body-id={app.id}
         className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5"
       >
         {children}
       </div>
+
+      {canResize
+        ? RESIZE_HANDLES.map((item) => (
+            <div
+              key={item.handle}
+              aria-hidden
+              onPointerDown={startResize(item.handle)}
+              className={`absolute z-10 touch-none select-none ${item.className}`}
+              style={{ cursor: item.cursor }}
+            />
+          ))
+        : null}
     </section>
   )
 }

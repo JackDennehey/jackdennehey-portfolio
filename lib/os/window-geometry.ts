@@ -20,6 +20,29 @@ export const DESKTOP_BOTTOM_SAFE_AREA = 72
 export const MAXIMIZED_MARGIN = 8
 export const INITIAL_WINDOW_CASCADE_STEP = 28
 export const INITIAL_WINDOW_CASCADE_SLOTS = 5
+export const DEFAULT_MIN_WINDOW_WIDTH = 280
+export const DEFAULT_MIN_WINDOW_HEIGHT = 200
+export const WINDOW_STACK_BASE_Z = 10
+
+export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
+
+export function getWindowSizeLimits(id: WindowId) {
+  const app = WINDOW_APPS[id]
+  const bounds = getUsableDesktopBounds()
+  const requestedMinWidth = app.minWidth ?? DEFAULT_MIN_WINDOW_WIDTH
+  const requestedMinHeight = app.minHeight ?? DEFAULT_MIN_WINDOW_HEIGHT
+  const minWidth = Math.min(requestedMinWidth, Math.max(200, bounds.width))
+  const minHeight = Math.min(requestedMinHeight, Math.max(160, bounds.height))
+  const maxWidth = Math.max(minWidth, bounds.width)
+  const maxHeight = Math.max(minHeight, bounds.height)
+
+  return { minWidth, minHeight, maxWidth, maxHeight }
+}
+
+export function isWindowResizable(id: WindowId, isMobile: boolean) {
+  if (isMobile) return false
+  return WINDOW_APPS[id].resizable !== false
+}
 
 export function getUsableDesktopBounds() {
   if (typeof window === 'undefined') {
@@ -79,11 +102,9 @@ export function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): Win
     return geometry
   }
 
-  const bounds = getUsableDesktopBounds()
-  const maxWidth = Math.max(280, bounds.width)
-  const maxHeight = Math.max(220, bounds.height)
-  const width = Math.min(geometry.width, maxWidth)
-  const height = Math.min(geometry.height, maxHeight)
+  const { minWidth, minHeight, maxWidth, maxHeight } = getWindowSizeLimits(id)
+  const width = Math.min(Math.max(geometry.width, minWidth), maxWidth)
+  const height = Math.min(Math.max(geometry.height, minHeight), maxHeight)
   const position = clampWindowPosition(id, geometry.x, geometry.y, {
     width,
     height,
@@ -91,6 +112,42 @@ export function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): Win
   })
 
   return { ...position, width, height }
+}
+
+export function applyWindowResize(
+  id: WindowId,
+  start: WindowGeometry,
+  handle: ResizeHandle,
+  dx: number,
+  dy: number,
+): WindowGeometry {
+  const { minWidth, minHeight, maxWidth, maxHeight } = getWindowSizeLimits(id)
+  const growEast = handle.includes('e')
+  const growWest = handle.includes('w')
+  const growSouth = handle.includes('s')
+  const growNorth = handle.includes('n')
+
+  let width = start.width
+  let height = start.height
+  if (growEast) width += dx
+  if (growWest) width -= dx
+  if (growSouth) height += dy
+  if (growNorth) height -= dy
+
+  width = Math.min(Math.max(width, minWidth), maxWidth)
+  height = Math.min(Math.max(height, minHeight), maxHeight)
+
+  let x = start.x
+  let y = start.y
+  if (growWest) x = start.x + start.width - width
+  if (growNorth) y = start.y + start.height - height
+
+  return clampWindowGeometry(id, { x, y, width, height })
+}
+
+export function getWindowStackZ(order: readonly WindowId[], id: WindowId) {
+  const index = order.indexOf(id)
+  return WINDOW_STACK_BASE_Z + Math.max(0, index)
 }
 
 export function getMaximizedGeometry(): WindowGeometry {

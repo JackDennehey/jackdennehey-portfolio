@@ -22,10 +22,10 @@ import {
   getWindowHash,
   getWindowIdFromHash,
   isWindowId,
-  shouldAutoMaximizeWindow,
   type WindowId,
 } from './apps'
 import { buildAppOpenCommands } from './build-app-commands'
+import { useWindowManager } from './use-window-manager'
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
@@ -81,16 +81,7 @@ import {
   type JackOsAchievementId,
   type JackOsInteractiveAppId,
 } from '@/lib/achievements'
-import {
-  WINDOW_CLOSE_DURATION_MS,
-  WINDOW_OPEN_DURATION_MS,
-  clampWindowGeometry,
-  clampWindowPosition,
-  getInitialWindowGeometry,
-  getMaximizedGeometry,
-  type OpenWindow,
-  type RestorableWindowStatus,
-} from '@/lib/os/window-geometry'
+import { WINDOW_CLOSE_DURATION_MS } from '@/lib/os/window-geometry'
 import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
 import {
   readBlueOceanCompleted,
@@ -225,8 +216,6 @@ export function Desktop() {
   const [scanlines, setScanlines] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [desktopIconRows, setDesktopIconRows] = useState(DESKTOP_ICON_DEFAULT_ROWS)
-  const [windows, setWindows] = useState<OpenWindow[]>([])
-  const [order, setOrder] = useState<WindowId[]>([])
   const [contextMenu, setContextMenu] = useState<ContextMenuPosition>(null)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [achievementsPanelOpen, setAchievementsPanelOpen] = useState(false)
@@ -253,22 +242,34 @@ export function Desktop() {
     useDesktopPreferences(secretUnlocks.unlockedIds, secretUnlocks.loaded)
   const soundEffects = useSoundEffects()
   const { theme, toggleTheme } = useInterfaceTheme()
-  const windowsRef = useRef<OpenWindow[]>([])
+  const {
+    windows,
+    order,
+    activeWindowId,
+    minimizedWindows,
+    visibleWindows,
+    getWindow,
+    getStackZ,
+    openWindow: openManagedWindow,
+    closeWindow: closeManagedWindow,
+    focusWindow,
+    minimizeWindow: minimizeManagedWindow,
+    maximizeWindow: maximizeManagedWindow,
+    restoreWindow: restoreManagedWindow,
+    restoreAllMinimized: restoreAllManagedMinimized,
+    moveWindow,
+    resizeWindow,
+    commitGeometry,
+  } = useWindowManager(isMobile)
   const handledInitialHash = useRef(false)
-  const windowOpenSequence = useRef(0)
   const assistantPromptSequence = useRef(0)
   const bootedAt = useRef<number | null>(null)
   const copyStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const achievementNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const firstBootAchievementTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const uiActivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const openTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
-  const closeTimers = useRef<Partial<Record<WindowId, ReturnType<typeof setTimeout>>>>({})
+  const hadActiveWindow = useRef(false)
   const blueOceanLaunchContextRef = useRef<BlueOceanLaunchContext>('desktop')
-
-  useEffect(() => {
-    windowsRef.current = windows
-  }, [windows])
 
   useEffect(() => {
     blueOceanLaunchContextRef.current = blueOceanLaunchContext
@@ -328,10 +329,6 @@ export function Desktop() {
       window.removeEventListener('resize', updateDesktopIconRows)
       window.visualViewport?.removeEventListener('resize', updateDesktopIconRows)
     }
-  }, [])
-
-  const focusWindow = useCallback((id: WindowId) => {
-    setOrder((prev) => [...prev.filter((w) => w !== id), id])
   }, [])
 
   const focusDesktop = useCallback(() => {
@@ -408,9 +405,9 @@ export function Desktop() {
 
   const openWindow = useCallback(
     (id: string, options: OpenWindowOptions = {}) => {
-      const windowId = id
-      if (!isWindowId(windowId)) return
-      if (windowId === 'blue-ocean') {
+      if (!isWindowId(id)) return
+
+      if (id === 'blue-ocean') {
         const urlContext =
           typeof window !== 'undefined' &&
           new URLSearchParams(window.location.search).get('from') === 'simple'
@@ -420,206 +417,60 @@ export function Desktop() {
         refreshBlueOceanState()
       }
 
-      const existing = windowsRef.current.find((w) => w.id === windowId)
-      if (windowId === 'recruiter' && options.updateHash !== false) {
+      const existing = getWindow(id)
+      if (id === 'recruiter' && options.updateHash !== false) {
         if (!existing) {
           setRecruiterSection('overview')
         }
         writeHashSlug(getRecruiterHash(existing ? recruiterSection : 'overview'))
       } else if (options.updateHash !== false) {
-        syncWindowHash(windowId)
+        syncWindowHash(id)
       }
 
-      if (existing) {
-        if (existing.status === 'minimized') {
-          const restoredStatus: RestorableWindowStatus =
-            shouldAutoMaximizeWindow(windowId, isMobile)
-              ? 'maximized'
-              : (existing.restoreStatus ?? 'open')
-          const restoredGeometry =
-            restoredStatus === 'maximized'
-              ? getMaximizedGeometry()
-              : clampWindowGeometry(windowId, existing.normal)
+      const result = openManagedWindow(id)
+      if (!result?.isNew || options.playSound === false) return
 
-          windowsRef.current = windowsRef.current.map((w) =>
-            w.id === windowId
-              ? { ...w, ...restoredGeometry, status: restoredStatus, restoreStatus: undefined }
-              : w,
-          )
-          setWindows(windowsRef.current)
-        } else if (
-          shouldAutoMaximizeWindow(windowId, isMobile) &&
-          existing.status !== 'maximized'
-        ) {
-          const normal = {
-            x: existing.x,
-            y: existing.y,
-            width: existing.width,
-            height: existing.height,
-          }
-          const maximized = getMaximizedGeometry()
-          windowsRef.current = windowsRef.current.map((w) =>
-            w.id === windowId ? { ...w, ...maximized, normal, status: 'maximized' } : w,
-          )
-          setWindows(windowsRef.current)
-        }
-        focusWindow(windowId)
-        return
+      soundEffects.appOpen()
+      recordInteractiveAppOpen(id)
+      bumpUiActivity()
+      if (id === 'recruiter') {
+        showAchievement('recruiter-mode-opened')
       }
-
-      const normalGeometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
-      const geometry =
-        shouldAutoMaximizeWindow(windowId, isMobile)
-          ? getMaximizedGeometry()
-          : normalGeometry
-      windowOpenSequence.current += 1
-      const nextWindow: OpenWindow = {
-        id: windowId,
-        ...geometry,
-        normal: normalGeometry,
-        status: 'opening',
+      if (id === 'timeline') {
+        showAchievement('timeline-opened')
       }
-      windowsRef.current = [...windowsRef.current, nextWindow]
-      setWindows((prev) =>
-        prev.some((w) => w.id === windowId) ? prev : [...prev, nextWindow],
-      )
-      focusWindow(windowId)
-      openTimers.current[windowId] = setTimeout(() => {
-        windowsRef.current = windowsRef.current.map((w) =>
-          w.id === windowId && w.status === 'opening'
-            ? {
-                ...w,
-                status:
-                  shouldAutoMaximizeWindow(windowId, isMobile) ? 'maximized' : 'open',
-              }
-            : w,
-        )
-        setWindows((prev) =>
-          prev.map((w) =>
-            w.id === windowId && w.status === 'opening'
-              ? {
-                  ...w,
-                  status:
-                    shouldAutoMaximizeWindow(windowId, isMobile) ? 'maximized' : 'open',
-                }
-              : w,
-          ),
-        )
-        delete openTimers.current[windowId]
-      }, WINDOW_OPEN_DURATION_MS)
-      if (options.playSound !== false) {
-        soundEffects.appOpen()
-        recordInteractiveAppOpen(windowId)
-        bumpUiActivity()
-        if (windowId === 'recruiter') {
-          showAchievement('recruiter-mode-opened')
-        }
-        if (windowId === 'timeline') {
-          showAchievement('timeline-opened')
-        }
-        if (windowId === 'roadmap') {
-          showAchievement('roadmap-opened')
-        }
+      if (id === 'roadmap') {
+        showAchievement('roadmap-opened')
       }
     },
     [
       bumpUiActivity,
-      focusWindow,
-      isMobile,
+      getWindow,
+      openManagedWindow,
       recruiterSection,
       recordInteractiveAppOpen,
+      refreshBlueOceanState,
       showAchievement,
       soundEffects,
-      refreshBlueOceanState,
     ],
   )
 
   const closeWindow = useCallback((id: WindowId) => {
-    const target = windowsRef.current.find((w) => w.id === id)
-    if (!target || target.status === 'closing') {
-      return
-    }
-
-    if (openTimers.current[id]) {
-      clearTimeout(openTimers.current[id])
-      delete openTimers.current[id]
-    }
-
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.id === id ? { ...w, status: 'closing' } : w,
-    )
-    setWindows((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, status: 'closing' } : w)),
-    )
+    if (!closeManagedWindow(id)) return
     soundEffects.windowClose()
     bumpUiActivity(10)
-    closeTimers.current[id] = setTimeout(() => {
-      windowsRef.current = windowsRef.current.filter((w) => w.id !== id)
-      setWindows((prev) => prev.filter((w) => w.id !== id))
-      setOrder((prev) => prev.filter((w) => w !== id))
-      focusDesktop()
-      delete closeTimers.current[id]
-    }, WINDOW_CLOSE_DURATION_MS)
-  }, [bumpUiActivity, focusDesktop, soundEffects])
-
-  const moveWindow = useCallback((id: WindowId, x: number, y: number) => {
-    const target = windowsRef.current.find((w) => w.id === id)
-    if (!target || target.status === 'maximized' || target.status === 'minimized') {
-      return
-    }
-
-    const position = clampWindowPosition(id, x, y, {
-      width: target.width,
-      height: target.height,
-    })
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.id === id ? { ...w, ...position, normal: { ...w.normal, ...position } } : w,
-    )
-    setWindows((prev) =>
-      prev.map((w) =>
-        w.id === id ? { ...w, ...position, normal: { ...w.normal, ...position } } : w,
-      ),
-    )
-  }, [])
+  }, [bumpUiActivity, closeManagedWindow, soundEffects])
 
   const minimizeWindow = useCallback((id: WindowId) => {
-    const target = windowsRef.current.find((w) => w.id === id)
-    if (!target || target.status === 'minimized' || target.status === 'closing') return
-
-    const restoreStatus: RestorableWindowStatus =
-      target.status === 'maximized' ? 'maximized' : 'open'
-    const normal = target.status === 'maximized'
-      ? target.normal
-      : { x: target.x, y: target.y, width: target.width, height: target.height }
-
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.id === id ? { ...w, normal, status: 'minimized', restoreStatus } : w,
-    )
-    setWindows(windowsRef.current)
-    setOrder((prev) => prev.filter((w) => w !== id))
+    if (!minimizeManagedWindow(id)) return
     bumpUiActivity(8)
     focusDesktop()
-  }, [bumpUiActivity, focusDesktop])
+  }, [bumpUiActivity, focusDesktop, minimizeManagedWindow])
 
   const restoreWindow = useCallback((id: WindowId) => {
-    const target = windowsRef.current.find((w) => w.id === id)
-    if (!target || target.status !== 'minimized') return
-
-    const restoredStatus = target.restoreStatus ?? 'open'
-    const restoredGeometry =
-      restoredStatus === 'maximized'
-        ? getMaximizedGeometry()
-        : clampWindowGeometry(id, target.normal)
-
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.id === id
-        ? { ...w, ...restoredGeometry, status: restoredStatus, restoreStatus: undefined }
-        : w,
-    )
-    setWindows(windowsRef.current)
+    if (!restoreManagedWindow(id)) return
     bumpUiActivity(8)
-    focusWindow(id)
-  }, [bumpUiActivity, focusWindow])
+  }, [bumpUiActivity, restoreManagedWindow])
 
   const restoreBlueOceanOrigin = useCallback(() => {
     refreshBlueOceanState()
@@ -638,7 +489,7 @@ export function Desktop() {
     }
 
     if (origin) {
-      const originWindow = windowsRef.current.find((w) => w.id === origin)
+      const originWindow = getWindow(origin)
       if (originWindow && originWindow.status !== 'closing') {
         if (originWindow.status === 'minimized') {
           restoreWindow(origin)
@@ -650,7 +501,7 @@ export function Desktop() {
     }
 
     focusDesktop()
-  }, [focusDesktop, focusWindow, refreshBlueOceanState, restoreWindow, router])
+  }, [focusDesktop, focusWindow, getWindow, refreshBlueOceanState, restoreWindow, router])
 
   const handleBlueOceanCompleted = useCallback(() => {
     setBlueOceanCompleted(true)
@@ -663,51 +514,15 @@ export function Desktop() {
   }, [closeWindow, restoreBlueOceanOrigin])
 
   const restoreAllMinimized = useCallback(() => {
-    const minimizedWindows = windowsRef.current.filter((w) => w.status === 'minimized')
     if (minimizedWindows.length === 0) return
-
-    const restoredWindows = windowsRef.current.map((w) => {
-      if (w.status !== 'minimized') return w
-
-      const restoredStatus = w.restoreStatus ?? 'open'
-      const restoredGeometry =
-        restoredStatus === 'maximized' ? getMaximizedGeometry() : clampWindowGeometry(w.id, w.normal)
-      return { ...w, ...restoredGeometry, status: restoredStatus, restoreStatus: undefined }
-    })
-
-    windowsRef.current = restoredWindows
-    setWindows(restoredWindows)
-    setOrder((prev) => [
-      ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
-      ...minimizedWindows.map((w) => w.id),
-    ])
+    restoreAllManagedMinimized()
     bumpUiActivity(10)
-  }, [bumpUiActivity])
+  }, [bumpUiActivity, minimizedWindows.length, restoreAllManagedMinimized])
 
   const maximizeWindow = useCallback((id: WindowId) => {
-    const target = windowsRef.current.find((w) => w.id === id)
-    if (!target || target.status === 'minimized' || target.status === 'closing') return
-
-    if (target.status === 'maximized') {
-      const restoredGeometry = clampWindowGeometry(id, target.normal)
-      windowsRef.current = windowsRef.current.map((w) =>
-        w.id === id ? { ...w, ...restoredGeometry, status: 'open' } : w,
-      )
-      setWindows(windowsRef.current)
-      bumpUiActivity(8)
-      focusWindow(id)
-      return
-    }
-
-    const normal = { x: target.x, y: target.y, width: target.width, height: target.height }
-    const maximized = getMaximizedGeometry()
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.id === id ? { ...w, ...maximized, normal, status: 'maximized' } : w,
-    )
-    setWindows(windowsRef.current)
+    if (!maximizeManagedWindow(id)) return
     bumpUiActivity(8)
-    focusWindow(id)
-  }, [bumpUiActivity, focusWindow])
+  }, [bumpUiActivity, maximizeManagedWindow])
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
@@ -859,7 +674,7 @@ export function Desktop() {
       return
     }
 
-    if (!isMobile && windowsRef.current.length === 0 && !preferences.hasSeenFirstVisit) {
+    if (!isMobile && windows.length === 0 && !preferences.hasSeenFirstVisit) {
       openWindow('home', { playSound: false, updateHash: false })
       updatePreferences({ hasSeenFirstVisit: true })
     }
@@ -870,6 +685,7 @@ export function Desktop() {
     preferences.hasSeenFirstVisit,
     preferencesLoaded,
     updatePreferences,
+    windows.length,
   ])
 
   useEffect(() => {
@@ -898,62 +714,7 @@ export function Desktop() {
   }, [booted, openWindow])
 
   useEffect(() => {
-    const onResize = () => {
-      const nextWindows = windowsRef.current.map((w) => {
-        if (w.status === 'maximized') {
-          return { ...w, ...getMaximizedGeometry() }
-        }
-
-        if (w.status === 'minimized') {
-          return w
-        }
-
-        const geometry = clampWindowGeometry(w.id, w)
-        return geometry.x === w.x &&
-          geometry.y === w.y &&
-          geometry.width === w.width &&
-          geometry.height === w.height
-          ? w
-          : { ...w, ...geometry, normal: { ...w.normal, ...geometry } }
-      })
-      windowsRef.current = nextWindows
-      setWindows(nextWindows)
-    }
-
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-
-  useEffect(() => {
-    if (!isMobile) return
-
-    const minimizedWindows = windowsRef.current.filter((w) => w.status === 'minimized')
-    if (minimizedWindows.length === 0) return
-
-    windowsRef.current = windowsRef.current.map((w) =>
-      w.status === 'minimized'
-        ? { ...w, ...clampWindowGeometry(w.id, w.normal), status: 'open', restoreStatus: undefined }
-        : w,
-    )
-    setWindows(windowsRef.current)
-    setOrder((prev) => [
-      ...prev.filter((id) => !minimizedWindows.some((w) => w.id === id)),
-      ...minimizedWindows.map((w) => w.id),
-    ])
-  }, [isMobile])
-
-  useEffect(() => {
     return () => {
-      Object.values(openTimers.current).forEach((timer) => {
-        if (timer) {
-          clearTimeout(timer)
-        }
-      })
-      Object.values(closeTimers.current).forEach((timer) => {
-        if (timer) {
-          clearTimeout(timer)
-        }
-      })
       if (copyStatusTimer.current) {
         clearTimeout(copyStatusTimer.current)
       }
@@ -969,23 +730,36 @@ export function Desktop() {
     }
   }, [])
 
+  useEffect(() => {
+    if (activeWindowId) {
+      hadActiveWindow.current = true
+      return
+    }
+
+    if (windows.some((windowRecord) => windowRecord.status === 'closing')) return
+    if (!hadActiveWindow.current) return
+
+    hadActiveWindow.current = false
+    focusDesktop()
+  }, [activeWindowId, focusDesktop, windows])
+
   // Escape closes the top-most window.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (contextMenu || commandPaletteOpen) return
       const visibleOrder = order.filter((id) => {
-        const windowRecord = windowsRef.current.find((w) => w.id === id)
+        const windowRecord = getWindow(id)
         return windowRecord && windowRecord.status !== 'minimized'
       })
       if (e.key === 'Escape' && visibleOrder.length > 0) {
-        closeWindow(visibleOrder[visibleOrder.length - 1])
+        closeWindow(visibleOrder[visibleOrder.length - 1]!)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [commandPaletteOpen, contextMenu, order, closeWindow])
+  }, [commandPaletteOpen, contextMenu, closeWindow, getWindow, order])
 
-  const topId = order[order.length - 1]
+  const topId = activeWindowId
   const desktopItems = useMemo(() => DESKTOP_ITEMS, [])
   const desktopIconItems = useMemo(
     () => desktopItems.filter((item) => !(item.kind === 'window' && item.id === 'assistant')),
@@ -998,8 +772,6 @@ export function Desktop() {
       }) as CSSProperties,
     [desktopIconRows],
   )
-  const minimizedWindows = windows.filter((w) => w.status === 'minimized')
-  const visibleWindows = windows.filter((w) => w.status !== 'minimized')
   const uptimeLabel = formatUptime(uptimeSeconds)
   const recruiterVisible = windows.some(
     (w) => w.id === 'recruiter' && w.status !== 'minimized',
@@ -1565,7 +1337,6 @@ export function Desktop() {
         {/* Windows */}
         {windows.map((w) => {
           const app = WINDOW_APPS[w.id]
-          const z = 10 + order.indexOf(w.id)
           return (
             <OsWindow
               key={w.id}
@@ -1574,7 +1345,7 @@ export function Desktop() {
               y={w.y}
               width={w.width}
               height={w.height}
-              z={z}
+              z={getStackZ(w.id)}
               status={w.status}
               focused={topId === w.id}
               isMobile={isMobile}
@@ -1589,6 +1360,8 @@ export function Desktop() {
               onMinimize={() => minimizeWindow(w.id)}
               onMaximize={() => maximizeWindow(w.id)}
               onMove={(x, y) => moveWindow(w.id, x, y)}
+              onResize={(handle, start, dx, dy) => resizeWindow(w.id, handle, start, dx, dy)}
+              onGeometryCommit={() => commitGeometry(w.id)}
             >
               {renderContent(w.id, w.status !== 'minimized' && w.status !== 'closing')}
             </OsWindow>
