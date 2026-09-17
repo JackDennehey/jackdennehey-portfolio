@@ -1,5 +1,7 @@
+import { JACK_OS_STORAGE_KEYS } from './os/storage'
+
 export const BLUE_OCEAN_COMPLETION_STORAGE_KEY =
-  'jack-os:1984-blue-ocean:v1:completed'
+  JACK_OS_STORAGE_KEYS.blueOceanCompleted
 
 export type BlueOceanLaunchContext =
   | 'desktop'

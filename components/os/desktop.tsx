@@ -21,8 +21,11 @@ import {
   WINDOW_APPS,
   getWindowHash,
   getWindowIdFromHash,
+  isWindowId,
+  shouldAutoMaximizeWindow,
   type WindowId,
 } from './apps'
+import { buildAppOpenCommands } from './build-app-commands'
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
@@ -70,16 +73,24 @@ import {
   type RecruiterSectionId,
 } from '@/lib/portfolio-knowledge'
 import {
-  ACHIEVEMENTS_STORAGE_KEY,
   ACHIEVEMENT_MESSAGES,
-  INTERACTIVE_APPS_OPENED_STORAGE_KEY,
-  JACK_OS_ACHIEVEMENT_IDS,
   JACK_OS_ACHIEVEMENT_REGISTRY,
   JACK_OS_5B_APP_IDS,
-  parseStoredIds,
+  readStoredAchievements,
+  recordInteractiveAppOpened,
   type JackOsAchievementId,
   type JackOsInteractiveAppId,
 } from '@/lib/achievements'
+import {
+  WINDOW_CLOSE_DURATION_MS,
+  WINDOW_OPEN_DURATION_MS,
+  clampWindowGeometry,
+  clampWindowPosition,
+  getInitialWindowGeometry,
+  getMaximizedGeometry,
+  type OpenWindow,
+  type RestorableWindowStatus,
+} from '@/lib/os/window-geometry'
 import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
 import {
   readBlueOceanCompleted,
@@ -123,15 +134,6 @@ const JdenStudiosContent = dynamic(
   { ssr: false, loading: () => <LazyWindowLoading label="Loading JDEN STUDIOS..." /> },
 )
 
-type WindowStatus = 'opening' | 'open' | 'minimized' | 'maximized' | 'closing'
-type RestorableWindowStatus = 'open' | 'maximized'
-type WindowGeometry = { x: number; y: number; width: number; height: number }
-type OpenWindow = WindowGeometry & {
-  id: WindowId
-  normal: WindowGeometry
-  status: WindowStatus
-  restoreStatus?: RestorableWindowStatus
-}
 type OpenWindowOptions = {
   playSound?: boolean
   updateHash?: boolean
@@ -141,19 +143,8 @@ type ContextMenuPosition = { x: number; y: number } | null
 
 const CONTEXT_MENU_WIDTH = 176
 const CONTEXT_MENU_HEIGHT = 92
-const WINDOW_OPEN_DURATION_MS = 180
-const WINDOW_CLOSE_DURATION_MS = 160
-const DESKTOP_EDGE_PADDING = 8
-const MENU_BAR_HEIGHT = 32
-const MIN_VISIBLE_TITLEBAR_WIDTH = 128
-const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
-const DESKTOP_BOTTOM_SAFE_AREA = 72
-const MAXIMIZED_MARGIN = 8
 const COPY_CONFIRMATION_DURATION_MS = 2200
 const ACHIEVEMENT_NOTICE_DURATION_MS = 3200
-const INITIAL_WINDOW_CASCADE_STEP = 28
-const INITIAL_WINDOW_CASCADE_SLOTS = 5
-const AUTO_MAXIMIZED_WINDOW_IDS = new Set<WindowId>(['recruiter', 'firewall'])
 const DESKTOP_ICON_DEFAULT_ROWS = 7
 const DESKTOP_ICON_TOP_OFFSET = 44
 const DESKTOP_ICON_BOTTOM_PADDING = 28
@@ -167,132 +158,12 @@ function formatUptime(totalSeconds: number) {
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
 }
 
-function readStoredAchievementIds() {
-  if (typeof window === 'undefined') return []
-
-  try {
-    return parseStoredIds(
-      window.localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY),
-      JACK_OS_ACHIEVEMENT_IDS,
-    )
-  } catch {
-    return []
-  }
-}
-
 function LazyWindowLoading({ label }: { label: string }) {
   return (
     <div className="grid min-h-48 place-items-center os-border bg-secondary p-4">
       <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">{label}</p>
     </div>
   )
-}
-
-function getUsableDesktopBounds() {
-  if (typeof window === 'undefined') {
-    return { left: 8, top: 40, right: 720, bottom: 600, width: 712, height: 560 }
-  }
-
-  const left = DESKTOP_EDGE_PADDING
-  const top = MENU_BAR_HEIGHT + DESKTOP_EDGE_PADDING
-  const right = Math.max(left + 320, window.innerWidth - DESKTOP_EDGE_PADDING)
-  const bottom = Math.max(top + 260, window.innerHeight - DESKTOP_BOTTOM_SAFE_AREA)
-
-  return {
-    left,
-    top,
-    right,
-    bottom,
-    width: right - left,
-    height: bottom - top,
-  }
-}
-
-function clampWindowPosition(
-  id: WindowId,
-  x: number,
-  y: number,
-  options: {
-    width?: number
-    height?: number
-    fullyVisible?: boolean
-  } = {},
-) {
-  if (typeof window === 'undefined') {
-    return { x, y }
-  }
-
-  const app = WINDOW_APPS[id]
-  const bounds = getUsableDesktopBounds()
-  const width = options.width ?? app.width
-  const height = options.height ?? app.height
-  const minX = bounds.left
-  const minY = bounds.top
-  const maxX = options.fullyVisible
-    ? Math.max(minX, bounds.right - width)
-    : Math.max(minX, bounds.right - Math.min(MIN_VISIBLE_TITLEBAR_WIDTH, width))
-  const maxY = options.fullyVisible
-    ? Math.max(minY, bounds.bottom - height)
-    : Math.max(minY, window.innerHeight - DESKTOP_BOTTOM_TITLEBAR_MARGIN)
-
-  return {
-    x: Math.min(Math.max(x, minX), maxX),
-    y: Math.min(Math.max(y, minY), maxY),
-  }
-}
-
-function clampWindowGeometry(id: WindowId, geometry: WindowGeometry): WindowGeometry {
-  if (typeof window === 'undefined') {
-    return geometry
-  }
-
-  const bounds = getUsableDesktopBounds()
-  const maxWidth = Math.max(280, bounds.width)
-  const maxHeight = Math.max(220, bounds.height)
-  const width = Math.min(geometry.width, maxWidth)
-  const height = Math.min(geometry.height, maxHeight)
-  const position = clampWindowPosition(id, geometry.x, geometry.y, {
-    width,
-    height,
-    fullyVisible: true,
-  })
-
-  return { ...position, width, height }
-}
-
-function getMaximizedGeometry(): WindowGeometry {
-  if (typeof window === 'undefined') {
-    return { x: 8, y: 40, width: 720, height: 560 }
-  }
-
-  return {
-    x: MAXIMIZED_MARGIN,
-    y: MENU_BAR_HEIGHT + MAXIMIZED_MARGIN,
-    width: Math.max(320, window.innerWidth - MAXIMIZED_MARGIN * 2),
-    height: Math.max(260, window.innerHeight - MENU_BAR_HEIGHT - MAXIMIZED_MARGIN * 2),
-  }
-}
-
-function getInitialWindowGeometry(id: WindowId, count: number): WindowGeometry {
-  if (typeof window === 'undefined') {
-    const app = WINDOW_APPS[id]
-    return { x: 80, y: 60, width: app.width, height: app.height }
-  }
-
-  const app = WINDOW_APPS[id]
-  const bounds = getUsableDesktopBounds()
-  const width = Math.min(app.width, bounds.width)
-  const height = Math.min(app.height, bounds.height)
-  const cascadeIndex = count % INITIAL_WINDOW_CASCADE_SLOTS
-  const baseX = bounds.left + Math.max(0, (bounds.width - width) / 2)
-  const baseY = bounds.top + Math.max(0, (bounds.height - height) / 2)
-
-  return clampWindowGeometry(id, {
-    x: baseX + cascadeIndex * INITIAL_WINDOW_CASCADE_STEP,
-    y: baseY + cascadeIndex * INITIAL_WINDOW_CASCADE_STEP,
-    width,
-    height,
-  })
 }
 
 function writeHashSlug(slug: string, mode: 'push' | 'replace' = 'push') {
@@ -411,7 +282,7 @@ export function Desktop() {
   })
 
   useEffect(() => {
-    setEarnedAchievementIds(readStoredAchievementIds())
+    setEarnedAchievementIds(readStoredAchievements())
     setBlueOceanCompleted(readBlueOceanCompleted())
     setBlueOceanCanResume(hasValidBlueOceanSession())
   }, [])
@@ -521,18 +392,10 @@ export function Desktop() {
 
   const recordInteractiveAppOpen = useCallback(
     (id: WindowId) => {
-      if (!isInteractiveAppId(id) || typeof window === 'undefined') return
+      if (!isInteractiveAppId(id)) return
 
       try {
-        const current = parseStoredIds(
-          window.localStorage.getItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY),
-          JACK_OS_5B_APP_IDS,
-        )
-        const next = current.includes(id) ? current : [...current, id]
-        window.localStorage.setItem(
-          INTERACTIVE_APPS_OPENED_STORAGE_KEY,
-          JSON.stringify(next),
-        )
+        const next = recordInteractiveAppOpened(id)
         if (JACK_OS_5B_APP_IDS.every((appId) => next.includes(appId))) {
           showAchievement('interactive-update-explorer')
         }
@@ -545,8 +408,8 @@ export function Desktop() {
 
   const openWindow = useCallback(
     (id: string, options: OpenWindowOptions = {}) => {
-      const windowId = id as WindowId
-      if (!WINDOW_APPS[windowId]) return
+      const windowId = id
+      if (!isWindowId(windowId)) return
       if (windowId === 'blue-ocean') {
         const urlContext =
           typeof window !== 'undefined' &&
@@ -570,7 +433,7 @@ export function Desktop() {
       if (existing) {
         if (existing.status === 'minimized') {
           const restoredStatus: RestorableWindowStatus =
-            AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile
+            shouldAutoMaximizeWindow(windowId, isMobile)
               ? 'maximized'
               : (existing.restoreStatus ?? 'open')
           const restoredGeometry =
@@ -585,8 +448,7 @@ export function Desktop() {
           )
           setWindows(windowsRef.current)
         } else if (
-          AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) &&
-          !isMobile &&
+          shouldAutoMaximizeWindow(windowId, isMobile) &&
           existing.status !== 'maximized'
         ) {
           const normal = {
@@ -607,7 +469,7 @@ export function Desktop() {
 
       const normalGeometry = getInitialWindowGeometry(windowId, windowOpenSequence.current)
       const geometry =
-        AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile
+        shouldAutoMaximizeWindow(windowId, isMobile)
           ? getMaximizedGeometry()
           : normalGeometry
       windowOpenSequence.current += 1
@@ -628,7 +490,7 @@ export function Desktop() {
             ? {
                 ...w,
                 status:
-                  AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile ? 'maximized' : 'open',
+                  shouldAutoMaximizeWindow(windowId, isMobile) ? 'maximized' : 'open',
               }
             : w,
         )
@@ -638,7 +500,7 @@ export function Desktop() {
               ? {
                   ...w,
                   status:
-                    AUTO_MAXIMIZED_WINDOW_IDS.has(windowId) && !isMobile ? 'maximized' : 'open',
+                    shouldAutoMaximizeWindow(windowId, isMobile) ? 'maximized' : 'open',
                 }
               : w,
           ),
@@ -1151,135 +1013,7 @@ export function Desktop() {
   }, [minimizeWindow, topId])
 
   const commandRegistry = useMemo<JackOsCommand[]>(() => {
-    const appIds: WindowId[] = [
-      'home',
-      'jden-studios',
-      'blue-ocean',
-      'pocket-pier',
-      'kickoff',
-      'about',
-      'projects',
-      'certifications',
-      'recruiter',
-      'resume',
-      'contact',
-      'assistant',
-      'timeline',
-      'guestbook',
-      'firewall',
-      'roadmap',
-      'wallpapers',
-      'secrets',
-    ]
-    const appAliases: Partial<Record<WindowId, readonly string[]>> = {
-      home: ['welcome', 'system', 'start'],
-      'jden-studios': [
-        'jden',
-        'jden studios',
-        'studio',
-        'independent studio',
-        'external system',
-        'client work',
-        'digital studio',
-      ],
-      'blue-ocean': [
-        '1984',
-        'blue ocean',
-        'keynote',
-        'presentation',
-        'flagship',
-        'business strategy',
-        'technical communication',
-        'ai-assisted',
-        'product development',
-        'retro computing',
-      ],
-      'pocket-pier': [
-        'pocket pier',
-        'mobile game',
-        'godot',
-        'gdscript',
-        'ios',
-        'app store',
-        'pixel art',
-        'harbor',
-        'fishing',
-        'product development',
-      ],
-      kickoff: [
-        'kickoff',
-        'football',
-        'nfl',
-        'prediction',
-        'model',
-        'machine learning',
-        'ask kickoff',
-        'walk-forward',
-        'football intelligence',
-        'openai',
-      ],
-      about: ['about me', 'jack', 'bio'],
-      certifications: ['credentials', 'certifications', 'certificates'],
-      recruiter: ['corporate', 'professional', 'overview', 'recruiter mode'],
-      assistant: ['jd', 'portfolio assistant', 'ask'],
-      timeline: ['history', 'journey', 'milestones', 'education history', 'system history'],
-      guestbook: ['visitor log', 'sign', 'message', 'comments'],
-      firewall: [
-        'network',
-        'packets',
-        'security',
-        'ports',
-        'traffic',
-        'simulation',
-        'packet inspector',
-        'beginner guide',
-        'firewall certified',
-      ],
-      roadmap: ['plans', 'goals', 'future direction', 'next steps', 'deployment track'],
-      wallpapers: ['personalize', 'background', 'desktop'],
-      secrets: ['hidden', 'files', 'manual'],
-    }
-
-    const appCommands = appIds.map((id) => {
-      const app = WINDOW_APPS[id]
-      return {
-        id: `open-${id}`,
-        title: id === 'home' ? 'Open Welcome' : `Open ${app.title}`,
-        subtitle:
-          id === 'blue-ocean'
-            ? 'Featured Experience / 31-stage interactive keynote'
-            : id === 'jden-studios'
-              ? 'System / independent digital studio'
-            : id === 'pocket-pier'
-              ? 'Featured Project / indie mobile game'
-              : id === 'kickoff'
-                ? 'Flagship Project / football intelligence platform'
-                : app.description
-                  ? `Application / ${app.description}`
-                  : 'Application',
-        keywords: [app.title, id, ...(appAliases[id] ?? [])],
-        Icon: app.Icon,
-        tone: app.tone,
-        iconVisual: app.iconVisual,
-        ariaLabel:
-          id === 'recruiter'
-            ? 'Open Recruiter Mode — guided professional overview'
-            : id === 'blue-ocean'
-              ? 'Open 1984 Blue Ocean — flagship guided interactive keynote'
-              : id === 'jden-studios'
-                ? 'Open JDEN STUDIOS — independent digital studio'
-              : id === 'pocket-pier'
-                ? 'Open Pocket Pier — JDen Studios mobile game, available on the App Store'
-              : id === 'kickoff'
-                ? 'Open Kickoff — flagship football intelligence platform'
-              : undefined,
-        action: () =>
-          openWindow(
-            id,
-            id === 'blue-ocean' ? { launchContext: 'search' } : undefined,
-          ),
-      }
-    })
+    const appCommands = buildAppOpenCommands(openWindow)
 
     const timelineEntryCommands = TIMELINE_ENTRIES.map((entry) => ({
       id: `timeline-${entry.id}`,

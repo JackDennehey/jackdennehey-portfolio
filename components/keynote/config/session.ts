@@ -3,8 +3,9 @@ import {
   getKeynoteStepById,
   getKeynoteStepIndexById,
 } from './steps'
+import { JACK_OS_STORAGE_KEYS } from '@/lib/os/storage'
 
-export const KEYNOTE_SESSION_KEY = 'jack-os:blue-ocean-session.v1'
+export const KEYNOTE_SESSION_KEY = JACK_OS_STORAGE_KEYS.blueOceanSession
 
 export type StoredPresentationSession = {
   version: 1

@@ -1,7 +1,14 @@
-export const ACHIEVEMENTS_STORAGE_KEY = 'jack-os:achievements.v1'
-export const INTERACTIVE_APPS_OPENED_STORAGE_KEY = 'jack-os:interactive-apps-opened.v1'
+import {
+  JACK_OS_STORAGE_KEYS,
+  readLocalStorageItem,
+  writeLocalStorageItem,
+} from './os/storage'
+
+export const ACHIEVEMENTS_STORAGE_KEY = JACK_OS_STORAGE_KEYS.achievements
+export const INTERACTIVE_APPS_OPENED_STORAGE_KEY =
+  JACK_OS_STORAGE_KEYS.interactiveAppsOpened
 export const FIREWALL_PRESET_COMPLETIONS_STORAGE_KEY =
-  'jack-os:firewall-presets-completed.v1'
+  JACK_OS_STORAGE_KEYS.firewallPresetsCompleted
 
 export type JackOsAchievementId =
   | 'first-boot'
@@ -168,4 +175,39 @@ export function parseStoredIds<Id extends string>(
   } catch {
     return []
   }
+}
+
+export function readStoredAchievements() {
+  return parseStoredIds(readLocalStorageItem(ACHIEVEMENTS_STORAGE_KEY), JACK_OS_ACHIEVEMENT_IDS)
+}
+
+export type AchievementPersistResult = 'added' | 'exists' | 'unavailable'
+
+export function persistAchievementId(
+  achievementId: JackOsAchievementId,
+): AchievementPersistResult {
+  if (!JACK_OS_ACHIEVEMENT_IDS.includes(achievementId)) {
+    return 'unavailable'
+  }
+
+  const current = readStoredAchievements()
+  if (current.includes(achievementId)) {
+    return 'exists'
+  }
+
+  const wrote = writeLocalStorageItem(
+    ACHIEVEMENTS_STORAGE_KEY,
+    JSON.stringify([...current, achievementId]),
+  )
+  return wrote ? 'added' : 'unavailable'
+}
+
+export function recordInteractiveAppOpened(id: JackOsInteractiveAppId) {
+  const current = parseStoredIds(
+    readLocalStorageItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY),
+    JACK_OS_5B_APP_IDS,
+  )
+  const next = current.includes(id) ? current : [...current, id]
+  writeLocalStorageItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY, JSON.stringify(next))
+  return next
 }

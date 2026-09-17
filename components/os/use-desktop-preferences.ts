@@ -7,25 +7,18 @@ import {
   parseDesktopPreferences,
   type DesktopPreferences,
 } from '@/lib/desktop-preferences'
+import { readLocalStorageItem, writeLocalStorageItem } from '@/lib/os/storage'
 import { DEFAULT_WALLPAPER_ID, isSelectableWallpaperId } from '@/lib/wallpapers'
 
 function readStoredPreferences(unlockedSecretIds: readonly string[]) {
-  try {
-    return parseDesktopPreferences(
-      window.localStorage.getItem(DESKTOP_PREFERENCES_STORAGE_KEY),
-      unlockedSecretIds,
-    )
-  } catch {
-    return DEFAULT_DESKTOP_PREFERENCES
-  }
+  return parseDesktopPreferences(
+    readLocalStorageItem(DESKTOP_PREFERENCES_STORAGE_KEY),
+    unlockedSecretIds,
+  )
 }
 
 function writeStoredPreferences(preferences: DesktopPreferences) {
-  try {
-    window.localStorage.setItem(DESKTOP_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
-  } catch {
-    // localStorage can be unavailable in private or locked-down browser contexts.
-  }
+  writeLocalStorageItem(DESKTOP_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
 }
 
 export function useDesktopPreferences(

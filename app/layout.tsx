@@ -11,6 +11,7 @@ import {
   SITE_TITLE,
   SITE_URL,
 } from '@/lib/site-metadata'
+import { JACK_OS_STORAGE_KEYS } from '@/lib/os/storage'
 import './globals.css'
 
 const socialImage = {
@@ -110,7 +111,7 @@ export const viewport: Viewport = {
 const themeInitScript = `
 (() => {
   try {
-    const key = 'jack-os:interface-theme';
+    const key = ${JSON.stringify(JACK_OS_STORAGE_KEYS.interfaceTheme)};
     const stored = window.localStorage.getItem(key);
     const valid = stored === 'light' || stored === 'dark';
     const theme = valid ? stored : 'light';

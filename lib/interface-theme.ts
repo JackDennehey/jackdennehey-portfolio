@@ -1,4 +1,6 @@
-export const INTERFACE_THEME_STORAGE_KEY = 'jack-os:interface-theme'
+import { JACK_OS_STORAGE_KEYS } from './os/storage'
+
+export const INTERFACE_THEME_STORAGE_KEY = JACK_OS_STORAGE_KEYS.interfaceTheme
 
 export type InterfaceTheme = 'light' | 'dark'
 

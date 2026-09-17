@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { GuestbookAdminEntry } from '@/lib/guestbook'
+import { JACK_OS_STORAGE_KEYS } from '@/lib/os/storage'
 
 type ModerationStatus = GuestbookAdminEntry['status']
 
 const STATUSES: ModerationStatus[] = ['pending', 'approved', 'rejected', 'blocked']
-const TOKEN_KEY = 'jack-os:guestbook-admin-token'
+const TOKEN_KEY = JACK_OS_STORAGE_KEYS.guestbookAdminToken
 
 export function GuestbookAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''

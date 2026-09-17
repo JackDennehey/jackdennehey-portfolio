@@ -1,27 +1,71 @@
 # Jack OS Architecture Notes
 
-Stable implementation notes for future Jack OS update passes. Keep this document focused on entry points and durable conventions rather than transient UI details.
+Stable implementation notes after JackOS M1 (System Audit & Foundation). Keep this document focused on entry points and durable conventions rather than transient UI details.
+
+JackOS is an evolution of this repository, not a rewrite. Product name remains **JackOS**.
+
+## System Map
+
+```
+JackOS
+|-- System
+|   |-- Window geometry + chrome constants  lib/os/window-geometry.ts
+|   |-- Window lifecycle                    components/os/desktop.tsx
+|   |-- Window chrome                       components/os/os-window.tsx
+|   |-- App registry                        components/os/apps.tsx
+|   |-- Persistence catalog                 lib/os/storage.ts
+|   |-- Command palette app commands        components/os/build-app-commands.ts
+|
+|-- Shell
+|   |-- Desktop                             components/os/desktop.tsx
+|   |-- Menu bar / widgets / minimized strip
+|   |-- Context menu                        components/os/desktop-context-menu.tsx
+|   |-- Command palette                     components/os/command-palette.tsx
+|   |-- Boot                                components/os/boot-screen.tsx
+|
+|-- Apps
+|   |-- Window content                      components/os/content/*
+|   |-- JDEN STUDIOS (system entity)        components/os/jden-launch.tsx
+|
+|-- Content
+    |-- Projects / about / credentials      lib/portfolio-data.ts
+    |-- Recruiter knowledge                 lib/portfolio-knowledge.ts
+    |-- Timeline                            lib/timeline-data.ts
+    |-- J.D. assistant                      lib/jd-assistant.ts
+```
 
 ## Application Registry
 
 - Window applications are registered in `components/os/apps.tsx` through `WINDOW_APPS`.
-- Desktop and mobile launcher entries are registered in `DESKTOP_ITEMS` in the same file.
-- Hash routing for window apps is centralized in `WINDOW_HASH_SLUGS`, `getWindowHash`, and `getWindowIdFromHash`.
-- Application icon components use the shared `WindowApp.Icon` contract, so the same icon renders in desktop shortcuts, mobile launcher, command palette, title bars, and minimized-window strip.
-- Custom raster app icons are centralized in `components/os/app-image-icons.tsx`.
+- Adding an app should start in `WINDOW_APPS` with id, title, icon, default size, description, keywords, and optional `autoMaximize` / `desktopLabel` / command-palette fields.
+- Desktop and mobile launcher order is `DESKTOP_LAUNCHER_APP_IDS`; `DESKTOP_ITEMS` is derived from that list plus GitHub/LinkedIn links.
+- Command-palette app rows are derived from `COMMAND_PALETTE_APP_IDS` via `buildAppOpenCommands`.
+- Hash routing is `WINDOW_HASH_SLUGS`, `getWindowHash`, and `getWindowIdFromHash`.
+- Home is launched from Welcome / first visit, not the desktop icon rail.
+- JDEN STUDIOS is a registered window plus a system-level desktop artifact; it is not a desktop launcher icon.
 
 ## Window Manager
 
-- `components/os/desktop.tsx` owns desktop boot state, open windows, window order, hash opening, first-visit welcome behavior, command registration, and application content routing.
+- Geometry, cascade, clamp, maximize bounds, and chrome metrics live in `lib/os/window-geometry.ts`.
+- `components/os/desktop.tsx` still owns open/close/focus/z-order/minimize/maximize/restore, hash opening, boot, command registration, and `renderContent`.
 - `components/os/os-window.tsx` owns window chrome, title-bar dragging, focus affordances, close/minimize/maximize controls, and mobile fullscreen presentation.
-- Recruiter Mode and Network Firewall are auto-maximized on desktop through `AUTO_MAXIMIZED_WINDOW_IDS`.
+- Recruiter Mode and Network Firewall auto-maximize on desktop through `WindowApp.autoMaximize`.
+- Windows are single-instance per `WindowId`. Positions are session-only. User resize is not implemented yet.
 - `components/os/minimized-window-strip.tsx` renders minimized windows from the central app registry.
+
+## Persistence
+
+- Canonical keys and helpers live in `lib/os/storage.ts`.
+- Domain modules re-export the same key strings so existing imports keep working.
+- Do not invent new localStorage keys inside components. Add them to the catalog first.
+- Intentionally **not** persisted: CRT scanlines, window positions/sizes/z-order, boot state.
+- Guestbook admin token and Blue Ocean in-progress session are sessionStorage only.
 
 ## Desktop Layout
 
 - Desktop widgets live on the left side in `components/os/desktop.tsx`: clock, calendar, and J.D.
 - Application icons live in a right-side launcher rail and keep the center of the wallpaper open as the workspace.
-- Mobile uses the OS-style app grid only when no app window is open.
+- Mobile (`max-width: 640px`) uses the OS-style app grid only when no app window is open, and windows go fullscreen.
 - J.D. is available as a left widget and mobile launcher item; it is intentionally hidden from the desktop app rail.
 
 ## Icon Registry
@@ -50,8 +94,8 @@ Stable implementation notes for future Jack OS update passes. Keep this document
 ## Achievement Storage
 
 - Achievement constants and storage keys live in `lib/achievements.ts`.
-- `jack-os:achievements.v1` stores stable achievement IDs.
-- Interactive 5B app exploration and firewall preset completion use separate local keys for prerequisite tracking.
+- Writes go through `persistAchievementId` so Simple Mode and desktop sound playback share one writer.
+- Interactive 5B app exploration uses `recordInteractiveAppOpened`.
 - Achievement playback is routed through `useSoundEffects().achievementUnlocked(...)`.
 
 ## Shared Portfolio Data
@@ -61,33 +105,21 @@ Stable implementation notes for future Jack OS update passes. Keep this document
 - The local J.D. assistant response engine lives in `lib/jd-assistant.ts`.
 - Timeline entries live in `lib/timeline-data.ts`.
 
-## Timeline Data
-
-- Timeline rendering is in `components/os/content/timeline-content.tsx`.
-- The default sort order is oldest first.
-- Stable explicit ordering is handled in the Timeline component; do not rely on ambiguous month strings alone for same-month releases.
-
 ## Theme And CRT Behavior
 
-- Theme persistence uses `jack-os:interface-theme`.
+- Theme persistence uses `JACK_OS_STORAGE_KEYS.interfaceTheme`.
 - Theme parsing lives in `lib/interface-theme.ts`; the hook is `components/os/use-interface-theme.ts`.
 - Initial theme hydration is handled by the inline script in `app/layout.tsx`.
 - CRT scanlines are desktop state in `components/os/desktop.tsx`; Recruiter Mode disables the visible CRT effect while it is open.
 
 ## localStorage Naming Conventions
 
-- Desktop preferences: `jack-os.desktop-preferences.v1`
-- Sound Effects: `jack-os:sound-effects-enabled`
-- First wallpaper sound completion: `jack-os:first-wallpaper-sound-played`
-- Interface theme: `jack-os:interface-theme`
-- Secrets: `jack-os:unlocked-secrets.v1`
-- Achievements: `jack-os:achievements.v1`
-- Interactive app tracking: `jack-os:interactive-apps-opened.v1`
-- Firewall preset completions: `jack-os:firewall-presets-completed.v1`
+See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are stable and must not be renamed without a migration.
 
-## Release And Branch Conventions
+## Known Scaling Limits (intentionally deferred)
 
-- V3A work starts from the final approved V2 production-candidate merge on `main`.
-- V3A implementation branch: `jack-os-v3-phase-3a`.
-- Do not push, merge, deploy, or modify `main` during local implementation passes.
-- Keep V3A as one public release made from focused internal commits.
+- `desktop.tsx` still coordinates too many shell concerns (boot, hash, WM lifecycle, command palette extras, content switch).
+- Window resize, remembered positions, and multi-instance apps are not implemented.
+- Mobile is a compressed desktop, not a purpose-built shell.
+- Portfolio facts are duplicated across `portfolio-data`, `portfolio-knowledge`, `jd-assistant`, and SEO metadata.
+- `app/globals.css` and keynote CSS are large; visual identity should stay JackOS-native rather than a macOS/Windows clone.

@@ -9,6 +9,12 @@ import {
   useRef,
 } from 'react'
 import { type WindowApp } from './apps'
+import {
+  DESKTOP_BOTTOM_TITLEBAR_MARGIN,
+  DESKTOP_EDGE_PADDING,
+  MENU_BAR_HEIGHT,
+  MIN_VISIBLE_TITLEBAR_WIDTH,
+} from '@/lib/os/window-geometry'
 
 type Props = {
   app: WindowApp
@@ -27,11 +33,6 @@ type Props = {
   onMaximize: () => void
   onMove: (x: number, y: number) => void
 }
-
-const MENU_BAR_HEIGHT = 32
-const DESKTOP_EDGE_PADDING = 8
-const MIN_VISIBLE_TITLEBAR_WIDTH = 128
-const DESKTOP_BOTTOM_TITLEBAR_MARGIN = 48
 
 export function OsWindow({
   app,

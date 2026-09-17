@@ -58,6 +58,16 @@ export type WindowApp = {
   height: number
   description?: string
   tone?: AppTone
+  /** Shorter launcher label when the window title is too long for the desktop. */
+  desktopLabel?: string
+  /** Search aliases for the command palette. */
+  keywords?: readonly string[]
+  /** Command palette title. Defaults to `Open ${title}`. */
+  commandTitle?: string
+  commandSubtitle?: string
+  commandAriaLabel?: string
+  /** Recruiter/Firewall-style desktop auto-maximize. Ignored on mobile. */
+  autoMaximize?: boolean
 }
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
@@ -68,6 +78,8 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 460,
     height: 480,
     description: 'first stops',
+    commandTitle: 'Open Welcome',
+    keywords: ['welcome', 'system', 'start'],
   },
   'blue-ocean': {
     id: 'blue-ocean',
@@ -77,6 +89,20 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 660,
     description: 'flagship interactive keynote',
     tone: 'blue-ocean',
+    commandSubtitle: 'Featured Experience / 31-stage interactive keynote',
+    commandAriaLabel: 'Open 1984 Blue Ocean — flagship guided interactive keynote',
+    keywords: [
+      '1984',
+      'blue ocean',
+      'keynote',
+      'presentation',
+      'flagship',
+      'business strategy',
+      'technical communication',
+      'ai-assisted',
+      'product development',
+      'retro computing',
+    ],
   },
   'pocket-pier': {
     id: 'pocket-pier',
@@ -86,6 +112,21 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 860,
     height: 640,
     description: 'indie mobile game',
+    commandSubtitle: 'Featured Project / indie mobile game',
+    commandAriaLabel:
+      'Open Pocket Pier — JDen Studios mobile game, available on the App Store',
+    keywords: [
+      'pocket pier',
+      'mobile game',
+      'godot',
+      'gdscript',
+      'ios',
+      'app store',
+      'pixel art',
+      'harbor',
+      'fishing',
+      'product development',
+    ],
   },
   kickoff: {
     id: 'kickoff',
@@ -95,6 +136,20 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 680,
     description: 'flagship football intelligence platform',
     tone: 'kickoff',
+    commandSubtitle: 'Flagship Project / football intelligence platform',
+    commandAriaLabel: 'Open Kickoff — flagship football intelligence platform',
+    keywords: [
+      'kickoff',
+      'football',
+      'nfl',
+      'prediction',
+      'model',
+      'machine learning',
+      'ask kickoff',
+      'walk-forward',
+      'football intelligence',
+      'openai',
+    ],
   },
   'jden-studios': {
     id: 'jden-studios',
@@ -104,6 +159,17 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 640,
     height: 600,
     description: 'independent digital studio',
+    commandSubtitle: 'System / independent digital studio',
+    commandAriaLabel: 'Open JDEN STUDIOS — independent digital studio',
+    keywords: [
+      'jden',
+      'jden studios',
+      'studio',
+      'independent studio',
+      'external system',
+      'client work',
+      'digital studio',
+    ],
   },
   about: {
     id: 'about',
@@ -113,6 +179,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 560,
     height: 540,
     description: 'background and interests',
+    keywords: ['about me', 'jack', 'bio'],
   },
   projects: {
     id: 'projects',
@@ -130,6 +197,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 520,
     height: 480,
     description: 'verified learning',
+    keywords: ['credentials', 'certifications', 'certificates'],
   },
   recruiter: {
     id: 'recruiter',
@@ -139,6 +207,9 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 640,
     description: 'guided professional overview',
     tone: 'recruiter',
+    autoMaximize: true,
+    commandAriaLabel: 'Open Recruiter Mode — guided professional overview',
+    keywords: ['corporate', 'professional', 'overview', 'recruiter mode'],
   },
   resume: {
     id: 'resume',
@@ -164,6 +235,8 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 560,
     height: 600,
     description: 'portfolio assistant',
+    desktopLabel: 'J.D.',
+    keywords: ['jd', 'portfolio assistant', 'ask'],
   },
   timeline: {
     id: 'timeline',
@@ -172,6 +245,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 760,
     height: 620,
     description: 'system history',
+    keywords: ['history', 'journey', 'milestones', 'education history', 'system history'],
   },
   guestbook: {
     id: 'guestbook',
@@ -181,6 +255,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 760,
     height: 640,
     description: 'visitor log',
+    keywords: ['visitor log', 'sign', 'message', 'comments'],
   },
   firewall: {
     id: 'firewall',
@@ -190,6 +265,18 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     height: 660,
     description: 'simulated traffic',
     tone: 'firewall',
+    autoMaximize: true,
+    keywords: [
+      'network',
+      'packets',
+      'security',
+      'ports',
+      'traffic',
+      'simulation',
+      'packet inspector',
+      'beginner guide',
+      'firewall certified',
+    ],
   },
   roadmap: {
     id: 'roadmap',
@@ -199,6 +286,8 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 780,
     height: 620,
     description: 'professional goals',
+    desktopLabel: 'Road Map',
+    keywords: ['plans', 'goals', 'future direction', 'next steps', 'deployment track'],
   },
   wallpapers: {
     id: 'wallpapers',
@@ -207,6 +296,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 780,
     height: 660,
     description: 'personalization',
+    keywords: ['personalize', 'background', 'desktop'],
   },
   secrets: {
     id: 'secrets',
@@ -216,6 +306,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     width: 500,
     height: 500,
     description: 'hidden files',
+    keywords: ['hidden', 'files', 'manual'],
   },
 }
 
@@ -267,6 +358,74 @@ export function getWindowIdFromHash(hash: string): WindowId | null {
   return WINDOW_IDS_BY_HASH[slug] ?? null
 }
 
+export function isWindowId(value: string): value is WindowId {
+  return value in WINDOW_APPS
+}
+
+export function shouldAutoMaximizeWindow(id: WindowId, isMobile: boolean) {
+  return Boolean(WINDOW_APPS[id].autoMaximize) && !isMobile
+}
+
+export function getDesktopAppLabel(id: WindowId) {
+  const app = WINDOW_APPS[id]
+  return app.desktopLabel ?? app.title
+}
+
+/** Curated desktop/mobile launcher order. Home and JDEN live elsewhere in the shell. */
+export const DESKTOP_LAUNCHER_APP_IDS = [
+  'blue-ocean',
+  'pocket-pier',
+  'kickoff',
+  'recruiter',
+  'firewall',
+  'timeline',
+  'guestbook',
+  'projects',
+  'certifications',
+  'about',
+  'contact',
+  'resume',
+  'roadmap',
+  'wallpapers',
+  'assistant',
+  'secrets',
+] as const satisfies readonly WindowId[]
+
+/** Curated command-palette app order. */
+export const COMMAND_PALETTE_APP_IDS = [
+  'home',
+  'jden-studios',
+  'blue-ocean',
+  'pocket-pier',
+  'kickoff',
+  'about',
+  'projects',
+  'certifications',
+  'recruiter',
+  'resume',
+  'contact',
+  'assistant',
+  'timeline',
+  'guestbook',
+  'firewall',
+  'roadmap',
+  'wallpapers',
+  'secrets',
+] as const satisfies readonly WindowId[]
+
+function toDesktopWindowItem(id: WindowId): Extract<DesktopItem, { kind: 'window' }> {
+  const app = WINDOW_APPS[id]
+  return {
+    kind: 'window',
+    id,
+    label: getDesktopAppLabel(id),
+    Icon: app.Icon,
+    iconVisual: app.iconVisual,
+    description: app.description,
+    tone: app.tone,
+  }
+}
+
 export type DesktopItem =
   | {
       kind: 'window'
@@ -280,93 +439,7 @@ export type DesktopItem =
   | { kind: 'link'; id: string; label: string; href: string; Icon: IconType }
 
 export const DESKTOP_ITEMS: DesktopItem[] = [
-  {
-    kind: 'window',
-    id: 'blue-ocean',
-    label: '1984 Blue Ocean',
-    Icon: JackBlueOceanIcon,
-    description: 'flagship interactive keynote',
-    tone: 'blue-ocean',
-  },
-  {
-    kind: 'window',
-    id: 'pocket-pier',
-    label: 'Pocket Pier',
-    Icon: JackPocketPierImageIcon,
-    iconVisual: 'image',
-    description: 'indie mobile game',
-  },
-  {
-    kind: 'window',
-    id: 'kickoff',
-    label: 'Kickoff',
-    Icon: JackKickoffIcon,
-    description: 'flagship football intelligence platform',
-    tone: 'kickoff',
-  },
-  {
-    kind: 'window',
-    id: 'recruiter',
-    label: 'Recruiter Mode',
-    Icon: JackRecruiterIcon,
-    description: 'guided professional overview',
-    tone: 'recruiter',
-  },
-  {
-    kind: 'window',
-    id: 'firewall',
-    label: 'Network Firewall',
-    Icon: JackFirewallIcon,
-    description: 'simulated traffic',
-    tone: 'firewall',
-  },
-  { kind: 'window', id: 'timeline', label: 'Timeline', Icon: JackTimelineIcon },
-  {
-    kind: 'window',
-    id: 'guestbook',
-    label: 'Guestbook',
-    Icon: JackGuestbookImageIcon,
-    iconVisual: 'image',
-  },
-  { kind: 'window', id: 'projects', label: 'Projects', Icon: JackProjectsIcon },
-  {
-    kind: 'window',
-    id: 'certifications',
-    label: 'Credentials',
-    Icon: JackCredentialsImageIcon,
-    iconVisual: 'image',
-  },
-  {
-    kind: 'window',
-    id: 'about',
-    label: 'About Me',
-    Icon: JackAboutImageIcon,
-    iconVisual: 'image',
-  },
-  { kind: 'window', id: 'contact', label: 'Contact', Icon: JackMailIcon },
-  {
-    kind: 'window',
-    id: 'resume',
-    label: 'Resume',
-    Icon: JackResumeImageIcon,
-    iconVisual: 'image',
-  },
-  {
-    kind: 'window',
-    id: 'roadmap',
-    label: 'Road Map',
-    Icon: JackRoadmapImageIcon,
-    iconVisual: 'image',
-  },
-  { kind: 'window', id: 'wallpapers', label: 'Wallpapers', Icon: JackWallpapersIcon },
-  { kind: 'window', id: 'assistant', label: 'J.D.', Icon: JackAssistantIcon },
-  {
-    kind: 'window',
-    id: 'secrets',
-    label: 'Secrets',
-    Icon: JackSecretsImageIcon,
-    iconVisual: 'image',
-  },
+  ...DESKTOP_LAUNCHER_APP_IDS.map(toDesktopWindowItem),
   { kind: 'link', id: 'github', label: 'GitHub', href: CONTACT.github, Icon: GithubIcon },
   { kind: 'link', id: 'linkedin', label: 'LinkedIn', href: CONTACT.linkedin, Icon: LinkedinIcon },
 ]
