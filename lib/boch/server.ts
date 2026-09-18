@@ -6,6 +6,7 @@ import { CompoundRateLimit, RateLimitPolicy } from './vendor/rate-limit'
 import { PUBLIC_BOCH_IDENTITY } from './vendor/role'
 import { MockPublicModelProvider, UnavailablePublicModelProvider } from './vendor/model-provider'
 import { GroundedPublicModelProvider } from './grounded-provider'
+import { GeminiPublicModelProvider } from './gemini-provider'
 import {
   HostedPublicModelProvider,
   isProductionBochRuntime,
@@ -28,8 +29,10 @@ function createProvider(): PublicModelProvider {
   if (mode === 'unavailable') return new UnavailablePublicModelProvider()
   if (mode === 'mock') return new MockPublicModelProvider()
   if (mode === 'grounded') return new GroundedPublicModelProvider()
-  if (mode === 'hosted' || mode === 'local') return new HostedPublicModelProvider()
-  return new HostedPublicModelProvider()
+  const backend = resolveBrainBackend()
+  if (backend === 'gemini') return new GeminiPublicModelProvider()
+  if (backend === 'ollama' || backend === 'gateway') return new HostedPublicModelProvider()
+  return new UnavailablePublicModelProvider()
 }
 
 function createSessionStore() {
@@ -80,7 +83,7 @@ export function bochPublicHealth() {
   const provider = resolveProviderMode()
   const backend = resolveBrainBackend()
   const production = isProductionBochRuntime()
-  const hosted = production ? Boolean(backend === 'gateway') : Boolean(backend)
+  const hosted = Boolean(backend === 'gemini' || backend === 'gateway')
   return {
     deployment: 'PUBLIC' as const,
     provider: production ? (hosted ? 'hosted' : 'unavailable') : provider === 'local' ? 'local' : provider,

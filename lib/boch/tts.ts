@@ -5,7 +5,6 @@
  * Browser speechSynthesis is client fallback only.
  */
 
-import { getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
 import { isProductionBochRuntime } from './hosted-provider'
 
 export const BOCH_BASE_INSTRUCT = [
@@ -40,9 +39,7 @@ export type PublicTtsResult = {
 
 export function resolvePublicTtsEngine(): PublicTtsEngine | null {
   if (qwenSidecarUrl()) return 'qwen-aiden'
-  if (process.env.VERCEL || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) {
-    return 'openai-onyx'
-  }
+  if (process.env.AI_GATEWAY_API_KEY) return 'openai-onyx'
   return null
 }
 
@@ -58,7 +55,10 @@ export async function synthesizePublicSpeech(
     const audio = await qwenSpeak(sidecar, spoken, emotion, energy)
     if (audio) return audio
   }
-  return openaiSpeak(spoken, emotion, energy)
+  if (process.env.AI_GATEWAY_API_KEY) {
+    return openaiSpeak(spoken, emotion, energy)
+  }
+  return null
 }
 
 function qwenSidecarUrl() {
@@ -107,7 +107,7 @@ async function qwenSpeak(host: string, text: string, emotion: string, energy: nu
 }
 
 async function openaiSpeak(text: string, emotion: string, energy: number): Promise<PublicTtsResult | null> {
-  const key = await getGatewayAuthToken()
+  const key = process.env.AI_GATEWAY_API_KEY?.trim()
   if (!key) return null
   const model = process.env.BOCH_TTS_MODEL || 'openai/tts-1-hd'
   const speed = clamp(1 + (energy - 0.5) * 0.12 + (emotion === 'smug' ? -0.06 : 0), 0.85, 1.15)
@@ -127,8 +127,7 @@ async function openaiSpeak(text: string, emotion: string, energy: number): Promi
     signal: AbortSignal.timeout(20_000),
   })
   if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    logGatewayFailure('tts', response.status, model, body)
+    console.error(JSON.stringify({ boch: true, kind: 'tts', status: response.status }))
     return null
   }
   const buffer = new Uint8Array(await response.arrayBuffer())

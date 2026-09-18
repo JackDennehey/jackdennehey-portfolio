@@ -203,9 +203,10 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 - Compatibility adapters `lib/portfolio-data.ts` and `lib/portfolio-knowledge.ts` remain until remaining consumers are migrated.
 - Sitemap `lastModified` is set only when `VERCEL_GIT_COMMIT_DATE` is present. There is no invented “last updated” date.
 - Files and Terminal remain future milestones.
-- BOCH production intelligence is `HostedPublicModelProvider` over Vercel AI Gateway. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama, and `BOCH_PROVIDER=local` on Vercel fails closed. Hosted auth is request-time Vercel OIDC (`getVercelOidcToken` / `x-vercel-oidc-token`); do not require `AI_GATEWAY_API_KEY` or a static `VERCEL_OIDC_TOKEN` env var on Vercel.
+- BOCH production intelligence is `GeminiPublicModelProvider` over Google Gemini API (`gemini-2.5-flash`, failover `gemini-2.5-flash-lite`) using server-only `GEMINI_API_KEY`. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama. Vercel AI Gateway is optional (`BOCH_PROVIDER=gateway`) and not required for production. Do not use `NEXT_PUBLIC_GEMINI_API_KEY`.
+- PUBLIC BOCH sends only public conversation context to Gemini: personality/system prompt, authority block, canonical JACK/BOCH evidence when retrieved, CURRENT evidence when present, last 8 turns, and the current visitor text. It does not send Personal BOCH memory, private notes, credentials, or the API key. Google's free-tier terms may use prompts to improve their products.
 - BOCH visitor sessions: in-memory for local/tests; signed `jackos-boch-ctx` cookie when `BOCH_SESSION_SECRET` or `GUESTBOOK_FINGERPRINT_SECRET` is set; optional Upstash/Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Cookie-only is durable across serverless instances without pretending KV exists.
-- PUBLIC voice: `POST /api/boch/speak` proxies Qwen3-TTS Aiden when a non-loopback `BOCH_TTS_URL` is configured (loopback refused in production). Otherwise AI Gateway `openai/tts-1-hd` `onyx`. Browser `speechSynthesis` is fallback only — not voice parity.
+- PUBLIC voice: `POST /api/boch/speak` proxies Qwen3-TTS Aiden when a non-loopback `BOCH_TTS_URL` is configured (loopback refused in production). Optional AI Gateway TTS if `AI_GATEWAY_API_KEY` is set. Browser `speechSynthesis` is fallback only — not voice parity.
 
 ## BOCH (M10)
 
@@ -220,7 +221,7 @@ PublicBochRuntime  (Deployment.PUBLIC fixed)
     ↓
 PublicKnowledgeStore ← lib/portfolio adapter
 PublicSessionStore (ephemeral, visitor-isolated)
-HostedPublicModelProvider | GroundedPublicModelProvider (fixture) | Mock | unavailable
+GeminiPublicModelProvider | HostedPublicModelProvider (Ollama/optional Gateway) | GroundedPublicModelProvider (fixture) | Mock | unavailable
 JackOSActionValidator
     ↓
 BochResponse
@@ -256,7 +257,7 @@ PUBLIC session (cookie and/or KV)
     ↓
 classifyPublicQuery → knowledge / current retrieval
     ↓
-hosted conversational model (Vercel AI Gateway)
+hosted conversational model (Gemini API, server-only GEMINI_API_KEY)
     ↓
 structured BochResponse
     ↓

@@ -1,19 +1,14 @@
 /**
- * PUBLIC conversational brain.
- * hosted = Vercel AI Gateway (production). local = workstation Ollama (dev only).
- * Production never uses localhost Ollama. Vercel never uses Jack's Mac.
+ * PUBLIC conversational brain transports.
+ * Production hosted = Gemini API (GEMINI_API_KEY). local = workstation Ollama (dev only).
+ * Production never uses localhost Ollama or Vercel AI Gateway billing.
  */
-import { parseBrainResponse } from './emotions'
 import { credentialsMissingMessage, getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
-import { authorityPromptBlock, knowledgePromptBlock, publicSystemPrompt } from './personality'
-import { SOURCE_KINDS } from './authority'
-import { normalizePublicExpression } from './vendor/contracts'
-import type { KnowledgeSearchHit } from './vendor/knowledge-store'
+import { geminiApiKey } from './gemini-provider'
+import { generatePublicCompletion, type PublicChatMessage } from './public-generate'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput, PublicModelProvider } from './vendor/model-provider'
 
-type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string }
-
-export type HostedBrainBackend = 'gateway' | 'ollama'
+export type HostedBrainBackend = 'gemini' | 'gateway' | 'ollama'
 
 export function isProductionBochRuntime() {
   return Boolean(process.env.VERCEL) || process.env.BOCH_RUNTIME === 'production'
@@ -34,25 +29,28 @@ export function resolveBrainBackend(): HostedBrainBackend | null {
   if (mode === 'unavailable' || mode === 'mock' || mode === 'grounded') return null
   if (isProductionBochRuntime()) {
     if (mode === 'local') return null
-    // Vercel injects OIDC per request. Do not require VERCEL_OIDC_TOKEN in env.
-    if (process.env.VERCEL) return 'gateway'
-    if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) return 'gateway'
+    if (geminiApiKey()) return 'gemini'
     return null
   }
   if (mode === 'local') {
     if (process.env.BOCH_OLLAMA_HOST === '0') return null
     return 'ollama'
   }
-  if (mode === 'hosted') {
-    if (process.env.VERCEL) return 'gateway'
+  if (mode === 'hosted' || mode === 'gemini') {
+    if (geminiApiKey()) return 'gemini'
+    return null
+  }
+  if (mode === 'gateway') {
     if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) return 'gateway'
     return null
   }
+  if (geminiApiKey()) return 'gemini'
   return null
 }
 
 export function hostedBrainLabel() {
   const backend = resolveBrainBackend()
+  if (backend === 'gemini') return process.env.BOCH_MODEL || 'gemini-2.5-flash'
   if (backend === 'gateway') return process.env.BOCH_MODEL || 'anthropic/claude-sonnet-4.6'
   if (backend === 'ollama') return process.env.BOCH_OLLAMA_MODEL || 'qwen2.5:7b'
   return 'unavailable'
@@ -61,100 +59,24 @@ export function hostedBrainLabel() {
 export class HostedPublicModelProvider implements PublicModelProvider {
   async generate(input: PublicModelGenerateInput): Promise<PublicModelGenerateOutput> {
     const backend = resolveBrainBackend()
-    if (!backend) {
+    if (!backend || backend === 'gemini') {
       const err = new Error('Model unavailable') as Error & { code: string }
       err.code = 'MODEL_UNAVAILABLE'
       throw err
     }
 
-    const knowledge = input.knowledge ?? []
-    const knowledgeLines = knowledge.map((hit) => formatHit(hit))
-    const focus = input.sessionContext?.focus
-    const history = historyFromSession(input.sessionContext?.recentContext)
-    const authority = input.authority || 'CASUAL'
-    const system = [
-      publicSystemPrompt(0.85),
-      input.systemRole || '',
-      authorityPromptBlock(authority),
-      knowledgePromptBlock(authority === 'JACK' || authority === 'BOCH' ? knowledgeLines : []),
-      input.currentInformation || '',
-      focus?.title ? `Session referent: ${focus.title} (${focus.projectId || focus.knowledgeId || ''}).` : 'Session referent: none.',
-    ]
-      .filter(Boolean)
-      .join('\n')
-
-    const userText = String(input.request?.text || '').trim()
-    const messages: ChatMessage[] = [...history, { role: 'user', content: userText }]
-    const temperature = authority === 'JACK' || authority === 'CURRENT' ? 0.2 : 0.55
-
-    let raw: string
     try {
-      raw =
-        backend === 'gateway'
-          ? await gatewayChat(system, messages, temperature)
-          : await ollamaChat(system, messages, temperature)
+      return await generatePublicCompletion(input, backend === 'gateway' ? gatewayChat : ollamaChat)
     } catch (error) {
-      const err = new Error(error instanceof Error ? error.message : 'Model unavailable') as Error & { code: string }
-      err.code = 'MODEL_UNAVAILABLE'
+      const code = (error as { code?: string })?.code
+      const err = new Error('Model unavailable') as Error & { code: string }
+      err.code = code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE'
       throw err
     }
-
-    const parsed = parseBrainResponse(raw)
-    const sourceType =
-      authority === 'JACK'
-        ? SOURCE_KINDS.CANONICAL_PORTFOLIO
-        : authority === 'BOCH'
-          ? SOURCE_KINDS.PUBLIC_BOCH_MANIFEST
-          : authority === 'CURRENT'
-            ? SOURCE_KINDS.CURRENT_WEB
-            : authority === 'GENERAL'
-              ? SOURCE_KINDS.GENERAL_MODEL
-              : SOURCE_KINDS.NONE
-    return {
-      text: parsed.reply,
-      emotion: parsed.emotion,
-      energy: parsed.energy,
-      expression: normalizePublicExpression(parsed.emotion),
-      actions: parsed.actions,
-      sourceMetadata: knowledge.slice(0, 5).map((hit) => ({ type: sourceType, id: hit.id })),
-    }
   }
 }
 
-function formatHit(hit: KnowledgeSearchHit) {
-  const projectId = hit.record?.jackos?.projectId || hit.record?.fields?.projectId
-  const appId = hit.record?.jackos?.appId
-  const tech = hit.record?.fields?.tech || hit.record?.fields?.technologies
-  const engine = hit.record?.fields?.engine
-  const category = hit.record?.fields?.category || hit.record?.type
-  const extras = [
-    `kind=${String(category)}`,
-    projectId ? `projectId=${String(projectId)}` : '',
-    appId ? `appId=${String(appId)}` : '',
-    engine ? `engine=${String(engine)}` : '',
-    tech ? `tech=${Array.isArray(tech) ? tech.join(', ') : String(tech)}` : '',
-  ]
-    .filter(Boolean)
-    .join('; ')
-  const body = (hit.record?.content || hit.excerpt || '').slice(0, 900)
-  return `- [${hit.id}] ${hit.title} (${hit.type}; ${extras}): ${body}`
-}
-
-function historyFromSession(recent: unknown[] | undefined): ChatMessage[] {
-  if (!Array.isArray(recent)) return []
-  const turns: ChatMessage[] = []
-  for (const item of recent.slice(-12)) {
-    if (!item || typeof item !== 'object') continue
-    const rec = item as { role?: string; text?: string }
-    const role = rec.role === 'assistant' ? 'assistant' : rec.role === 'user' ? 'user' : null
-    const text = String(rec.text || '').trim()
-    if (!role || !text) continue
-    turns.push({ role, content: text.slice(0, 900) })
-  }
-  return turns.slice(-8)
-}
-
-async function ollamaChat(system: string, messages: ChatMessage[], temperature = 0.55) {
+async function ollamaChat(system: string, messages: PublicChatMessage[], temperature = 0.55) {
   const host = (process.env.BOCH_OLLAMA_HOST || 'http://127.0.0.1:11434').replace(/\/$/, '')
   const model = process.env.BOCH_OLLAMA_MODEL || 'qwen2.5:7b'
   const response = await fetch(`${host}/api/chat`, {
@@ -175,10 +97,10 @@ async function ollamaChat(system: string, messages: ChatMessage[], temperature =
   return String(data.message?.content || data.response || '')
 }
 
-async function gatewayChat(system: string, messages: ChatMessage[], temperature = 0.5) {
+async function gatewayChat(system: string, messages: PublicChatMessage[], temperature = 0.5) {
   const key = await getGatewayAuthToken()
   if (!key) {
-    console.error('[boch] AI Gateway auth missing (no API key, no request OIDC)')
+    console.error('[boch] optional AI Gateway credentials missing')
     throw new Error(credentialsMissingMessage())
   }
   const models = [
@@ -206,17 +128,17 @@ async function gatewayChat(system: string, messages: ChatMessage[], temperature 
       if (!response.ok) {
         const body = await response.text().catch(() => '')
         const cls = logGatewayFailure('chat', response.status, model, body)
-        lastError = new Error(`AI Gateway ${response.status} ${cls}: ${body.replace(/\s+/g, ' ').slice(0, 180)}`)
+        lastError = new Error('Model unavailable')
         if (cls === 'auth' || cls === 'billing') break
         continue
       }
       const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
       const content = String(data.choices?.[0]?.message?.content || '')
       if (content) return content
-      lastError = new Error('AI Gateway empty completion')
+      lastError = new Error('Model unavailable')
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error('AI Gateway failed')
+      lastError = error instanceof Error ? error : new Error('Model unavailable')
     }
   }
-  throw lastError || new Error('AI Gateway failed')
+  throw lastError || new Error('Model unavailable')
 }

@@ -125,10 +125,13 @@ export class PublicBochRuntime {
       })
       return response
     } catch (err) {
+      const thrown = (err as { code?: string })?.code
       const code =
-        (err as { code?: string })?.code === 'MODEL_UNAVAILABLE'
+        thrown === 'MODEL_UNAVAILABLE'
           ? PUBLIC_ERROR_CODES.MODEL_UNAVAILABLE
-          : PUBLIC_ERROR_CODES.INTERNAL_ERROR
+          : thrown === 'RATE_LIMITED'
+            ? PUBLIC_ERROR_CODES.RATE_LIMITED
+            : PUBLIC_ERROR_CODES.INTERNAL_ERROR
       recordBochDiagnostic({
         at: Date.now(),
         provider: resolveProviderMode(),
@@ -147,17 +150,19 @@ export class PublicBochRuntime {
         text:
           code === 'MODEL_UNAVAILABLE'
             ? "Brain's offline. Face still works. Tragic."
-            : 'Something went sideways. Try again.',
-        emotion: 'confused',
+            : code === 'RATE_LIMITED'
+              ? "Easy. I'm not a call center. Try me in a minute."
+              : 'Something went sideways. Try again.',
+        emotion: code === 'RATE_LIMITED' ? 'annoyed' : 'confused',
         energy: 0.4,
-        expression: 'CONFUSED',
+        expression: code === 'RATE_LIMITED' ? 'ANNOYED' : 'CONFUSED',
         actions: [],
         error: createBochError(
           code,
-          err instanceof Error && err.message
-            ? err.message.slice(0, 240)
-            : code === 'MODEL_UNAVAILABLE'
-              ? 'Model unavailable.'
+          code === 'MODEL_UNAVAILABLE'
+            ? 'Model unavailable.'
+            : code === 'RATE_LIMITED'
+              ? 'Rate limited.'
               : 'Internal error.',
         ),
       })

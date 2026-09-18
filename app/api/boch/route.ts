@@ -1,5 +1,4 @@
 import { cookies } from 'next/headers'
-import { collectGatewayAuth, runWithGatewayAuth } from '@/lib/boch/gateway-auth'
 import { createBochRequest, PUBLIC_CONTRACT_VERSION } from '@/lib/boch/vendor/contracts'
 import {
   bochPublicHealth,
@@ -50,11 +49,6 @@ async function persistVisitorSession(request: Request, sessionId: string) {
 }
 
 export async function POST(request: Request) {
-  const snapshot = await collectGatewayAuth(request)
-  return runWithGatewayAuth(snapshot, () => handleBochPost(request, snapshot))
-}
-
-async function handleBochPost(request: Request, snapshot: Awaited<ReturnType<typeof collectGatewayAuth>>) {
   let body: unknown
   try {
     body = await request.json()
@@ -103,12 +97,7 @@ async function handleBochPost(request: Request, snapshot: Awaited<ReturnType<typ
 
   const response = await getPublicBochRuntime().send(bochRequest)
   await persistVisitorSession(request, sessionId)
-  const headers = new Headers({ 'Content-Type': 'application/json' })
-  if (response.error?.code === 'MODEL_UNAVAILABLE') {
-    headers.set('X-BOCH-Gateway-Auth', snapshot.source)
-    if (snapshot.vercelHeaders.length) headers.set('X-BOCH-Vercel-Hdrs', snapshot.vercelHeaders.join(','))
-  }
-  return new Response(JSON.stringify(response), { headers })
+  return Response.json(response)
 }
 
 export async function GET() {
