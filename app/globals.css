@@ -327,24 +327,6 @@
       4px 4px;
   }
 
-  .jd-widget {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .jd-widget-artwork {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-  }
-
-  .jd-widget-artwork img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-
   .wallpaper-preview-raster img {
     display: block;
   }
@@ -3257,12 +3239,8 @@ body:has(.simple-mode-page) > a.skip-link {
   margin-left: auto;
 }
 
-.boch-speak-toggle {
-  cursor: pointer;
-}
-
-.boch-speak-toggle input {
-  accent-color: var(--boch-face);
+.boch-speak-toggle[aria-pressed='true'] {
+  font-weight: 700;
 }
 
 .boch-type-form {

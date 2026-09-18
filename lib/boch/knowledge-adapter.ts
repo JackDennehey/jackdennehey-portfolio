@@ -284,7 +284,7 @@ export function buildPublicKnowledgeBundle(): PublicKnowledgeBundle {
       'boch-jd',
       'FAQ',
       'J.D. and BOCH',
-      'J.D. is a lightweight guided portfolio Q&A layer still available in JackOS. BOCH is the public character/runtime for conversational guidance. They are not the same identity. Prefer BOCH for questions.',
+      'J.D. was a lightweight guided portfolio Q&A layer in earlier JackOS releases. BOCH is now the sole JackOS assistant. They are not the same identity.',
       { aliases: ['are you j.d.', 'are you jd', 'jd assistant'] },
     ),
     record(

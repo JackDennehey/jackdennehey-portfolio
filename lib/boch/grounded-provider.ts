@@ -31,6 +31,11 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
       if (/joke/.test(text)) return say('A yellow circle walks into JackOS. The windows take him seriously. That is the joke.', 'SMUG')
       if (/yellow/.test(text)) return say('Because a beige enterprise chatbot would be worse.', 'SMUG')
       if (/how are you|what's up|whats up/.test(text)) return say("Still yellow. Still here. Still not your intern.", 'HAPPY')
+      if (/^thanks\b|^thank you\b/.test(text)) return say('Anytime. Face stays on.', 'HAPPY')
+      if (/^(bye|goodbye|see ya|later)\b/.test(text)) return say('Going. Face stays. Tragic.', 'DEADPAN')
+      if (/what can you do/.test(text)) {
+        return say('Public JackOS guide. Work, school, projects. Not a call center.', 'SMUG')
+      }
       return say('Hey. Face is on. Brain is caffeinated. What do you want?', 'HAPPY')
     }
     const contradiction = falsePremiseReply(text, knowledge) || canonicalContradiction(text, knowledge)
@@ -57,7 +62,7 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
     }
     if (/are you (j\.?d\.?|jd)|same as j\.?d/.test(text)) {
       return say(
-        "No. J.D. is a small guided Q&A layer still hanging around. I'm BOCH. Same portfolio facts, different face.",
+        "No. J.D. was a small guided Q&A layer. I'm BOCH — the JackOS assistant. Same public facts, different face.",
         'DEADPAN',
       )
     }

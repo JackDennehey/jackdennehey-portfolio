@@ -1,6 +1,9 @@
-<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="jack-dennehey-logo-title">
-  <title id="jack-dennehey-logo-title">Jack Dennehey J.D. icon</title>
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="jackos-icon-title">
+  <title id="jackos-icon-title">JackOS</title>
   <rect width="180" height="180" rx="24" fill="#f7f4ec"/>
-  <image href="/images/jd/jd-icon.png" x="12" y="12" width="156" height="156" preserveAspectRatio="xMidYMid meet"/>
+  <circle cx="90" cy="90" r="68" fill="#f4d338"/>
+  <ellipse cx="68" cy="82" rx="10" ry="16" fill="#17170e"/>
+  <ellipse cx="112" cy="82" rx="10" ry="16" fill="#17170e"/>
+  <path d="M58 112c12 22 52 22 64 0c-12 16-52 16-64 0" fill="#17170e"/>
   <rect x="8" y="8" width="164" height="164" rx="18" fill="none" stroke="#050505" stroke-width="4"/>
 </svg>

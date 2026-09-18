@@ -13,6 +13,8 @@ const JACKOS_APP_IDS = [
   'case-study',
   'certifications',
   'timeline',
+  'roadmap',
+  'jden-studios',
 ] as const
 
 export const JACKOS_APP_IDS_ALLOWLIST = JACKOS_APP_IDS

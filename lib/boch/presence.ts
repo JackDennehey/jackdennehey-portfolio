@@ -19,7 +19,7 @@ export const BOCH_MODES = Object.freeze({
   SLEEP: {
     expression: 'sleepy',
     status: 'Taking a little nothing break.',
-    description: 'Click BOCH to wake him up.',
+    description: 'Tap or click BOCH to wake him up.',
   },
   MUTED: {
     expression: 'neutral',

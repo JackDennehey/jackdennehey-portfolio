@@ -59,7 +59,6 @@ export const SPOTLIGHT_SYSTEM_COMMANDS = [
   'restore-minimized',
   'minimize-active',
   'focus-desktop',
-  'ask-jd',
   'ask-boch',
 ] as const
 

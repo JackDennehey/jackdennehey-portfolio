@@ -64,11 +64,9 @@ function systemEntry(
     iconAppId:
       command === 'personalize'
         ? 'wallpapers'
-        : command === 'ask-jd'
-          ? 'assistant'
-          : command === 'ask-boch'
-            ? 'boch'
-            : command === 'copy-email'
+        : command === 'ask-boch'
+          ? 'boch'
+          : command === 'copy-email'
             ? 'contact'
             : command === 'view-achievements'
               ? 'roadmap'
@@ -366,8 +364,14 @@ function buildSystemEntries(): SpotlightEntry[] {
       'workspace',
       'back',
     ]),
-    systemEntry('ask-jd', 'Ask J.D.', 'Portfolio assistant', ['assistant', 'jd', 'question', 'ask']),
-    systemEntry('ask-boch', 'Ask BOCH', 'Public portfolio guide', ['boch', 'bock', 'assistant', 'ask', 'guide']),
+    systemEntry('ask-boch', 'Ask BOCH', 'Public portfolio guide', [
+      'boch',
+      'bock',
+      'assistant',
+      'ask',
+      'guide',
+      'jd',
+    ]),
   ]
 }
 

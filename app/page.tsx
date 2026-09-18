@@ -198,7 +198,7 @@ function SeoContent() {
           Guestbook: a reviewed visitor message system with moderation before public display.
         </li>
         <li>
-          J.D.: a local portfolio assistant that answers questions about Jack&apos;s background,
+          BOCH: the JackOS assistant. A public, family-friendly guide to Jack&apos;s background,
           projects, credentials, and contact information.
         </li>
       </ul>

@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 
 type RoadmapContentProps = {
   onOpen: (id: WindowId) => void
-  onAskAssistant: (question: string) => void
+  onAskBoch: () => void
 }
 
-export function RoadmapContent({ onOpen, onAskAssistant }: RoadmapContentProps) {
+export function RoadmapContent({ onOpen, onAskBoch }: RoadmapContentProps) {
   const [collapsedSectionIds, setCollapsedSectionIds] = useState<Set<RoadmapSection['id']>>(
     () => new Set(),
   )
@@ -65,8 +65,8 @@ export function RoadmapContent({ onOpen, onAskAssistant }: RoadmapContentProps) 
         <RoadmapAction onClick={() => onOpen('projects')}>Open Projects</RoadmapAction>
         <RoadmapAction onClick={() => onOpen('timeline')}>Open Timeline</RoadmapAction>
         <RoadmapAction onClick={() => onOpen('recruiter')}>Open Recruiter Mode</RoadmapAction>
-        <RoadmapAction onClick={() => onAskAssistant('What is Jack working toward?')}>
-          Ask J.D. about goals
+        <RoadmapAction onClick={() => onAskBoch()}>
+          Ask BOCH about goals
         </RoadmapAction>
         <RoadmapAction onClick={() => setRefreshCount((count) => count + 1)}>
           Refresh Log

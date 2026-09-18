@@ -41,7 +41,7 @@ export const BLUE_OCEAN_CASE_STUDY: CaseStudy = {
         'Chapter divider pacing across five named chapters',
         'Session resume for an in-progress keynote',
         'Reduced-motion support',
-        'Launchable from desktop, Welcome, Recruiter Mode, Projects, search, and Ask J.D.',
+        'Launchable from desktop, Welcome, Recruiter Mode, Projects, search, and Ask BOCH.',
       ],
     },
     {

@@ -135,6 +135,19 @@ async function main() {
   transcripts.push(['tell me a joke', json.text])
   assert('joke casual', hasNone(json.text, ['Kickoff', 'Pocket Pier']))
 
+  ;({ json, cookie } = await post('Thanks', cookie))
+  transcripts.push(['Thanks', json.text])
+  assert('thanks is not a greeting repeat', hasNone(json.text, ['caffeinated', 'What do you want']))
+
+  ;({ json, cookie } = await post('Bye', cookie))
+  transcripts.push(['Bye', json.text])
+  assert('bye is not a greeting repeat', hasNone(json.text, ['caffeinated', 'What do you want']))
+
+  ;({ json, cookie } = await post('What can you do?', cookie))
+  transcripts.push(['What can you do?', json.text])
+  assert('capabilities are not a greeting repeat', hasNone(json.text, ['caffeinated', 'What do you want']))
+  assert('capabilities stay BOCH', hasAny(json.text, ['guide', 'JackOS', 'BOCH', 'BOCK', 'projects']))
+
   cookie = await reset(cookie)
   ;({ json, cookie } = await post('What is Pocket Pier?', cookie))
   transcripts.push(['What is Pocket Pier?', json.text])

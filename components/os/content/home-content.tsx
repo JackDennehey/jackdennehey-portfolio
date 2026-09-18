@@ -52,6 +52,7 @@ export function HomeContent({
           <WelcomeButton onClick={() => onOpen('recruiter')}>Recruiter Mode</WelcomeButton>
           <WelcomeButton onClick={() => onOpen('resume')}>Resume</WelcomeButton>
           <WelcomeButton onClick={() => onOpen('contact')}>Contact</WelcomeButton>
+          <WelcomeButton onClick={() => onOpen('boch')}>Ask BOCH</WelcomeButton>
         </div>
       </section>
 

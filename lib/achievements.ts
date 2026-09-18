@@ -66,8 +66,8 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   },
   {
     id: 'jd-first-question',
-    title: 'Asked J.D.',
-    description: 'Submitted a valid question to the local portfolio assistant.',
+    title: 'Asked BOCH',
+    description: 'Submitted a question to the JackOS assistant.',
   },
   {
     id: 'wallpaper-changed',
@@ -132,7 +132,7 @@ export const ACHIEVEMENT_MESSAGES: Record<
   },
   'jd-first-question': {
     title: 'Achievement Unlocked',
-    message: 'Asked J.D.',
+    message: 'Asked BOCH',
   },
   'wallpaper-changed': {
     title: 'Achievement Unlocked',

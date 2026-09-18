@@ -26,6 +26,8 @@ const APP_TO_WINDOW: Record<string, WindowId> = {
   'case-study': 'case-study',
   certifications: 'certifications',
   timeline: 'timeline',
+  roadmap: 'roadmap',
+  'jden-studios': 'jden-studios',
 }
 
 export function createJackOSActionValidator(urlAllowlist: string[]) {

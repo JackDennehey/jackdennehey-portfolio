@@ -29,12 +29,13 @@ import {
 
 type Props = {
   onExecuteDestinations: (destinations: JackOSBochDestination[]) => void
+  onAsked?: () => void
 }
 
 const INTRO = 'A face with a brain, opinions, and a voice.'
 const MODE_ORDER: BochPresenceMode[] = ['NORMAL', 'CLEAN', 'WORK', 'SLEEP', 'MUTED']
 
-export function BochContent({ onExecuteDestinations }: Props) {
+export function BochContent({ onExecuteDestinations, onAsked }: Props) {
   const inputId = useId()
   const logId = useId()
   const [mode, setMode] = useState<BochPresenceMode>('NORMAL')
@@ -52,6 +53,7 @@ export function BochContent({ onExecuteDestinations }: Props) {
   const [audioLevel, setAudioLevel] = useState(0)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const sending = useRef(false)
+  const askedOnce = useRef(false)
   const listenStop = useRef<(() => void) | null>(null)
   const speakStop = useRef<(() => void) | null>(null)
   const lastVoice = useRef({ text: INTRO, spoken: INTRO, emotion: 'happy', energy: 0.55 })
@@ -229,6 +231,10 @@ export function BochContent({ onExecuteDestinations }: Props) {
       scheduleModeFace(mode)
     } finally {
       sending.current = false
+      if (!askedOnce.current) {
+        askedOnce.current = true
+        onAsked?.()
+      }
       if (inputModeRef.current === 'type') inputRef.current?.focus()
     }
   }
@@ -324,7 +330,7 @@ export function BochContent({ onExecuteDestinations }: Props) {
   const statusText =
     ACTIVITY_STATUS[activity] || (mode === 'SLEEP' ? BOCH_MODES.SLEEP.status : BOCH_MODES[mode].status)
   const caption = BOCH_EXPRESSION_LABELS[faceExpression] || BOCH_EXPRESSION_LABELS.happy
-  const hint = mode === 'SLEEP' ? 'Click to wake up' : 'Click to say hello'
+  const hint = mode === 'SLEEP' ? 'Tap or click to wake up' : 'Tap or click to say hello'
 
   return (
     <div
@@ -377,24 +383,25 @@ export function BochContent({ onExecuteDestinations }: Props) {
                 </>
               )}
             </button>
-            <label className="boch-speak-toggle">
-              <input
-                type="checkbox"
-                checked={speakReplies && mode !== 'MUTED'}
-                disabled={mode === 'MUTED'}
-                onChange={(event) => {
-                  const next = event.target.checked
-                  setSpeakReplies(next)
-                  if (next && mode !== 'MUTED' && mode !== 'SLEEP') {
-                    const voice = lastVoice.current
-                    speakReply(voice.text, voice.spoken, voice.emotion, voice.energy)
-                  } else {
-                    stopSpeak()
-                  }
-                }}
-              />{' '}
+            <button
+              type="button"
+              className="boch-utility boch-speak-toggle"
+              aria-pressed={speakReplies && mode !== 'MUTED'}
+              disabled={mode === 'MUTED'}
+              onClick={() => {
+                if (mode === 'MUTED') return
+                const next = !speakReplies
+                setSpeakReplies(next)
+                if (next && mode !== 'SLEEP') {
+                  const voice = lastVoice.current
+                  speakReply(voice.text, voice.spoken, voice.emotion, voice.energy)
+                } else {
+                  stopSpeak()
+                }
+              }}
+            >
               Speak replies
-            </label>
+            </button>
             <button type="button" className="boch-utility" onClick={() => void reset()}>
               Clear conversation
             </button>
@@ -469,9 +476,9 @@ export function BochContent({ onExecuteDestinations }: Props) {
           ))}
         </nav>
         <p className="boch-shortcuts">
-          <i>Click the face to nudge</i>
+          <i>Tap or click the face to nudge</i>
           <i>PUBLIC · family-friendly</i>
-          <i>JackOS keeps the windows</i>
+          <i>The rest of JackOS stays available</i>
         </p>
       </footer>
     </div>

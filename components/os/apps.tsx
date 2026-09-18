@@ -12,7 +12,6 @@ import {
 } from './app-image-icons'
 import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
-  JackAssistantIcon,
   JackBlueOceanIcon,
   JackBochIcon,
   JackDocumentIcon,
@@ -41,7 +40,6 @@ export type WindowId =
   | 'recruiter'
   | 'resume'
   | 'contact'
-  | 'assistant'
   | 'boch'
   | 'timeline'
   | 'guestbook'
@@ -271,16 +269,6 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     minWidth: 320,
     description: 'email and external links',
   },
-  assistant: {
-    id: 'assistant',
-    title: 'J.D. — JackOS Assistant',
-    Icon: JackAssistantIcon,
-    width: 560,
-    height: 600,
-    description: 'portfolio assistant',
-    desktopLabel: 'J.D.',
-    keywords: ['jd', 'portfolio assistant', 'ask'],
-  },
   boch: {
     id: 'boch',
     title: 'BOCH',
@@ -294,7 +282,7 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     desktopLabel: 'BOCH',
     spotlightTitle: 'Open BOCH',
     spotlightSubtitle: 'Public guide / Behavioral Operating & Cognitive Helper',
-    keywords: ['boch', 'bock', 'assistant', 'ask', 'ai', 'guide', 'helper'],
+    keywords: ['boch', 'bock', 'assistant', 'ask', 'ai', 'guide', 'helper', 'jd', 'j.d.'],
   },
   timeline: {
     id: 'timeline',
@@ -383,7 +371,6 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   recruiter: 'recruiter',
   resume: 'resume',
   contact: 'contact',
-  assistant: 'jd',
   boch: 'boch',
   timeline: 'timeline',
   guestbook: 'guestbook',
@@ -401,8 +388,9 @@ const WINDOW_IDS_BY_HASH = Object.entries(WINDOW_HASH_SLUGS).reduce(
   {} as Record<string, WindowId>,
 )
 
-WINDOW_IDS_BY_HASH.assistant = 'assistant'
 WINDOW_IDS_BY_HASH.bock = 'boch'
+WINDOW_IDS_BY_HASH.jd = 'boch'
+WINDOW_IDS_BY_HASH.assistant = 'boch'
 WINDOW_IDS_BY_HASH['recruiter-mode'] = 'recruiter'
 WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
 WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
@@ -419,6 +407,12 @@ export function getWindowHash(id: WindowId) {
 export function getWindowIdFromHash(hash: string): WindowId | null {
   const slug = hash.replace(/^#/, '').trim().toLowerCase()
   return WINDOW_IDS_BY_HASH[slug] ?? null
+}
+
+/** Legacy J.D. hashes. They open BOCH and should normalize to `#boch`. */
+export function isLegacyJdAssistantHash(hash: string) {
+  const slug = hash.replace(/^#/, '').trim().toLowerCase()
+  return slug === 'jd' || slug === 'assistant'
 }
 
 export function isWindowId(value: string): value is WindowId {
@@ -467,7 +461,6 @@ export const DESKTOP_LAUNCHER_APP_IDS = [
   'resume',
   'roadmap',
   'wallpapers',
-  'assistant',
   'secrets',
 ] as const satisfies readonly WindowId[]
 
@@ -486,7 +479,6 @@ export const SPOTLIGHT_APP_IDS = [
   'recruiter',
   'resume',
   'contact',
-  'assistant',
   'timeline',
   'guestbook',
   'firewall',

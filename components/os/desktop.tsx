@@ -22,6 +22,7 @@ import {
   getWindowHash,
   getWindowIdFromHash,
   isDockPinnedAppId,
+  isLegacyJdAssistantHash,
   isWindowId,
   type WindowId,
 } from './apps'
@@ -31,7 +32,6 @@ import { MobileShell } from './mobile/mobile-shell'
 import { DesktopCalendar } from './desktop-calendar'
 import { DesktopClock } from './desktop-clock'
 import { DesktopContextMenu } from './desktop-context-menu'
-import { JdWidget } from './jd-widget'
 import { useDesktopPreferences } from './use-desktop-preferences'
 import { useHourlyChime } from './use-hourly-chime'
 import { WallpaperManager } from './wallpaper-manager'
@@ -51,7 +51,6 @@ import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
 import { RecruiterModeContent } from './content/recruiter-mode-content'
-import { JdAssistantContent } from './content/jd-assistant-content'
 import { BochContent } from './content/boch-content'
 import type { JackOSBochDestination } from '@/lib/boch/actions'
 import { useSoundEffects } from './use-sound-effects'
@@ -276,10 +275,6 @@ export function Desktop() {
     null,
   )
   const [portfolioFocusNonce, setPortfolioFocusNonce] = useState(0)
-  const [assistantSeedPrompt, setAssistantSeedPrompt] = useState<{
-    question: string
-    nonce: number
-  } | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
   const [achievementNotice, setAchievementNotice] = useState<{
     title: string
@@ -316,7 +311,6 @@ export function Desktop() {
     commitGeometry,
   } = useWindowManager(isMobile)
   const handledInitialHash = useRef(false)
-  const assistantPromptSequence = useRef(0)
   const bootedAt = useRef<number | null>(null)
   const copyStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const achievementNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -518,7 +512,6 @@ export function Desktop() {
       recruiter: 'recruiter',
       projects: 'projects',
       'case-study': 'case-study',
-      'ask-jd': 'assistant',
     }
     const origin = originByContext[context]
 
@@ -687,20 +680,6 @@ export function Desktop() {
     [openWindow],
   )
 
-  const openAssistant = useCallback(
-    (question?: string) => {
-      if (question) {
-        assistantPromptSequence.current += 1
-        setAssistantSeedPrompt({
-          question,
-          nonce: assistantPromptSequence.current,
-        })
-      }
-      openWindow('assistant')
-    },
-    [openWindow],
-  )
-
   const showCopyStatus = useCallback((message: string) => {
     if (copyStatusTimer.current) {
       clearTimeout(copyStatusTimer.current)
@@ -829,7 +808,10 @@ export function Desktop() {
 
     const hashWindow = getWindowIdFromHash(window.location.hash)
     if (hashWindow) {
-      openWindow(hashWindow, { playSound: false, updateHash: false })
+      openWindow(hashWindow, {
+        playSound: false,
+        updateHash: isLegacyJdAssistantHash(window.location.hash),
+      })
       return
     }
 
@@ -881,7 +863,10 @@ export function Desktop() {
 
       const hashWindow = getWindowIdFromHash(window.location.hash)
       if (hashWindow) {
-        openWindow(hashWindow, { playSound: false, updateHash: false })
+        openWindow(hashWindow, {
+          playSound: false,
+          updateHash: isLegacyJdAssistantHash(window.location.hash),
+        })
         return
       }
 
@@ -1007,7 +992,6 @@ export function Desktop() {
     () =>
       desktopItems.filter((item) => {
         if (item.kind !== 'window') return true
-        if (item.id === 'assistant') return false
         if (isDockPinnedAppId(item.id)) return false
         return true
       }),
@@ -1158,9 +1142,6 @@ export function Desktop() {
               }
               focusDesktop()
               return
-            case 'ask-jd':
-              openAssistant()
-              return
             case 'ask-boch':
               openWindow('boch')
               return
@@ -1173,7 +1154,6 @@ export function Desktop() {
       goMobileHome,
       isMobile,
       minimizeActiveWindow,
-      openAssistant,
       openCaseStudy,
       openPersonalize,
       openSimpleMode,
@@ -1287,24 +1267,11 @@ export function Desktop() {
         return <ResumeContent />
       case 'contact':
         return <ContactContent onCopyEmail={copyEmailToClipboard} />
-      case 'assistant':
-        return (
-          <JdAssistantContent
-            seedPrompt={assistantSeedPrompt}
-            onOpen={(windowId) =>
-              openWindow(
-                windowId,
-                windowId === 'blue-ocean' ? { launchContext: 'ask-jd' } : undefined,
-              )
-            }
-            onCopyEmail={copyEmailToClipboard}
-            onQuestionAnswered={() => showAchievement('jd-first-question')}
-          />
-        )
       case 'boch':
         return (
           <BochContent
             onExecuteDestinations={executeBochDestinations}
+            onAsked={() => showAchievement('jd-first-question')}
           />
         )
       case 'timeline':
@@ -1322,7 +1289,7 @@ export function Desktop() {
         return (
           <RoadmapContent
             onOpen={openWindow}
-            onAskAssistant={(question) => openAssistant(question)}
+            onAskBoch={() => openWindow('boch')}
           />
         )
       case 'wallpapers':
@@ -1458,7 +1425,6 @@ export function Desktop() {
                 {preferences.showCalendar ? (
                   <DesktopCalendar onOpenCalendar={() => undefined} />
                 ) : null}
-                <JdWidget onOpen={() => openAssistant()} />
                 <JdenDesktopArtifact onOpen={() => openWindow('jden-studios')} />
               </div>
             ) : null}

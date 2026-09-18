@@ -206,21 +206,6 @@ export function JackBochIcon(props: IconProps) {
   )
 }
 
-export function JackAssistantIcon(props: IconProps) {
-  return (
-    <JackIcon {...props}>
-      <image
-        href="/images/jd/jd-icon.png"
-        x="2"
-        y="2"
-        width="20"
-        height="20"
-        preserveAspectRatio="xMidYMid meet"
-      />
-    </JackIcon>
-  )
-}
-
 export function JackTimelineIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

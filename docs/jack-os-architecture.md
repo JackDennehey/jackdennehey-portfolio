@@ -41,7 +41,6 @@ JackOS
     |-- Project case studies                  lib/portfolio/case-studies/
     |-- Compatibility adapters                lib/portfolio-data.ts, lib/portfolio-knowledge.ts
     |-- Timeline                              lib/timeline-data.ts
-    |-- J.D. assistant                        lib/jd-assistant.ts
     |-- BOCH public runtime                   lib/boch/
     |-- SEO copy                              lib/portfolio/seo.ts via lib/site-metadata.ts
 ```
@@ -82,10 +81,9 @@ JackOS
 ## Desktop Layout
 
 - Menu bar shows JackOS identity, the active application name (or Desktop), JDEN, System, About, Simple, Search (Spotlight), Help, achievements, and real system status.
-- Desktop widgets live on the left side in `components/os/desktop.tsx`: clock, calendar, J.D., and the JDEN artifact.
+- Desktop widgets live on the left side in `components/os/desktop.tsx`: clock, calendar, and the JDEN artifact.
 - The dock is the primary desktop launcher for pinned apps and currently running overflow apps. It is desktop-only; it is not mounted on mobile.
 - Remaining desktop icons live in a right-side rail (plus GitHub/LinkedIn) and keep the center of the wallpaper open as the workspace.
-- J.D. is available as a left widget and mobile launcher item; it is intentionally hidden from the desktop app rail.
 
 ## Mobile Shell
 
@@ -137,7 +135,7 @@ JackOS
 - Selectors and assistant/search formatters live in `lib/portfolio/selectors.ts` and `lib/portfolio/format.ts`. Integrity checks run when the catalog is imported.
 - `lib/portfolio-data.ts` is a compatibility adapter for existing consumers that still expect `PROJECTS[].title`.
 - Recruiter presentation plus derived knowledge live in `lib/portfolio-knowledge.ts`.
-- The local J.D. assistant response engine lives in `lib/jd-assistant.ts` and reads derived knowledge. J.D. is a guided portfolio Q&A layer, not a second search system and not a BOCH prototype.
+- The BOCH public runtime lives in `lib/boch/` and reads canonical JackOS knowledge. BOCH is the sole first-party assistant. Spotlight remains deterministic local search.
 - Timeline entries live in `lib/timeline-data.ts` and resolve projects/credentials by canonical id.
 - Portfolio.app is registered as `portfolio` in `WINDOW_APPS`, hash `#portfolio`.
 - Project case studies live in `lib/portfolio/case-studies/` and render through `components/os/case-study/`. `caseStudyAvailable` is true only when a study record exists. Portfolio.app, Projects, Recruiter Mode, and Simple Mode open the same studies by canonical project id.
@@ -154,8 +152,7 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 | Simple Mode (`/simple`) | Conventional full-site experience without OS chrome. |
 | Resume.app (`#resume`) | Readable resume plus `/jack-dennehey-resume.txt` download. |
 | Contact (`#contact`) | Email, GitHub, LinkedIn, site identity. |
-| J.D. (`#jd`) | Temporary guided Q&A. Kept during BOCH validation. |
-| BOCH (`#boch`) | Public conversational guide. Deployment.PUBLIC. |
+| BOCH (`#boch`) | Sole JackOS assistant. Public conversational guide. Deployment.PUBLIC. Legacy `#jd` and `#assistant` open BOCH. |
 
 ### Simple Mode lifecycle
 
@@ -176,7 +173,7 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 
 ## System Actions
 
-- Spotlight system commands: Personalize, Ask BOCH, Ask J.D., Copy Email, View Achievements, Reset Window Layout, Restart Session.
+- Spotlight system commands: Personalize, Ask BOCH, Copy Email, View Achievements, Reset Window Layout, Restart Session.
 - Desktop System menu and mobile System panel expose the same real preferences (theme, sound, CRT, wallpaper/Personalize, Welcome, Recruiter, Simple, Achievements, Restart). Reset Window Layout is desktop-only.
 - Context menu repeats desktop workspace actions; it does not invent a second command surface.
 - Cmd/Ctrl+K and the menu Search control open Spotlight. There is no parallel command palette.
@@ -239,7 +236,7 @@ client-side Kokoro-82M Fenrir (browser) → Web Audio
 - Voice: `BochResponse` text stays on-screen as written. Speech-only `spokenForm` maps BOCH→BOCK, then client-side Kokoro Fenrir plays via Web Audio. Speak is lazy: the model is not downloaded on JackOS load or merely opening BOCH. `POST /api/boch/speak` returns 410 and does not synthesize. Do not expose Ollama or a TTS host to visitors.
 - Dock: BOCH is pinned first for discovery. Projects moved to the desktop rail so the dock stays at seven pins.
 - Simple Mode and Recruiter Mode have optional Ask BOCH entries. Conventional surfaces remain usable without BOCH.
-- J.D. stays available (`#jd`) during M10 validation. Help menu opens BOCH. Replacement decision: KEEP TEMPORARILY until the public-internet acceptance test succeeds with Jack's development machine unavailable.
+- BOCH is the sole first-party JackOS assistant. Legacy `#jd` / `#assistant` hashes open BOCH and normalize to `#boch`. J.D. implementation is retired.
 - Session cookie `jackos-boch-sid` is httpOnly, SameSite=Lax, and `Secure` only on HTTPS. Optional signed `jackos-boch-ctx` carries bounded history across serverless instances. Visitor conversations are session-scoped and never Personal BOCH memory.
 - Knowledge authority (M10.7): CASUAL / BOCH / JACK / CURRENT / GENERAL / PRIVATE. Retrieval chooses evidence; the model writes language; JackOS validates actions. Canonical JackOS records win for Jack-specific facts. Time-sensitive world facts use `PublicCurrentInformationProvider` (DuckDuckGo, optional Brave, Wikipedia fallback, runtime clock). If live retrieval is unavailable, BOCH refuses to guess.
 - Abuse controls: 2,000-character input, 12-turn history, 400 max output tokens, 45s model timeout, 8s retrieval timeout, 20 requests/session/min plus 180 global/min (in-process; pair with Vercel Firewall in production). Server logs record provider, latency, category, record IDs, and validation — never visitor text. `GET /api/boch` is a PUBLIC health snapshot only (no diagnostic ring, model names, keys, or prompts).

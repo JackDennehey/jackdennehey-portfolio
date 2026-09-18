@@ -11,7 +11,6 @@ export type BlueOceanLaunchContext =
   | 'projects'
   | 'case-study'
   | 'search'
-  | 'ask-jd'
 
 export const BLUE_OCEAN_COPY = {
   title: '1984 Blue Ocean',
