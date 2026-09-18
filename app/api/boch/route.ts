@@ -15,6 +15,7 @@ import {
 } from '@/lib/boch/session-cookie'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 const CLIENT = { name: 'jackos', version: '0.1.0' }
 

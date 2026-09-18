@@ -6,6 +6,7 @@
 import { credentialsMissingMessage, getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
 import { geminiApiKey } from './gemini-provider'
 import { generatePublicCompletion, type PublicChatMessage } from './public-generate'
+import { readServerEnv } from './server-env'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput, PublicModelProvider } from './vendor/model-provider'
 
 export type HostedBrainBackend = 'gemini' | 'gateway' | 'ollama'
@@ -50,7 +51,7 @@ export function resolveBrainBackend(): HostedBrainBackend | null {
 
 export function hostedBrainLabel() {
   const backend = resolveBrainBackend()
-  if (backend === 'gemini') return process.env.BOCH_MODEL || 'gemini-2.5-flash'
+  if (backend === 'gemini') return readServerEnv('BOCH_MODEL') || 'gemini-3.5-flash'
   if (backend === 'gateway') return process.env.BOCH_MODEL || 'anthropic/claude-sonnet-4.6'
   if (backend === 'ollama') return process.env.BOCH_OLLAMA_MODEL || 'qwen2.5:7b'
   return 'unavailable'

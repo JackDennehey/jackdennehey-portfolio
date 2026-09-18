@@ -9,6 +9,7 @@
  * credentials, unpublished owner data.
  */
 import { generatePublicCompletion, type PublicChatMessage } from './public-generate'
+import { readServerEnv } from './server-env'
 import type { PublicModelDiagnosis } from './vendor/contracts'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput, PublicModelProvider } from './vendor/model-provider'
 
@@ -17,13 +18,13 @@ const GEMINI_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models'
 type DiagnosedError = Error & { code: string; diagnosis: PublicModelDiagnosis }
 
 export function geminiApiKey() {
-  return process.env.GEMINI_API_KEY?.trim() || null
+  return readServerEnv('GEMINI_API_KEY') || null
 }
 
 export function geminiModelIds() {
   return [
-    process.env.BOCH_MODEL || 'gemini-2.5-flash',
-    process.env.BOCH_MODEL_FAILOVER || 'gemini-2.5-flash-lite',
+    readServerEnv('BOCH_MODEL') || 'gemini-3.5-flash',
+    readServerEnv('BOCH_MODEL_FAILOVER') || 'gemini-3.5-flash-lite',
   ].filter((model, index, list) => list.indexOf(model) === index)
 }
 
@@ -145,7 +146,7 @@ function missingKeyDiagnosis(): PublicModelDiagnosis {
     hasKey: false,
     status: null,
     class: 'auth',
-    model: geminiModelIds()[0] || 'gemini-2.5-flash',
+    model: geminiModelIds()[0] || 'gemini-3.5-flash',
     cause: 'missing_key',
     body: 'GEMINI_API_KEY not detected',
   })

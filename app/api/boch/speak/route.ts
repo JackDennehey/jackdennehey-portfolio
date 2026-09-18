@@ -8,6 +8,7 @@ import {
 import { synthesizePublicSpeech } from '@/lib/boch/tts'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   let body: unknown
