@@ -50,7 +50,7 @@ async function geminiChat(system: string, messages: PublicChatMessage[], tempera
     throw diagnosedError('MODEL_UNAVAILABLE', missingKeyDiagnosis())
   }
 
-  const maxTokens = Number(process.env.BOCH_MAX_OUTPUT_TOKENS) || 400
+  const maxTokens = Number(process.env.BOCH_MAX_OUTPUT_TOKENS) || 2048
   const timeoutMs = Number(process.env.BOCH_MODEL_TIMEOUT_MS) || 45_000
   const contents = toGeminiContents(messages)
   let lastError: DiagnosedError | null = null
@@ -64,6 +64,7 @@ async function geminiChat(system: string, messages: PublicChatMessage[], tempera
         temperature,
         maxOutputTokens: maxTokens,
         responseMimeType: 'application/json',
+        thinkingConfig: { thinkingLevel: 'MINIMAL' },
       },
     }
 
