@@ -203,7 +203,7 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 - Compatibility adapters `lib/portfolio-data.ts` and `lib/portfolio-knowledge.ts` remain until remaining consumers are migrated.
 - Sitemap `lastModified` is set only when `VERCEL_GIT_COMMIT_DATE` is present. There is no invented “last updated” date.
 - Files and Terminal remain future milestones.
-- BOCH production intelligence is `HostedPublicModelProvider` over Vercel AI Gateway. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama, and `BOCH_PROVIDER=local` on Vercel fails closed.
+- BOCH production intelligence is `HostedPublicModelProvider` over Vercel AI Gateway. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama, and `BOCH_PROVIDER=local` on Vercel fails closed. Hosted auth is request-time Vercel OIDC (`getVercelOidcToken` / `x-vercel-oidc-token`); do not require `AI_GATEWAY_API_KEY` or a static `VERCEL_OIDC_TOKEN` env var on Vercel.
 - BOCH visitor sessions: in-memory for local/tests; signed `jackos-boch-ctx` cookie when `BOCH_SESSION_SECRET` or `GUESTBOOK_FINGERPRINT_SECRET` is set; optional Upstash/Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Cookie-only is durable across serverless instances without pretending KV exists.
 - PUBLIC voice: `POST /api/boch/speak` proxies Qwen3-TTS Aiden when a non-loopback `BOCH_TTS_URL` is configured (loopback refused in production). Otherwise AI Gateway `openai/tts-1-hd` `onyx`. Browser `speechSynthesis` is fallback only — not voice parity.
 

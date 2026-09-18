@@ -5,6 +5,7 @@
  * Browser speechSynthesis is client fallback only.
  */
 
+import { getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
 import { isProductionBochRuntime } from './hosted-provider'
 
 export const BOCH_BASE_INSTRUCT = [
@@ -39,7 +40,9 @@ export type PublicTtsResult = {
 
 export function resolvePublicTtsEngine(): PublicTtsEngine | null {
   if (qwenSidecarUrl()) return 'qwen-aiden'
-  if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) return 'openai-onyx'
+  if (process.env.VERCEL || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) {
+    return 'openai-onyx'
+  }
   return null
 }
 
@@ -55,10 +58,7 @@ export async function synthesizePublicSpeech(
     const audio = await qwenSpeak(sidecar, spoken, emotion, energy)
     if (audio) return audio
   }
-  if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) {
-    return openaiSpeak(spoken, emotion, energy)
-  }
-  return null
+  return openaiSpeak(spoken, emotion, energy)
 }
 
 function qwenSidecarUrl() {
@@ -107,8 +107,9 @@ async function qwenSpeak(host: string, text: string, emotion: string, energy: nu
 }
 
 async function openaiSpeak(text: string, emotion: string, energy: number): Promise<PublicTtsResult | null> {
-  const key = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
+  const key = await getGatewayAuthToken()
   if (!key) return null
+  const model = process.env.BOCH_TTS_MODEL || 'openai/tts-1-hd'
   const speed = clamp(1 + (energy - 0.5) * 0.12 + (emotion === 'smug' ? -0.06 : 0), 0.85, 1.15)
   const response = await fetch('https://ai-gateway.vercel.sh/v1/audio/speech', {
     method: 'POST',
@@ -117,7 +118,7 @@ async function openaiSpeak(text: string, emotion: string, energy: number): Promi
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.BOCH_TTS_MODEL || 'openai/tts-1-hd',
+      model,
       voice: process.env.BOCH_TTS_OPENAI_VOICE || 'onyx',
       input: text,
       speed,
@@ -125,7 +126,11 @@ async function openaiSpeak(text: string, emotion: string, energy: number): Promi
     }),
     signal: AbortSignal.timeout(20_000),
   })
-  if (!response.ok) return null
+  if (!response.ok) {
+    const body = await response.text().catch(() => '')
+    logGatewayFailure('tts', response.status, model, body)
+    return null
+  }
   const buffer = new Uint8Array(await response.arrayBuffer())
   if (buffer.byteLength < 500) return null
   return { audio: buffer, contentType: 'audio/mpeg', engine: 'openai-onyx' }

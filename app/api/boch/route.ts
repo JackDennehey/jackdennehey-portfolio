@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { readGatewayTokenFromRequest, runWithGatewayAuth } from '@/lib/boch/gateway-auth'
 import { createBochRequest, PUBLIC_CONTRACT_VERSION } from '@/lib/boch/vendor/contracts'
 import {
   bochPublicHealth,
@@ -49,6 +50,10 @@ async function persistVisitorSession(request: Request, sessionId: string) {
 }
 
 export async function POST(request: Request) {
+  return runWithGatewayAuth(readGatewayTokenFromRequest(request), () => handleBochPost(request))
+}
+
+async function handleBochPost(request: Request) {
   let body: unknown
   try {
     body = await request.json()

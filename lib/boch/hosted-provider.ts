@@ -4,6 +4,7 @@
  * Production never uses localhost Ollama. Vercel never uses Jack's Mac.
  */
 import { parseBrainResponse } from './emotions'
+import { getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
 import { authorityPromptBlock, knowledgePromptBlock, publicSystemPrompt } from './personality'
 import { SOURCE_KINDS } from './authority'
 import { normalizePublicExpression } from './vendor/contracts'
@@ -33,6 +34,8 @@ export function resolveBrainBackend(): HostedBrainBackend | null {
   if (mode === 'unavailable' || mode === 'mock' || mode === 'grounded') return null
   if (isProductionBochRuntime()) {
     if (mode === 'local') return null
+    // Vercel injects OIDC per request. Do not require VERCEL_OIDC_TOKEN in env.
+    if (process.env.VERCEL) return 'gateway'
     if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) return 'gateway'
     return null
   }
@@ -41,6 +44,7 @@ export function resolveBrainBackend(): HostedBrainBackend | null {
     return 'ollama'
   }
   if (mode === 'hosted') {
+    if (process.env.VERCEL) return 'gateway'
     if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN) return 'gateway'
     return null
   }
@@ -172,8 +176,11 @@ async function ollamaChat(system: string, messages: ChatMessage[], temperature =
 }
 
 async function gatewayChat(system: string, messages: ChatMessage[], temperature = 0.5) {
-  const key = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
-  if (!key) throw new Error('AI Gateway credentials missing')
+  const key = await getGatewayAuthToken()
+  if (!key) {
+    console.error('[boch] AI Gateway auth missing (no API key, no request OIDC)')
+    throw new Error('AI Gateway credentials missing')
+  }
   const models = [
     process.env.BOCH_MODEL || 'anthropic/claude-sonnet-4.6',
     process.env.BOCH_MODEL_FAILOVER || 'google/gemini-3.8-flash',
@@ -197,7 +204,10 @@ async function gatewayChat(system: string, messages: ChatMessage[], temperature 
         signal: AbortSignal.timeout(Number(process.env.BOCH_MODEL_TIMEOUT_MS) || 45_000),
       })
       if (!response.ok) {
-        lastError = new Error(`AI Gateway ${response.status}`)
+        const body = await response.text().catch(() => '')
+        const cls = logGatewayFailure('chat', response.status, model, body)
+        lastError = new Error(`AI Gateway ${response.status} ${cls}`)
+        if (cls === 'auth' || cls === 'billing') break
         continue
       }
       const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }

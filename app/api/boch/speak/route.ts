@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { readGatewayTokenFromRequest, runWithGatewayAuth } from '@/lib/boch/gateway-auth'
 import {
   bochSessionCookieOptions,
   getBochSessionCookieName,
@@ -10,6 +11,10 @@ import { synthesizePublicSpeech } from '@/lib/boch/tts'
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
+  return runWithGatewayAuth(readGatewayTokenFromRequest(request), () => handleSpeak(request))
+}
+
+async function handleSpeak(request: Request) {
   let body: unknown
   try {
     body = await request.json()
