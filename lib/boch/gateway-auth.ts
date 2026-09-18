@@ -104,16 +104,22 @@ function readOidcFromVercelContext() {
   }
 }
 
-export function classifyGatewayHttp(status: number) {
-  if (status === 401 || status === 403) return 'auth'
+export function classifyGatewayFailure(status: number, body: string) {
+  const lower = body.toLowerCase()
+  if (status === 401) return 'auth'
   if (status === 402) return 'billing'
   if (status === 404) return 'model'
   if (status === 429) return 'rate'
+  if (status === 403) {
+    if (lower.includes('no_providers_available') || lower.includes('restricted access to this model')) return 'model'
+    if (lower.includes('credit') || lower.includes('billing') || lower.includes('payment')) return 'billing'
+    return 'auth'
+  }
   return 'gateway'
 }
 
 export function logGatewayFailure(kind: 'chat' | 'tts', status: number, model: string, body: string) {
-  const cls = classifyGatewayHttp(status)
+  const cls = classifyGatewayFailure(status, body)
   console.error(
     JSON.stringify({
       boch: true,

@@ -206,7 +206,7 @@ async function gatewayChat(system: string, messages: ChatMessage[], temperature 
       if (!response.ok) {
         const body = await response.text().catch(() => '')
         const cls = logGatewayFailure('chat', response.status, model, body)
-        lastError = new Error(`AI Gateway ${response.status} ${cls}`)
+        lastError = new Error(`AI Gateway ${response.status} ${cls}: ${body.replace(/\s+/g, ' ').slice(0, 180)}`)
         if (cls === 'auth' || cls === 'billing') break
         continue
       }
