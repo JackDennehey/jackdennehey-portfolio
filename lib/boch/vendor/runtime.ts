@@ -337,7 +337,8 @@ export class PublicBochRuntime {
         sourceKind: sourceKindForAuthority(authority),
       })
     } catch (err) {
-      if ((err as { code?: string })?.code === 'MODEL_UNAVAILABLE') throw err
+      const code = (err as { code?: string })?.code
+      if (code === 'MODEL_UNAVAILABLE' || code === 'RATE_LIMITED') throw err
       const e = new Error('Model unavailable') as Error & { code: string }
       e.code = 'MODEL_UNAVAILABLE'
       throw e
