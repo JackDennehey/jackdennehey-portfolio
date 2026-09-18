@@ -13,7 +13,6 @@ import {
   resolveBrainBackend,
   resolveProviderMode,
 } from './hosted-provider'
-import { resolvePublicTtsEngine } from './tts'
 import { buildPublicKnowledgeBundle, buildUrlAllowlist } from './knowledge-adapter'
 import { DurableKvSessionStore, durableKvConfigured } from './kv-session-store'
 import { canPersistVisitorSession } from './session-cookie'
@@ -87,7 +86,7 @@ export function bochPublicHealth() {
   return {
     deployment: 'PUBLIC' as const,
     provider: production ? (hosted ? 'hosted' : 'unavailable') : provider === 'local' ? 'local' : provider,
-    voice: resolvePublicTtsEngine() ? 'hosted' : 'fallback',
+    voice: 'client-fenrir',
     sessions: durableKvConfigured() ? 'cookie-or-kv' : canPersistVisitorSession() ? 'cookie' : 'memory',
     production,
   }

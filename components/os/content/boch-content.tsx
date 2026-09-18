@@ -19,6 +19,8 @@ import {
   type BochPresenceMode,
 } from '@/lib/boch/presence'
 import {
+  bochVoiceReady,
+  disposeBochSpeech,
   speakPublicReply,
   speechRecognitionAvailable,
   startBochListening,
@@ -40,7 +42,7 @@ export function BochContent({ onExecuteDestinations }: Props) {
   const [faceExpression, setFaceExpression] = useState<string>(BOCH_MODES.NORMAL.expression)
   const [publicExpression, setPublicExpression] = useState<PublicExpression>('NORMAL')
   const [inputMode, setInputMode] = useState<'type' | 'voice'>('type')
-  const [speakReplies, setSpeakReplies] = useState(true)
+  const [speakReplies, setSpeakReplies] = useState(false)
   const [input, setInput] = useState('')
   const [reply, setReply] = useState(INTRO)
   const [hearingStatus, setHearingStatus] = useState('Type is ready. Microphone off.')
@@ -52,6 +54,7 @@ export function BochContent({ onExecuteDestinations }: Props) {
   const sending = useRef(false)
   const listenStop = useRef<(() => void) | null>(null)
   const speakStop = useRef<(() => void) | null>(null)
+  const lastVoice = useRef({ text: INTRO, spoken: INTRO, emotion: 'happy', energy: 0.55 })
   const nudgeSeq = useRef(1)
   const expressionTimer = useRef<number>(0)
   const sendRef = useRef<(text: string) => Promise<void>>(async () => undefined)
@@ -70,7 +73,7 @@ export function BochContent({ onExecuteDestinations }: Props) {
     return () => {
       listenStop.current?.()
       speakStop.current?.()
-      stopBochSpeech()
+      disposeBochSpeech()
       window.clearTimeout(expressionTimer.current)
     }
   }, [])
@@ -114,17 +117,24 @@ export function BochContent({ onExecuteDestinations }: Props) {
   }
 
   const speakReply = (text: string, spokenText: string, emotion: string, energy: number) => {
-    if (!speakReplies || mode === 'MUTED' || mode === 'SLEEP') {
+    if (mode === 'MUTED' || mode === 'SLEEP') {
       setActivity('idle')
       return
     }
+    lastVoice.current = { text, spoken: spokenText, emotion, energy }
     stopSpeak()
     setActivity('voicing')
-    setHearingStatus('Generating voice…')
+    setHearingStatus(bochVoiceReady() ? 'BOCH has something to say.' : 'Loading voice…')
     speakStop.current = speakPublicReply(text, spokenText, emotion, energy, {
-      onGenerating: () => {
-        setActivity('voicing')
-        setHearingStatus('Generating voice…')
+      onState: (state) => {
+        if (state === 'loading-model') {
+          setActivity('voicing')
+          setHearingStatus('Loading voice…')
+        }
+        if (state === 'generating') {
+          setActivity('voicing')
+          setHearingStatus('Loading voice…')
+        }
       },
       onStart: () => {
         setActivity('speaking')
@@ -137,9 +147,11 @@ export function BochContent({ onExecuteDestinations }: Props) {
       },
       onUnavailable: (message) => {
         setHearingStatus(message)
+        setActivity('idle')
+        setAudioLevel(0)
       },
-      onError: (message) => {
-        setHearingStatus(message)
+      onError: () => {
+        setHearingStatus("BOCH's voice isn't available in this browser.")
         setActivity('idle')
         setAudioLevel(0)
       },
@@ -191,13 +203,18 @@ export function BochContent({ onExecuteDestinations }: Props) {
       if (payload.actions?.length) {
         onExecuteDestinations(mapBochActions(payload.actions as BochAction[], { userText: trimmed }))
       }
-      speakReply(
-        textOut,
-        payload.spokenText || textOut,
-        String(payload.emotion || nextFace).toLowerCase(),
-        typeof payload.energy === 'number' ? payload.energy : 0.55,
-      )
-      if (!speakReplies || mode === 'MUTED' || mode === 'SLEEP') setActivity('idle')
+      const spokenOut = payload.spokenText || textOut
+      lastVoice.current = {
+        text: textOut,
+        spoken: spokenOut,
+        emotion: String(payload.emotion || nextFace).toLowerCase(),
+        energy: typeof payload.energy === 'number' ? payload.energy : 0.55,
+      }
+      if (speakReplies && bochVoiceReady() && mode !== 'MUTED' && mode !== 'SLEEP') {
+        speakReply(lastVoice.current.text, lastVoice.current.spoken, lastVoice.current.emotion, lastVoice.current.energy)
+      } else {
+        setActivity('idle')
+      }
     } catch {
       const textOut = "Brain's offline. Face still works. Tragic."
       setPublicExpression('CONFUSED')
@@ -361,15 +378,35 @@ export function BochContent({ onExecuteDestinations }: Props) {
                 type="checkbox"
                 checked={speakReplies && mode !== 'MUTED'}
                 disabled={mode === 'MUTED'}
-                onChange={(event) => setSpeakReplies(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setSpeakReplies(next)
+                  if (next && mode !== 'MUTED' && mode !== 'SLEEP') {
+                    const voice = lastVoice.current
+                    speakReply(voice.text, voice.spoken, voice.emotion, voice.energy)
+                  } else {
+                    stopSpeak()
+                  }
+                }}
               />{' '}
               Speak replies
             </label>
             <button type="button" className="boch-utility" onClick={() => void reset()}>
               Clear conversation
             </button>
+            <button
+              type="button"
+              className="boch-utility"
+              onClick={() => {
+                const voice = lastVoice.current
+                speakReply(voice.text, voice.spoken, voice.emotion, voice.energy)
+              }}
+              disabled={mode === 'MUTED' || mode === 'SLEEP' || activity === 'thinking'}
+            >
+              Speak
+            </button>
             <button type="button" className="boch-utility boch-stop-audio" onClick={stopSpeak}>
-              Stop audio
+              Stop
             </button>
           </div>
 

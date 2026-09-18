@@ -73,6 +73,7 @@ async function main() {
   assert('no private memory', health.hasPrivateMemory === false)
   assert('provider present', typeof health.provider === 'string' && health.provider.length > 0)
   assert('public GET has no diagnostics dump', health.diagnostics == null && health.brain == null)
+  assert('PUBLIC voice is client Fenrir', health.voice === 'client-fenrir')
   console.log('intelligence', {
     provider: health.provider,
     voice: health.voice,
@@ -340,8 +341,8 @@ async function main() {
     body: JSON.stringify({ text: 'Hey. Face is on.', emotion: 'happy' }),
   })
   assert(
-    'voice hosted or documented fallback',
-    speak.status === 200 || speak.status === 503,
+    'PUBLIC voice is client-side Fenrir',
+    speak.status === 410,
     `status ${speak.status} engine=${speak.headers.get('X-BOCH-Voice') || 'none'}`,
   )
 

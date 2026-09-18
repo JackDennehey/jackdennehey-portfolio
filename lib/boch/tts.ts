@@ -1,8 +1,7 @@
 /**
- * PUBLIC voice backends. Recognizable BOCH voice is standalone Qwen3-TTS CustomVoice "Aiden".
- * JackOS never exposes the sidecar URL or credentials to the browser.
- * On Vercel, loopback TTS is refused. OpenAI tts-1-hd (onyx) is the hosted stand-in.
- * Browser speechSynthesis is client fallback only.
+ * PERSONAL/local sidecar TTS helpers.
+ * PUBLIC JackOS no longer hosts speech. Fenrir runs in the visitor's browser.
+ * Keep this module for standalone PERSONAL deployments that still set BOCH_TTS_URL.
  */
 
 import { isProductionBochRuntime } from './hosted-provider'

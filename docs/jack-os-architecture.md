@@ -206,7 +206,7 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 - BOCH production intelligence is `GeminiPublicModelProvider` over Google Gemini API (`gemini-3.5-flash`, failover `gemini-3.5-flash-lite`) using server-only `GEMINI_API_KEY`. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama. Vercel AI Gateway is optional (`BOCH_PROVIDER=gateway`) and not required for production. Do not use `NEXT_PUBLIC_GEMINI_API_KEY`.
 - PUBLIC BOCH sends only public conversation context to Gemini: personality/system prompt, authority block, canonical JACK/BOCH evidence for the current topic, CURRENT evidence when present, a referent-only session block, and the current visitor text. Conversation history is not a fact source. It does not send Personal BOCH memory, private notes, credentials, or the API key. Google's free-tier terms may use prompts to improve their products.
 - BOCH visitor sessions: in-memory for local/tests; signed `jackos-boch-ctx` cookie when `BOCH_SESSION_SECRET` or `GUESTBOOK_FINGERPRINT_SECRET` is set; optional Upstash/Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Cookie-only is durable across serverless instances without pretending KV exists.
-- PUBLIC voice: `POST /api/boch/speak` proxies Qwen3-TTS Aiden when a non-loopback `BOCH_TTS_URL` is configured (loopback refused in production). Optional AI Gateway TTS if `AI_GATEWAY_API_KEY` is set. Browser `speechSynthesis` is fallback only — not voice parity.
+- PUBLIC voice: Fenrir (`am_fenrir`) via client-side Kokoro-82M in the visitor's browser. Text never leaves the tab for TTS. No TTS API key, no `/api/boch/speak` synthesis, no Jack Mac sidecar. PERSONAL/local `BOCH_TTS_URL` remains for standalone deployments only.
 
 ## BOCH (M10)
 
@@ -227,12 +227,16 @@ JackOSActionValidator
 BochResponse
     ↓
 JackOS maps validated actions → existing openWindow / openCaseStudy / https URLs
+    ↓
+visitor Speak (optional, explicit)
+    ↓
+client-side Kokoro-82M Fenrir (browser) → Web Audio
 ```
 
 - Spotlight remains deterministic local search. BOCH is conversational. They share canonical `lib/portfolio` facts, not a second content graph.
-- The JackOS window is only the container. BOCH's interior is the standalone companion: wordmark, dominant 400×400 face, expression renderer, mood/status, single reply, and hosted voice with browser fallback. It is not a JackOS-styled chatbot.
+- The JackOS window is only the container. BOCH's interior is the standalone companion: wordmark, dominant 400×400 face, expression renderer, mood/status, single reply, and Fenrir in the visitor's browser. It is not a JackOS-styled chatbot.
 - CURRENT MOOD is local presence (NORMAL / CLEAN / WORK / SLEEP / MUTED). PUBLIC remains the trust boundary and cannot be switched from the UI.
-- Voice: `BochResponse.spokenText` → `POST /api/boch/speak` (Aiden sidecar or OpenAI TTS) → JackOS playback. Browser `speechSynthesis` only if hosted voice is unavailable. Do not expose Ollama or the TTS host to visitors.
+- Voice: `BochResponse` text stays on-screen as written. Speech-only `spokenForm` maps BOCH→BOCK, then client-side Kokoro Fenrir plays via Web Audio. Speak is lazy: the model is not downloaded on JackOS load or merely opening BOCH. `POST /api/boch/speak` returns 410 and does not synthesize. Do not expose Ollama or a TTS host to visitors.
 - Dock: BOCH is pinned first for discovery. Projects moved to the desktop rail so the dock stays at seven pins.
 - Simple Mode and Recruiter Mode have optional Ask BOCH entries. Conventional surfaces remain usable without BOCH.
 - J.D. stays available (`#jd`) during M10 validation. Help menu opens BOCH. Replacement decision: KEEP TEMPORARILY until the public-internet acceptance test succeeds with Jack's development machine unavailable.

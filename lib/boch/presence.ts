@@ -67,7 +67,7 @@ export const ACTIVITY_STATUS: Record<BochActivity, string> = {
   idle: '',
   listening: 'Listening. You have the floor.',
   thinking: 'Give me a tiny second.',
-  voicing: 'Generating voice…',
+  voicing: 'Loading voice…',
   speaking: 'BOCH has something to say.',
 }
 

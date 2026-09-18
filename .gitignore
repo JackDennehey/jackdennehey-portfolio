@@ -11,5 +11,6 @@ public/images/app icons/
 node_modules
 .next/
 next-env.d.ts
+public/boch-voice/
 tsconfig.tsbuildinfo
 .DS_Store

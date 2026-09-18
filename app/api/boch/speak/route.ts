@@ -5,53 +5,22 @@ import {
   getPublicBochRuntime,
   newVisitorSessionId,
 } from '@/lib/boch/server'
-import { synthesizePublicSpeech } from '@/lib/boch/tts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return Response.json({ error: 'INVALID_REQUEST' }, { status: 400 })
-  }
-  const rec = body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
-  const text = String(rec.text || rec.spokenText || '').trim()
-  if (!text) return Response.json({ error: 'INVALID_REQUEST' }, { status: 400 })
-  if (text.length > 1000) return Response.json({ error: 'INVALID_REQUEST' }, { status: 400 })
+/** PUBLIC JackOS speech is Fenrir in the browser. This route no longer synthesizes. */
 
+export async function POST(request: Request) {
   const store = await cookies()
   let sessionId = store.get(getBochSessionCookieName())?.value
   if (!sessionId || !/^sess_[a-z0-9]+$/i.test(sessionId)) {
     sessionId = newVisitorSessionId()
     store.set(getBochSessionCookieName(), sessionId, bochSessionCookieOptions(request))
   }
-
-  const limited = getPublicBochRuntime().rateLimit.check(`speak:${sessionId}`)
-  if (!limited.allowed) {
-    return Response.json({ error: 'RATE_LIMITED' }, { status: 429 })
-  }
-
-  try {
-    const spoken = await synthesizePublicSpeech(
-      text,
-      String(rec.emotion || 'neutral'),
-      Number(rec.energy) || 0.5,
-    )
-    if (!spoken) {
-      return Response.json({ error: 'VOICE_UNAVAILABLE' }, { status: 503 })
-    }
-    return new Response(Buffer.from(spoken.audio), {
-      status: 200,
-      headers: {
-        'Content-Type': spoken.contentType,
-        'Cache-Control': 'no-store',
-        'X-BOCH-Voice': spoken.engine,
-      },
-    })
-  } catch {
-    return Response.json({ error: 'VOICE_UNAVAILABLE' }, { status: 503 })
-  }
+  getPublicBochRuntime().rateLimit.check(`speak:${sessionId}`)
+  return Response.json(
+    { error: 'CLIENT_VOICE', message: 'BOCH speaks in the browser.' },
+    { status: 410 },
+  )
 }
