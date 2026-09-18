@@ -1,8 +1,8 @@
 # JackOS Architecture Notes
 
-Stable implementation notes after JackOS M9 (recruiter surfaces). Keep this document focused on entry points and durable conventions rather than transient UI details.
-
 JackOS is an evolution of this repository, not a rewrite. The product name is **JackOS**. “Jack OS” remains a spoken/search alias and appears in historical material (V1–V3B). Do not treat V3B as the current product label.
+
+Stable implementation notes after JackOS M10 (BOCH integration). Keep this document focused on entry points and durable conventions rather than transient UI details.
 
 ## System Map
 
@@ -42,6 +42,7 @@ JackOS
     |-- Compatibility adapters                lib/portfolio-data.ts, lib/portfolio-knowledge.ts
     |-- Timeline                              lib/timeline-data.ts
     |-- J.D. assistant                        lib/jd-assistant.ts
+    |-- BOCH public runtime                   lib/boch/
     |-- SEO copy                              lib/portfolio/seo.ts via lib/site-metadata.ts
 ```
 
@@ -153,7 +154,8 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 | Simple Mode (`/simple`) | Conventional full-site experience without OS chrome. |
 | Resume.app (`#resume`) | Readable resume plus `/jack-dennehey-resume.txt` download. |
 | Contact (`#contact`) | Email, GitHub, LinkedIn, site identity. |
-| J.D. | Lightweight guided Q&A until a later standalone BOCH evaluation. |
+| J.D. (`#jd`) | Temporary guided Q&A. Kept during BOCH validation. |
+| BOCH (`#boch`) | Public conversational guide. Deployment.PUBLIC. |
 
 ### Simple Mode lifecycle
 
@@ -170,11 +172,11 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 - Actions are typed (`open-app`, `open-case-study`, `open-case-study-section`, `open-portfolio-section`, `open-recruiter-section`, `open-external`, `system`). `desktop.tsx` routes them through existing open/navigation helpers.
 - Case-study section results open the study and scroll `getCaseStudySectionDomId(projectId, sectionId)` into view. They do not use JackOS hashes.
 - Adding searchable content: put facts in the canonical source. Rebuild is automatic on import. Integrity checks run when `lib/search` is imported.
-- Future BOCH should consume `querySpotlight` / `SpotlightAction` rather than scraping the UI.
+- BOCH does not replace Spotlight. Spotlight stays fast and deterministic. BOCH consumes canonical portfolio knowledge, not Spotlight UI scraping.
 
 ## System Actions
 
-- Spotlight system commands: Personalize, Ask J.D., Copy Email, View Achievements, Reset Window Layout, Restart Session.
+- Spotlight system commands: Personalize, Ask BOCH, Ask J.D., Copy Email, View Achievements, Reset Window Layout, Restart Session.
 - Desktop System menu and mobile System panel expose the same real preferences (theme, sound, CRT, wallpaper/Personalize, Welcome, Recruiter, Simple, Achievements, Restart). Reset Window Layout is desktop-only.
 - Context menu repeats desktop workspace actions; it does not invent a second command surface.
 - Cmd/Ctrl+K and the menu Search control open Spotlight. There is no parallel command palette.
@@ -200,4 +202,66 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 - `app/globals.css` and keynote CSS are large; visual identity should stay JackOS-native rather than a macOS/Windows clone.
 - Compatibility adapters `lib/portfolio-data.ts` and `lib/portfolio-knowledge.ts` remain until remaining consumers are migrated.
 - Sitemap `lastModified` is set only when `VERCEL_GIT_COMMIT_DATE` is present. There is no invented “last updated” date.
-- BOCH is gated on the standalone BOCH project. Files and Terminal remain future milestones, not M9 by default.
+- Files and Terminal remain future milestones.
+- BOCH production intelligence is `HostedPublicModelProvider` over Vercel AI Gateway. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama, and `BOCH_PROVIDER=local` on Vercel fails closed.
+- BOCH visitor sessions: in-memory for local/tests; signed `jackos-boch-ctx` cookie when `BOCH_SESSION_SECRET` or `GUESTBOOK_FINGERPRINT_SECRET` is set; optional Upstash/Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Cookie-only is durable across serverless instances without pretending KV exists.
+- PUBLIC voice: `POST /api/boch/speak` proxies Qwen3-TTS Aiden when a non-loopback `BOCH_TTS_URL` is configured (loopback refused in production). Otherwise AI Gateway `openai/tts-1-hd` `onyx`. Browser `speechSynthesis` is fallback only — not voice parity.
+
+## BOCH (M10)
+
+BOCH = Behavioral Operating & Cognitive Helper, pronounced BOCK.
+
+```
+JackOS BOCH UI
+    ↓  BochRequest contractVersion 1
+POST /api/boch  (httpOnly sess_* cookie)
+    ↓
+PublicBochRuntime  (Deployment.PUBLIC fixed)
+    ↓
+PublicKnowledgeStore ← lib/portfolio adapter
+PublicSessionStore (ephemeral, visitor-isolated)
+HostedPublicModelProvider | GroundedPublicModelProvider (fixture) | Mock | unavailable
+JackOSActionValidator
+    ↓
+BochResponse
+    ↓
+JackOS maps validated actions → existing openWindow / openCaseStudy / https URLs
+```
+
+- Spotlight remains deterministic local search. BOCH is conversational. They share canonical `lib/portfolio` facts, not a second content graph.
+- The JackOS window is only the container. BOCH's interior is the standalone companion: wordmark, dominant 400×400 face, expression renderer, mood/status, single reply, and hosted voice with browser fallback. It is not a JackOS-styled chatbot.
+- CURRENT MOOD is local presence (NORMAL / CLEAN / WORK / SLEEP / MUTED). PUBLIC remains the trust boundary and cannot be switched from the UI.
+- Voice: `BochResponse.spokenText` → `POST /api/boch/speak` (Aiden sidecar or OpenAI TTS) → JackOS playback. Browser `speechSynthesis` only if hosted voice is unavailable. Do not expose Ollama or the TTS host to visitors.
+- Dock: BOCH is pinned first for discovery. Projects moved to the desktop rail so the dock stays at seven pins.
+- Simple Mode and Recruiter Mode have optional Ask BOCH entries. Conventional surfaces remain usable without BOCH.
+- J.D. stays available (`#jd`) during M10 validation. Help menu opens BOCH. Replacement decision: KEEP TEMPORARILY until the public-internet acceptance test succeeds with Jack's development machine unavailable.
+- Session cookie `jackos-boch-sid` is httpOnly, SameSite=Lax, and `Secure` only on HTTPS. Optional signed `jackos-boch-ctx` carries bounded history across serverless instances. Visitor conversations are session-scoped and never Personal BOCH memory.
+- Knowledge authority (M10.7): CASUAL / BOCH / JACK / CURRENT / GENERAL / PRIVATE. Retrieval chooses evidence; the model writes language; JackOS validates actions. Canonical JackOS records win for Jack-specific facts. Time-sensitive world facts use `PublicCurrentInformationProvider` (DuckDuckGo, optional Brave, Wikipedia fallback, runtime clock). If live retrieval is unavailable, BOCH refuses to guess.
+- Abuse controls: 2,000-character input, 12-turn history, 400 max output tokens, 45s model timeout, 8s retrieval timeout, 20 requests/session/min plus 180 global/min (in-process; pair with Vercel Firewall in production). Server logs record provider, latency, category, record IDs, and validation — never visitor text. `GET /api/boch` is a PUBLIC health snapshot only (no diagnostic ring, model names, keys, or prompts).
+
+## BOCH M10.7 production path
+
+```
+ANY VISITOR
+    ↓
+jackdennehey.com
+    ↓
+JackOS BOCH
+    ↓
+POST /api/boch
+    ↓
+Deployment.PUBLIC
+    ↓
+PUBLIC session (cookie and/or KV)
+    ↓
+classifyPublicQuery → knowledge / current retrieval
+    ↓
+hosted conversational model (Vercel AI Gateway)
+    ↓
+structured BochResponse
+    ↓
+JackOSActionValidator → JackOS
+```
+
+Jack's Mac is not in this chain. `BOCH_PROVIDER=local` is development-only.
+

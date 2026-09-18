@@ -358,7 +358,11 @@ export function OsWindow({
 
       <div
         data-window-body-id={app.id}
-        className="window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5"
+        className={
+          app.flushContent
+            ? 'window-body min-h-0 flex flex-1 flex-col overflow-hidden p-0'
+            : 'window-body min-h-0 flex-1 overflow-y-auto bg-paper p-4 text-card-foreground sm:p-5'
+        }
       >
         {children}
       </div>

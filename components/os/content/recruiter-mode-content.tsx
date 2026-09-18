@@ -240,6 +240,7 @@ function OverviewSection({
           Download Resume
         </ActionLink>
         <ActionButton onClick={() => onOpen('contact')}>Contact</ActionButton>
+        <ActionButton onClick={() => onOpen('boch')}>Ask BOCH</ActionButton>
         <ActionButton onClick={onOpenSimpleMode}>Simple Mode</ActionButton>
         <ActionButton onClick={onContinue}>Continue</ActionButton>
       </ActionRow>

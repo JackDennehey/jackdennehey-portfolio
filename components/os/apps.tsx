@@ -14,6 +14,7 @@ import { GithubIcon, LinkedinIcon } from './brand-icons'
 import {
   JackAssistantIcon,
   JackBlueOceanIcon,
+  JackBochIcon,
   JackDocumentIcon,
   JackFirewallIcon,
   JackIdIcon,
@@ -41,6 +42,7 @@ export type WindowId =
   | 'resume'
   | 'contact'
   | 'assistant'
+  | 'boch'
   | 'timeline'
   | 'guestbook'
   | 'firewall'
@@ -77,6 +79,8 @@ export type WindowApp = {
   minHeight?: number
   /** Desktop windows are resizable unless this is false. Ignored on mobile. */
   resizable?: boolean
+  /** Fill the window body with no paper padding. Used by BOCH's own stage. */
+  flushContent?: boolean
 }
 
 export const WINDOW_APPS: Record<WindowId, WindowApp> = {
@@ -277,6 +281,21 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     desktopLabel: 'J.D.',
     keywords: ['jd', 'portfolio assistant', 'ask'],
   },
+  boch: {
+    id: 'boch',
+    title: 'BOCH',
+    Icon: JackBochIcon,
+    width: 680,
+    height: 840,
+    minWidth: 360,
+    minHeight: 560,
+    flushContent: true,
+    description: 'public portfolio guide',
+    desktopLabel: 'BOCH',
+    spotlightTitle: 'Open BOCH',
+    spotlightSubtitle: 'Public guide / Behavioral Operating & Cognitive Helper',
+    keywords: ['boch', 'bock', 'assistant', 'ask', 'ai', 'guide', 'helper'],
+  },
   timeline: {
     id: 'timeline',
     title: 'Timeline',
@@ -365,6 +384,7 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   resume: 'resume',
   contact: 'contact',
   assistant: 'jd',
+  boch: 'boch',
   timeline: 'timeline',
   guestbook: 'guestbook',
   firewall: 'firewall',
@@ -382,6 +402,7 @@ const WINDOW_IDS_BY_HASH = Object.entries(WINDOW_HASH_SLUGS).reduce(
 )
 
 WINDOW_IDS_BY_HASH.assistant = 'assistant'
+WINDOW_IDS_BY_HASH.bock = 'boch'
 WINDOW_IDS_BY_HASH['recruiter-mode'] = 'recruiter'
 WINDOW_IDS_BY_HASH['network-firewall'] = 'firewall'
 WINDOW_IDS_BY_HASH.keynote = 'blue-ocean'
@@ -415,13 +436,13 @@ export function getDesktopAppLabel(id: WindowId) {
 
 /** Curated desktop dock pins. Metadata still comes from WINDOW_APPS. */
 export const DOCK_PINNED_APP_IDS = [
+  'boch',
   'portfolio',
   'blue-ocean',
   'pocket-pier',
   'kickoff',
   'recruiter',
   'firewall',
-  'projects',
 ] as const satisfies readonly WindowId[]
 
 export function isDockPinnedAppId(id: WindowId) {
@@ -430,6 +451,7 @@ export function isDockPinnedAppId(id: WindowId) {
 
 /** Curated desktop/mobile launcher order. Home and JDEN live elsewhere in the shell. */
 export const DESKTOP_LAUNCHER_APP_IDS = [
+  'boch',
   'portfolio',
   'blue-ocean',
   'pocket-pier',
@@ -452,6 +474,7 @@ export const DESKTOP_LAUNCHER_APP_IDS = [
 /** Curated Spotlight app order. */
 export const SPOTLIGHT_APP_IDS = [
   'home',
+  'boch',
   'jden-studios',
   'portfolio',
   'blue-ocean',

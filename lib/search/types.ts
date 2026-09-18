@@ -60,6 +60,7 @@ export const SPOTLIGHT_SYSTEM_COMMANDS = [
   'minimize-active',
   'focus-desktop',
   'ask-jd',
+  'ask-boch',
 ] as const
 
 export type SpotlightSystemCommand = (typeof SPOTLIGHT_SYSTEM_COMMANDS)[number]

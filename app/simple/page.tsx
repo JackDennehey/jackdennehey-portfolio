@@ -127,6 +127,9 @@ export default function SimpleModePage() {
             <a className="simple-action" href={`mailto:${PROFILE.contact.email}`}>
               Email Jack
             </a>
+            <Link href="/#boch" className="simple-action">
+              Ask BOCH
+            </Link>
             <Link href="/#recruiter" className="simple-action">
               Recruiter Mode
             </Link>

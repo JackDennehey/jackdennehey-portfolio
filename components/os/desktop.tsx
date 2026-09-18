@@ -52,6 +52,8 @@ import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
 import { RecruiterModeContent } from './content/recruiter-mode-content'
 import { JdAssistantContent } from './content/jd-assistant-content'
+import { BochContent } from './content/boch-content'
+import type { JackOSBochDestination } from '@/lib/boch/actions'
 import { useSoundEffects } from './use-sound-effects'
 import { useInterfaceTheme } from './use-interface-theme'
 import { JackOsDock } from './shell/dock'
@@ -659,6 +661,25 @@ export function Desktop() {
     [openWindow],
   )
 
+  const executeBochDestinations = useCallback(
+    (destinations: JackOSBochDestination[]) => {
+      for (const destination of destinations) {
+        if (destination.kind === 'window') {
+          if (destination.id === 'boch') continue
+          openWindow(
+            destination.id,
+            destination.id === 'blue-ocean' ? { launchContext: 'welcome' } : undefined,
+          )
+        } else if (destination.kind === 'case-study') {
+          openCaseStudy(destination.projectId, 'search')
+        } else if (destination.kind === 'url') {
+          window.open(destination.href, '_blank', 'noopener,noreferrer')
+        }
+      }
+    },
+    [openCaseStudy, openWindow],
+  )
+
   const returnFromCaseStudy = useCallback(
     (target: 'portfolio' | 'projects') => {
       openWindow(target)
@@ -1139,6 +1160,10 @@ export function Desktop() {
               return
             case 'ask-jd':
               openAssistant()
+              return
+            case 'ask-boch':
+              openWindow('boch')
+              return
           }
       }
     },
@@ -1274,6 +1299,12 @@ export function Desktop() {
             }
             onCopyEmail={copyEmailToClipboard}
             onQuestionAnswered={() => showAchievement('jd-first-question')}
+          />
+        )
+      case 'boch':
+        return (
+          <BochContent
+            onExecuteDestinations={executeBochDestinations}
           />
         )
       case 'timeline':

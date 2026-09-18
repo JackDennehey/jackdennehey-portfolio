@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": 1,
+  "knowledgeSchemaVersion": 1,
+  "identity": {
+    "name": "BOCH",
+    "spokenName": "BOCK",
+    "appearance": "yellow circular smiley with black oval eyes and curved black mouth",
+    "coreTraits": ["sarcastic", "witty", "dry", "expressive", "useful", "slightly mischievous"]
+  },
+  "deployment": "PUBLIC",
+  "contentLevel": "FAMILY",
+  "supportedExpressions": [
+    "NORMAL", "HAPPY", "SMUG", "ANNOYED", "ANGRY", "SURPRISED",
+    "SUSPICIOUS", "DEADPAN", "THINKING", "SLEEP", "CURIOUS", "CONFUSED"
+  ],
+  "supportedActionTypes": [
+    "OPEN_APP",
+    "OPEN_PROJECT",
+    "OPEN_RESUME",
+    "OPEN_CONTACT",
+    "OPEN_ABOUT",
+    "OPEN_URL",
+    "FOCUS_WINDOW",
+    "SHOW_NOTIFICATION"
+  ],
+  "supportedKnowledgeTypes": [
+    "PROJECT", "SKILL", "EXPERIENCE", "EDUCATION", "BIO",
+    "JACKOS_FEATURE", "BOCH_LORE", "FAQ", "LINK", "OTHER"
+  ],
+  "errorCodes": [
+    "INVALID_REQUEST",
+    "SESSION_EXPIRED",
+    "KNOWLEDGE_NOT_FOUND",
+    "ACTION_DENIED",
+    "MODEL_UNAVAILABLE",
+    "INTERNAL_ERROR",
+    "RATE_LIMITED",
+    "UNSUPPORTED_CONTRACT"
+  ],
+  "limits": {
+    "maxMessageLength": 2000,
+    "maxContextTurns": 12,
+    "maxActionsPerResponse": 3,
+    "maxKnowledgeResults": 5,
+    "maxSessionAgeMs": 3600000,
+    "maxIdleMs": 1800000
+  },
+  "notes": [
+    "JackOS must use PublicBochRuntime with fixed PUBLIC deployment.",
+    "Never pass personal memory, reminders, notes, or ServiceManager.",
+    "OPEN_URL requires an explicit https allowlist.",
+    "Portfolio facts come from PublicKnowledgeStore / JackOS canonical import."
+  ]
+}

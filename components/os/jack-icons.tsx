@@ -192,6 +192,20 @@ export function JackRecruiterIcon(props: IconProps) {
   )
 }
 
+export function JackBochIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="10" fill="#f7d400" />
+      <ellipse cx="9.2" cy="10.2" rx="1.35" ry="2.2" fill="#17170e" />
+      <ellipse cx="14.8" cy="10.2" rx="1.35" ry="2.2" fill="#17170e" />
+      <path
+        d="M6.2 13.6c2.2 3.4 9.4 3.4 11.6 0c-2.1 2.6-9.5 2.6-11.6 0"
+        fill="#17170e"
+      />
+    </svg>
+  )
+}
+
 export function JackAssistantIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

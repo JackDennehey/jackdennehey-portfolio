@@ -66,7 +66,9 @@ function systemEntry(
         ? 'wallpapers'
         : command === 'ask-jd'
           ? 'assistant'
-          : command === 'copy-email'
+          : command === 'ask-boch'
+            ? 'boch'
+            : command === 'copy-email'
             ? 'contact'
             : command === 'view-achievements'
               ? 'roadmap'
@@ -82,6 +84,7 @@ function buildAppEntries(): SpotlightEntry[] {
     if (id === 'contact') return appEntry(id, 30)
     if (id === 'recruiter') return appEntry(id, 60)
     if (id === 'home') return appEntry(id, 80)
+    if (id === 'boch') return appEntry(id, 15)
     return appEntry(id)
   })
 }
@@ -364,6 +367,7 @@ function buildSystemEntries(): SpotlightEntry[] {
       'back',
     ]),
     systemEntry('ask-jd', 'Ask J.D.', 'Portfolio assistant', ['assistant', 'jd', 'question', 'ask']),
+    systemEntry('ask-boch', 'Ask BOCH', 'Public portfolio guide', ['boch', 'bock', 'assistant', 'ask', 'guide']),
   ]
 }
 

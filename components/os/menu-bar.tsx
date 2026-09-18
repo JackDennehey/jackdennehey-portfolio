@@ -119,7 +119,7 @@ export function MenuBar({
         >
           Search
         </button>
-        <MenuButton onClick={() => onOpen('assistant')}>Help</MenuButton>
+        <MenuButton onClick={() => onOpen('boch')}>Help</MenuButton>
       </nav>
 
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">

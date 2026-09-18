@@ -4,6 +4,7 @@
 public/images/app icons/
 
 # Environment variables
+.env
 .env*.local
 
 # Common ignores

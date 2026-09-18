@@ -7,6 +7,7 @@ export const SEARCH_ALIASES: Record<string, readonly string[]> = {
   'app:wallpapers': ['personalize', 'background', 'wallpaper'],
   'app:certifications': ['certs', 'certificate', 'badge'],
   'app:assistant': ['jd', 'j.d.', 'help'],
+  'app:boch': ['bock', 'boch', 'assistant', 'guide', 'ask'],
   'app:home': ['welcome', 'start'],
   'app:recruiter': ['hiring', 'recruiter', 'overview'],
   'project:jackos': ['os', 'operating system', 'jack os', 'desktop'],
@@ -24,6 +25,7 @@ export const SEARCH_ALIASES: Record<string, readonly string[]> = {
   'system:simple-mode': ['simple', 'plain portfolio'],
   'system:copy-email': ['email', 'contact', 'gmail'],
   'system:ask-jd': ['assistant', 'jd', 'help'],
+  'system:ask-boch': ['boch', 'bock', 'ask boch'],
 }
 
 export const FIREWALL_SEARCH_TERMS = [
