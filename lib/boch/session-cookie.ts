@@ -1,6 +1,6 @@
 /** Compact signed visitor session cookie. Durable across serverless instances without Personal memory. */
 
-import { readServerEnv } from './server-env'
+import { readJoinedServerEnv } from './server-env'
 import type { PublicSession, PublicSessionFocus, PublicSessionTurn } from './vendor/session-store'
 
 export const SESSION_CONTEXT_COOKIE = 'jackos-boch-ctx'
@@ -16,7 +16,10 @@ type CompactSession = {
 }
 
 export function sessionSecret() {
-  return readServerEnv('BOCH_SESSION_SECRET') || readServerEnv('GUESTBOOK_FINGERPRINT_SECRET')
+  return (
+    readJoinedServerEnv(['BOCH', 'SESSION', 'SECRET']) ||
+    readJoinedServerEnv(['GUESTBOOK', 'FINGERPRINT', 'SECRET'])
+  )
 }
 
 export function canPersistVisitorSession() {
