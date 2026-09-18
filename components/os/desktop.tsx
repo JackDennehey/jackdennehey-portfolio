@@ -51,6 +51,7 @@ import { ContactContent } from './content/contact-content'
 import { WallpapersContent } from './content/wallpapers-content'
 import { SecretsContent } from './content/secrets-content'
 import { RecruiterModeContent } from './content/recruiter-mode-content'
+import { FilesContent } from './content/files-content'
 import { BochContent } from './content/boch-content'
 import type { JackOSBochDestination } from '@/lib/boch/actions'
 import { useSoundEffects } from './use-sound-effects'
@@ -94,6 +95,13 @@ import {
   type JackOsInteractiveAppId,
 } from '@/lib/achievements'
 import { WINDOW_CLOSE_DURATION_MS } from '@/lib/os/window-geometry'
+import {
+  FILES_ROOT_PATH,
+  getFilesHash,
+  parseFilesHash,
+  type FilesOpenTarget,
+  type FilesPath,
+} from '@/lib/os/files'
 import {
   readBlueOceanCompleted,
   type BlueOceanLaunchContext,
@@ -146,6 +154,7 @@ type OpenWindowOptions = {
   updateHash?: boolean
   launchContext?: BlueOceanLaunchContext
   caseStudyProjectId?: CaseStudyProjectId
+  filesPath?: FilesPath
 }
 type ContextMenuPosition = { x: number; y: number } | null
 
@@ -229,6 +238,7 @@ function isUnrecognizedJackOsHash(hash: string) {
   return !(
     parseCaseStudyHash(hash) ||
     getRecruiterSectionFromHash(hash) ||
+    parseFilesHash(hash) ||
     getWindowIdFromHash(hash)
   )
 }
@@ -267,6 +277,7 @@ export function Desktop() {
   const [earnedAchievementIds, setEarnedAchievementIds] = useState<JackOsAchievementId[]>([])
   const [uptimeSeconds, setUptimeSeconds] = useState(0)
   const [recruiterSection, setRecruiterSection] = useState<RecruiterSectionId>('overview')
+  const [filesPath, setFilesPath] = useState<FilesPath>(FILES_ROOT_PATH)
   const [caseStudyProjectId, setCaseStudyProjectId] = useState<CaseStudyProjectId>('jackos')
   const [caseStudyOrigin, setCaseStudyOrigin] = useState<CaseStudyOrigin>('hash')
   const [caseStudyFocusSectionId, setCaseStudyFocusSectionId] = useState<string | null>(null)
@@ -457,6 +468,14 @@ export function Desktop() {
           setRecruiterSection('overview')
         }
         writeHashSlug(getRecruiterHash(existing ? recruiterSection : 'overview'))
+      } else if (id === 'files') {
+        const nextPath = options.filesPath ?? (existing ? filesPath : FILES_ROOT_PATH)
+        if (options.filesPath || !existing) {
+          setFilesPath(nextPath)
+        }
+        if (options.updateHash !== false) {
+          writeHashSlug(getFilesHash(nextPath))
+        }
       } else if (options.updateHash !== false) {
         syncWindowHash(id)
       }
@@ -482,6 +501,7 @@ export function Desktop() {
       getWindow,
       openManagedWindow,
       recruiterSection,
+      filesPath,
       caseStudyProjectId,
       recordInteractiveAppOpen,
       refreshBlueOceanState,
@@ -636,6 +656,15 @@ export function Desktop() {
     [openWindow],
   )
 
+  const navigateFiles = useCallback(
+    (next: FilesPath) => {
+      setFilesPath(next)
+      writeHashSlug(getFilesHash(next))
+      openWindow('files', { playSound: false, updateHash: false, filesPath: next })
+    },
+    [openWindow],
+  )
+
   const openCaseStudy = useCallback(
     (projectId: string, origin: CaseStudyOrigin = 'portfolio', sectionId?: string) => {
       if (!isCaseStudyProjectId(projectId)) return
@@ -652,6 +681,35 @@ export function Desktop() {
       })
     },
     [openWindow],
+  )
+
+  const executeFilesOpenTarget = useCallback(
+    (target: Exclude<FilesOpenTarget, { type: 'navigate' }>) => {
+      if (target.type === 'window') {
+        if (target.portfolioSection) {
+          setPortfolioFocusSectionId(target.portfolioSection)
+          setPortfolioFocusNonce((current) => current + 1)
+        }
+        openWindow(target.windowId)
+        return
+      }
+
+      const project = getProjectById(target.projectId)
+      if (!project) return
+      if (target.preferred === 'case-study' && isCaseStudyProjectId(target.projectId)) {
+        openCaseStudy(target.projectId, 'search')
+        return
+      }
+      if (target.preferred === 'internal-app' && project.internalApp) {
+        openWindow(
+          project.internalApp,
+          project.internalApp === 'blue-ocean' ? { launchContext: 'desktop' } : undefined,
+        )
+        return
+      }
+      openWindow('projects')
+    },
+    [openCaseStudy, openWindow],
   )
 
   const executeBochDestinations = useCallback(
@@ -806,6 +864,13 @@ export function Desktop() {
       return
     }
 
+    const filesHashPath = parseFilesHash(window.location.hash)
+    if (filesHashPath) {
+      setFilesPath(filesHashPath)
+      openWindow('files', { playSound: false, updateHash: false, filesPath: filesHashPath })
+      return
+    }
+
     const hashWindow = getWindowIdFromHash(window.location.hash)
     if (hashWindow) {
       openWindow(hashWindow, {
@@ -858,6 +923,13 @@ export function Desktop() {
       if (recruiterHashSection) {
         setRecruiterSection(recruiterHashSection)
         openWindow('recruiter', { playSound: false, updateHash: false })
+        return
+      }
+
+      const filesHashPath = parseFilesHash(window.location.hash)
+      if (filesHashPath) {
+        setFilesPath(filesHashPath)
+        openWindow('files', { playSound: false, updateHash: false, filesPath: filesHashPath })
         return
       }
 
@@ -1094,6 +1166,9 @@ export function Desktop() {
             selectRecruiterSection(action.sectionId)
           }
           return
+        case 'open-files':
+          navigateFiles({ folder: action.folder, selectedId: null })
+          return
         case 'open-external':
           window.open(action.href, '_blank', 'noopener,noreferrer')
           return
@@ -1157,6 +1232,7 @@ export function Desktop() {
       openCaseStudy,
       openPersonalize,
       openSimpleMode,
+      navigateFiles,
       openWindow,
       preferences.hourlyChime,
       resetWindowLayout,
@@ -1243,6 +1319,15 @@ export function Desktop() {
               openCaseStudy(nextProjectId, nextOrigin ?? 'next')
             }
             onReturn={returnFromCaseStudy}
+          />
+        )
+      case 'files':
+        return (
+          <FilesContent
+            path={filesPath}
+            isMobile={isMobile}
+            onNavigate={navigateFiles}
+            onOpenTarget={executeFilesOpenTarget}
           />
         )
       case 'certifications':

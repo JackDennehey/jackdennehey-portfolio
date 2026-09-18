@@ -108,6 +108,7 @@ const jackOsJsonLd = {
   description: SITE_DESCRIPTION,
   featureList: [
     'Portfolio.app professional overview',
+    'Files.app portfolio explorer',
     'Network Firewall packet simulation',
     'Recruiter Mode guided professional overview',
     'Timeline of education, credentials, and projects',
@@ -133,7 +134,8 @@ function SeoContent() {
     <div id="portfolio-content" className="sr-only">
       <h1>Jack Dennehey — Business Student at Penn State Brandywine</h1>
       <p>
-        {PROFILE.summary} {PROFILE.shortIntro} Portfolio.app is the overview inside JackOS. Simple
+        {PROFILE.summary} {PROFILE.shortIntro} Portfolio.app is the overview inside JackOS. Files.app
+        is the catalog of what Jack has built, learned, and worked on. Simple
         Mode is the conventional full-site reading. Recruiter Mode is the short evidence brief.
       </p>
 
@@ -166,6 +168,10 @@ function SeoContent() {
         <li>
           Portfolio.app: a conventional professional overview of Jack&apos;s background, featured
           work, experience, skills, education, credentials, and contact information.
+        </li>
+        <li>
+          Files.app: a JackOS portfolio explorer over projects, experience, education, skills,
+          credentials, and resume. It is a catalog, not a disk.
         </li>
         <li>
           Kickoff: a football intelligence platform with a walk-forward prediction model, historical

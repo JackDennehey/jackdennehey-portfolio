@@ -10,6 +10,7 @@ import { RECRUITER_SECTIONS } from '@/lib/portfolio-knowledge'
 import { TIMELINE_ENTRIES } from '@/lib/timeline-data'
 import { CURRENT_WALLPAPERS } from '@/lib/wallpapers'
 import { FIREWALL_SEARCH_TERMS, SEARCH_ALIASES } from './aliases'
+import { FILES_SPOTLIGHT_FOLDERS } from '@/lib/os/files'
 import { caseStudySectionKeywords, caseStudySectionSearchText } from './extract'
 import { uniqueSearchTerms } from './score'
 import { compactSearchText } from './text'
@@ -83,6 +84,7 @@ function buildAppEntries(): SpotlightEntry[] {
     if (id === 'recruiter') return appEntry(id, 60)
     if (id === 'home') return appEntry(id, 80)
     if (id === 'boch') return appEntry(id, 15)
+    if (id === 'files') return appEntry(id, 18)
     return appEntry(id)
   })
 }
@@ -375,6 +377,22 @@ function buildSystemEntries(): SpotlightEntry[] {
   ]
 }
 
+function buildFilesLocationEntries(): SpotlightEntry[] {
+  return FILES_SPOTLIGHT_FOLDERS.map((entry, index) => ({
+    id: `files:${entry.folder}`,
+    kind: 'app' as const,
+    title: entry.title,
+    subtitle: 'Files location / JackOS catalog',
+    name: entry.title,
+    keywords: uniqueSearchTerms(['explorer', 'catalog', 'library', entry.folder, ...entry.keywords]),
+    aliases: aliasesFor(`files:${entry.folder}`),
+    searchableText: compactSearchText([entry.title, 'JackOS Files', entry.folder]),
+    action: { type: 'open-files', folder: entry.folder },
+    iconAppId: 'files',
+    emptyOrder: 90 + index,
+  }))
+}
+
 let cachedIndex: readonly SpotlightEntry[] | null = null
 
 export function buildSpotlightIndex(): readonly SpotlightEntry[] {
@@ -382,6 +400,7 @@ export function buildSpotlightIndex(): readonly SpotlightEntry[] {
 
   cachedIndex = [
     ...buildAppEntries(),
+    ...buildFilesLocationEntries(),
     buildProfileEntry(),
     ...buildProjectEntries(),
     ...buildCaseStudyEntries(),

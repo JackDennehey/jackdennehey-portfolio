@@ -28,6 +28,7 @@ const APP_TO_WINDOW: Record<string, WindowId> = {
   timeline: 'timeline',
   roadmap: 'roadmap',
   'jden-studios': 'jden-studios',
+  files: 'files',
 }
 
 export function createJackOSActionValidator(urlAllowlist: string[]) {

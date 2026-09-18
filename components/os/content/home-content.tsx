@@ -41,13 +41,14 @@ export function HomeContent({
           Start here
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
-          Portfolio.app is the overview inside JackOS. Simple Mode is the same work without the
+          Portfolio.app is the overview inside JackOS. Files is the catalog of what Jack has built, learned, and worked on. Simple Mode is the same work without the
           desktop. Recruiter Mode is the short evidence brief.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <WelcomeButton primary onClick={() => onOpen('portfolio')}>
             Open Portfolio
           </WelcomeButton>
+          <WelcomeButton onClick={() => onOpen('files')}>Open Files</WelcomeButton>
           <WelcomeButton onClick={onOpenSimpleMode}>Simple Mode</WelcomeButton>
           <WelcomeButton onClick={() => onOpen('recruiter')}>Recruiter Mode</WelcomeButton>
           <WelcomeButton onClick={() => onOpen('resume')}>Resume</WelcomeButton>

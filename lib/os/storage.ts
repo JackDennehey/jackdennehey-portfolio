@@ -19,6 +19,7 @@ export const JACK_OS_STORAGE_KEYS = {
   blueOceanSession: 'jack-os:blue-ocean-session.v1',
   guestbookAdminToken: 'jack-os:guestbook-admin-token',
   windowGeometry: 'jack-os:window-geometry.v1',
+  filesView: 'jack-os:files-view.v1',
 } as const
 
 export type JackOsStorageKey =
@@ -116,6 +117,13 @@ export const JACK_OS_STORAGE_CATALOG: readonly {
     area: 'local',
     persistAcrossSessions: true,
     notes: 'Normal window x/y/width/height after user move or resize. Clamped on read. Reset Window Layout clears this key only.',
+  },
+  {
+    name: 'filesView',
+    key: JACK_OS_STORAGE_KEYS.filesView,
+    area: 'local',
+    persistAcrossSessions: true,
+    notes: 'Files.app grid or list view preference.',
   },
 ] as const
 

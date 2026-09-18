@@ -72,6 +72,25 @@ export function JackDocumentIcon(props: IconProps) {
   )
 }
 
+export function JackFolderIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M3 8h6l2 2h10v10H3z" />
+      <path d="M3 8V6h5l2 2" />
+    </JackIcon>
+  )
+}
+
+export function JackFilesIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M3 7h7l2 2h9v11H3z" />
+      <path d="M3 7V5h6l2 2" />
+      <path d="M7 13h10M7 16h7" />
+    </JackIcon>
+  )
+}
+
 export function JackSearchIcon(props: IconProps) {
   return (
     <JackIcon {...props}>

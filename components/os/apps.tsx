@@ -15,6 +15,7 @@ import {
   JackBlueOceanIcon,
   JackBochIcon,
   JackDocumentIcon,
+  JackFilesIcon,
   JackFirewallIcon,
   JackIdIcon,
   JackKickoffIcon,
@@ -41,6 +42,7 @@ export type WindowId =
   | 'resume'
   | 'contact'
   | 'boch'
+  | 'files'
   | 'timeline'
   | 'guestbook'
   | 'firewall'
@@ -284,6 +286,20 @@ export const WINDOW_APPS: Record<WindowId, WindowApp> = {
     spotlightSubtitle: 'Public guide / Behavioral Operating & Cognitive Helper',
     keywords: ['boch', 'bock', 'assistant', 'ask', 'ai', 'guide', 'helper', 'jd', 'j.d.'],
   },
+  files: {
+    id: 'files',
+    title: 'Files',
+    Icon: JackFilesIcon,
+    width: 880,
+    height: 620,
+    minWidth: 520,
+    minHeight: 420,
+    flushContent: true,
+    description: 'portfolio explorer',
+    spotlightTitle: 'Open Files',
+    spotlightSubtitle: 'Browse what Jack has built, learned, and worked on',
+    keywords: ['explorer', 'catalog', 'library', 'browse', 'projects folder'],
+  },
   timeline: {
     id: 'timeline',
     title: 'Timeline',
@@ -372,6 +388,7 @@ export const WINDOW_HASH_SLUGS: Record<WindowId, string> = {
   resume: 'resume',
   contact: 'contact',
   boch: 'boch',
+  files: 'files',
   timeline: 'timeline',
   guestbook: 'guestbook',
   firewall: 'firewall',
@@ -431,6 +448,7 @@ export function getDesktopAppLabel(id: WindowId) {
 /** Curated desktop dock pins. Metadata still comes from WINDOW_APPS. */
 export const DOCK_PINNED_APP_IDS = [
   'boch',
+  'files',
   'portfolio',
   'blue-ocean',
   'pocket-pier',
@@ -446,6 +464,7 @@ export function isDockPinnedAppId(id: WindowId) {
 /** Curated desktop/mobile launcher order. Home and JDEN live elsewhere in the shell. */
 export const DESKTOP_LAUNCHER_APP_IDS = [
   'boch',
+  'files',
   'portfolio',
   'blue-ocean',
   'pocket-pier',
@@ -468,6 +487,7 @@ export const DESKTOP_LAUNCHER_APP_IDS = [
 export const SPOTLIGHT_APP_IDS = [
   'home',
   'boch',
+  'files',
   'jden-studios',
   'portfolio',
   'blue-ocean',

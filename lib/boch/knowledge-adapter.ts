@@ -220,6 +220,17 @@ export function buildPublicKnowledgeBundle(): PublicKnowledgeBundle {
       },
     ),
     record(
+      'feature-files',
+      'JACKOS_FEATURE',
+      'Files',
+      'Files.app is JackOS\'s public portfolio explorer. Virtual folders: Projects, Experience, Education, Skills, Credentials, and Resume. It browses canonical portfolio records. It is not a disk and not private owner files. Open it with OPEN_APP files. Opening a named project still uses OPEN_PROJECT.',
+      {
+        tags: ['files', 'explorer'],
+        aliases: ['files app', 'open files', 'explorer', 'catalog', 'library'],
+        jackos: { appId: 'files' },
+      },
+    ),
+    record(
       'feature-portfolio',
       'JACKOS_FEATURE',
       'Portfolio.app',

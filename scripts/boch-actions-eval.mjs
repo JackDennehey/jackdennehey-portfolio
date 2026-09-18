@@ -62,6 +62,8 @@ assert('OPEN_APP roadmap validates', roadmap.ok === true)
 const jden = allow({ type: 'OPEN_APP', payload: { appId: 'jden-studios' } })
 assert('OPEN_APP jden-studios validates', jden.ok === true)
 
+assert('files is allowlisted', JACKOS_APP_IDS_ALLOWLIST.includes('files'))
+assert('OPEN_APP files validates', allow({ type: 'OPEN_APP', payload: { appId: 'files' } }).ok === true)
 assert('OPEN_APP guestbook denied', allow({ type: 'OPEN_APP', payload: { appId: 'guestbook' } }).ok === false)
 assert('OPEN_APP firewall denied', allow({ type: 'OPEN_APP', payload: { appId: 'firewall' } }).ok === false)
 assert('COPY_EMAIL action type denied', allow({ type: 'COPY_EMAIL', payload: {} }).ok === false)
@@ -73,6 +75,7 @@ assert('malformed OPEN_APP payload denied', allow({ type: 'OPEN_APP', payload: {
 const actionsSrc = readFileSync(join(here, '../lib/boch/actions.ts'), 'utf8')
 assert('mapBochActions maps roadmap', /roadmap:\s*'roadmap'/.test(actionsSrc))
 assert('mapBochActions maps jden-studios', /'jden-studios':\s*'jden-studios'/.test(actionsSrc))
+assert('mapBochActions maps files', /files:\s*'files'/.test(actionsSrc))
 assert('mapBochActions does not map guestbook', !/guestbook:\s*'guestbook'/.test(actionsSrc))
 assert('mapBochActions does not map firewall', !/firewall:\s*'firewall'/.test(actionsSrc))
 

@@ -1,4 +1,5 @@
 import { isWindowId } from '@/components/os/apps'
+import { FILES_FOLDERS } from '@/lib/os/files'
 import { isRecruiterSectionId } from '@/lib/portfolio-knowledge'
 import { getCaseStudy, isCaseStudyProjectId } from '@/lib/portfolio/case-studies'
 import { getProjectById } from '@/lib/portfolio/selectors'
@@ -53,6 +54,11 @@ function actionIssues(entry: SpotlightEntry) {
     case 'open-recruiter-section':
       if (!isRecruiterSectionId(action.sectionId)) {
         issues.push(`${entry.id} opens unknown recruiter section ${action.sectionId}`)
+      }
+      break
+    case 'open-files':
+      if (!(FILES_FOLDERS as readonly string[]).includes(action.folder)) {
+        issues.push(`${entry.id} opens unknown Files location ${action.folder}`)
       }
       break
     case 'open-external':
@@ -114,6 +120,8 @@ export function describeSpotlightAction(action: SpotlightAction) {
       return 'Open Portfolio section'
     case 'open-recruiter-section':
       return 'Open Recruiter section'
+    case 'open-files':
+      return 'Open Files location'
     case 'open-external':
       return 'Open external link'
     case 'system':

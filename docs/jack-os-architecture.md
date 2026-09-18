@@ -52,7 +52,7 @@ JackOS
 - Desktop dock pins are `DOCK_PINNED_APP_IDS`. Pin IDs resolve through `WINDOW_APPS`; do not duplicate names or icons.
 - Desktop and mobile launcher order is `DESKTOP_LAUNCHER_APP_IDS`; `DESKTOP_ITEMS` is derived from that list plus GitHub/LinkedIn links. The desktop rail hides dock-pinned apps so the two launchers do not show the same list.
 - Spotlight app rows are derived from `SPOTLIGHT_APP_IDS` via `lib/search/build-index.ts`. There is no parallel command palette.
-- Hash routing is `WINDOW_HASH_SLUGS`, `getWindowHash`, and `getWindowIdFromHash`.
+- Hash routing is `WINDOW_HASH_SLUGS`, `getWindowHash`, and `getWindowIdFromHash`. Recruiter and Files also use multi-segment hashes (`#recruiter/education`, `#files/projects`).
 - Project case studies use a single `case-study` window. Deep links are `#case-study/{projectId}` with `#project/{projectId}` as an alias. Existing product hashes (`#kickoff`, `#pocket-pier`, `#1984-blue-ocean`, `#portfolio`) still open those apps.
 - Home is launched from Welcome / first visit / system menu, not the desktop icon rail.
 - JDEN STUDIOS is a registered window plus a system-level desktop artifact; it is not a desktop launcher icon.
@@ -151,6 +151,7 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 | Recruiter Mode (`#recruiter`) | Fast evidence brief. Same hashes for sections (`#recruiter/projects`). |
 | Simple Mode (`/simple`) | Conventional full-site experience without OS chrome. |
 | Resume.app (`#resume`) | Readable resume plus `/jack-dennehey-resume.txt` download. |
+| Files.app (`#files`) | Virtual explorer over canonical projects, experience, education, skills, credentials, and resume. |
 | Contact (`#contact`) | Email, GitHub, LinkedIn, site identity. |
 | BOCH (`#boch`) | Sole JackOS assistant. Public conversational guide. Deployment.PUBLIC. Legacy `#jd` and `#assistant` open BOCH. |
 
@@ -158,7 +159,7 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 
 - Simple Mode is a **route**, not in-app window state. Opening it is `window.location.assign('/simple')` (full navigation).
 - Return to JackOS is `/`. Browser history is a normal page stack: `/` ↔ `/simple`.
-- Direct hashes into JackOS still work from Simple Mode (`/#portfolio`, `/#resume`, `/#contact`, `/#recruiter`, `/#case-study/{id}`).
+- Direct hashes into JackOS still work from Simple Mode (`/#portfolio`, `/#resume`, `/#contact`, `/#recruiter`, `/#files`, `/#case-study/{id}`).
 - `/simple` does not load the desktop shell. That is the performance boundary; do not rewrite architecture solely for theoretical bundle savings.
 
 ## Spotlight
@@ -166,7 +167,7 @@ Two intentional paths share one content graph (`lib/portfolio`, case studies, Sp
 - Local search only. No network, no query telemetry, no web search, no LLM.
 - Index sources: `WINDOW_APPS` / `SPOTLIGHT_APP_IDS`, canonical `lib/portfolio` records, case studies and sections, timeline, recruiter sections, real system commands, and project links. Small aliases live in `lib/search/aliases.ts` and are not a second content source.
 - Query and ranking live in `lib/search/query.ts` and `lib/search/score.ts`. The UI does not own matching.
-- Actions are typed (`open-app`, `open-case-study`, `open-case-study-section`, `open-portfolio-section`, `open-recruiter-section`, `open-external`, `system`). `desktop.tsx` routes them through existing open/navigation helpers.
+- Actions are typed (`open-app`, `open-case-study`, `open-case-study-section`, `open-portfolio-section`, `open-recruiter-section`, `open-files`, `open-external`, `system`). `desktop.tsx` routes them through existing open/navigation helpers.
 - Case-study section results open the study and scroll `getCaseStudySectionDomId(projectId, sectionId)` into view. They do not use JackOS hashes.
 - Adding searchable content: put facts in the canonical source. Rebuild is automatic on import. Integrity checks run when `lib/search` is imported.
 - BOCH does not replace Spotlight. Spotlight stays fast and deterministic. BOCH consumes canonical portfolio knowledge, not Spotlight UI scraping.
@@ -199,7 +200,7 @@ See `JACK_OS_STORAGE_CATALOG` in `lib/os/storage.ts`. Existing key strings are s
 - `app/globals.css` and keynote CSS are large; visual identity should stay JackOS-native rather than a macOS/Windows clone.
 - Compatibility adapters `lib/portfolio-data.ts` and `lib/portfolio-knowledge.ts` remain until remaining consumers are migrated.
 - Sitemap `lastModified` is set only when `VERCEL_GIT_COMMIT_DATE` is present. There is no invented “last updated” date.
-- Files and Terminal remain future milestones.
+- Files.app is the public portfolio explorer over canonical `lib/portfolio` records (`lib/os/files.ts`, `#files`, `#files/projects`). It is an information architecture, not a disk. Terminal remains a future milestone.
 - BOCH production intelligence is `GeminiPublicModelProvider` over Google Gemini API (`gemini-3.5-flash`, failover `gemini-3.5-flash-lite`) using server-only `GEMINI_API_KEY`. Development may use `BOCH_PROVIDER=local` (workstation Ollama). Production never uses localhost Ollama. Vercel AI Gateway is optional (`BOCH_PROVIDER=gateway`) and not required for production. Do not use `NEXT_PUBLIC_GEMINI_API_KEY`.
 - PUBLIC BOCH sends only public conversation context to Gemini: personality/system prompt, authority block, canonical JACK/BOCH evidence for the current topic, CURRENT evidence when present, a referent-only session block, and the current visitor text. Conversation history is not a fact source. It does not send Personal BOCH memory, private notes, credentials, or the API key. Google's free-tier terms may use prompts to improve their products.
 - BOCH visitor sessions: in-memory for local/tests; signed `jackos-boch-ctx` cookie when `BOCH_SESSION_SECRET` or `GUESTBOOK_FINGERPRINT_SECRET` is set; optional Upstash/Vercel KV (`KV_REST_API_URL` + `KV_REST_API_TOKEN`). Cookie-only is durable across serverless instances without pretending KV exists.

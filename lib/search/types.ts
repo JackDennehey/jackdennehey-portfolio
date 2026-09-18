@@ -1,3 +1,5 @@
+import type { FilesFolderId } from '@/lib/os/files'
+
 export const SPOTLIGHT_KINDS = [
   'app',
   'project',
@@ -70,6 +72,7 @@ export type SpotlightAction =
   | { type: 'open-case-study-section'; projectId: string; sectionId: string }
   | { type: 'open-portfolio-section'; sectionId: PortfolioSectionId }
   | { type: 'open-recruiter-section'; sectionId: string }
+  | { type: 'open-files'; folder: FilesFolderId }
   | { type: 'open-external'; href: string }
   | { type: 'system'; command: SpotlightSystemCommand }
 
