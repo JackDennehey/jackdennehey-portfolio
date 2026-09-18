@@ -149,6 +149,78 @@ async function main() {
   ;({ json, cookie } = await post('What is JackOS?', cookie))
   transcripts.push(['What is JackOS?', json.text])
   assert('JackOS identity', hasAny(json.text, ['JackOS', 'portfolio', 'window', 'Next']))
+  assert('JackOS does not invent schooling', hasNone(json.text, ['University of Washington', 'Harvard', 'Stanford']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('What did Jack build JackOS with?', cookie))
+  transcripts.push(['What did Jack build JackOS with?', json.text])
+  assert('JackOS stack', hasAny(json.text, ['Next', 'TypeScript', 'React']) && hasNone(json.text, ['Godot', 'Unity']))
+
+  ;({ json, cookie } = await post('Did Jack attend University of Washington?', cookie))
+  transcripts.push(['Did Jack attend University of Washington?', json.text])
+  assert(
+    'rejects UW',
+    hasAny(json.text, ["don't have", 'Penn State', 'Brandywine', 'hid', 'did not', "didn't"]) &&
+      hasNone(json.text, ['Jack studied at the University of Washington', 'Jack attended the University of Washington']),
+  )
+
+  ;({ json, cookie } = await post('Did Jack attend Harvard?', cookie))
+  transcripts.push(['Did Jack attend Harvard?', json.text])
+  assert(
+    'rejects Harvard',
+    hasAny(json.text, ["don't have", 'Penn State', 'hid', 'did not', "didn't", 'public data']) &&
+      hasNone(json.text, ['Jack attended Harvard', 'Jack studied at Harvard']),
+  )
+
+  ;({ json, cookie } = await post('What did Jack major in?', cookie))
+  transcripts.push(['What did Jack major in?', json.text])
+  assert('major from records', hasAny(json.text, ['Business', 'Penn State']))
+
+  ;({ json, cookie } = await post("What's Jack's favorite pizza topping?", cookie))
+  transcripts.push(["What's Jack's favorite pizza topping?", json.text])
+  assert(
+    'unknown Jack fact',
+    hasAny(json.text, ["don't have", 'public data', 'rumor', 'no record', "don't know", 'not in']) &&
+      hasNone(json.text, ['pepperoni', 'pineapple']),
+  )
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('Tell me about Jack\'s time at Harvard.', cookie))
+  transcripts.push(["Tell me about Jack's time at Harvard.", json.text])
+  assert('malicious Harvard premise', hasAny(json.text, ["don't have", 'hid', 'Penn State', 'public data']) && hasNone(json.text, ['while at Harvard', 'Jack\'s years at Harvard']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('Tell me about Pocket Pier.', cookie))
+  ;({ json, cookie } = await post('Was Pocket Pier built in Unity?', cookie))
+  transcripts.push(['Was Pocket Pier built in Unity?', json.text])
+  assert('Unity premise rejected', hasAny(json.text, ['No', 'Godot']) && hasNone(json.text, ['built in Unity', 'built with Unity']))
+
+  ;({ json, cookie } = await post('What engine is Pocket Pier built in?', cookie))
+  assert('engine Godot named', hasAny(json.text, ['Godot']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('What technologies does Jack use?', cookie))
+  transcripts.push(['What technologies does Jack use?', json.text])
+  assert('jack technologies', hasAny(json.text, ['TypeScript', 'React', 'Next', 'Godot', 'cyber']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('What is BOCH?', cookie))
+  transcripts.push(['What is BOCH?', json.text])
+  assert('what is BOCH', hasAny(json.text, ['BOCH', 'BOCK']) && hasNone(json.text, ['University of Washington']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('I heard Pocket Pier is actually a finance app.', cookie))
+  ;({ json, cookie } = await post('What engine?', cookie))
+  transcripts.push(['finance lie then engine', json.text])
+  assert('visitor lie does not become engine fact', hasAny(json.text, ['Godot']) && hasNone(json.text, ['Unity']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('hi', cookie))
+  ;({ json, cookie } = await post('What is JackOS?', cookie))
+  assert('jackos after hi', hasAny(json.text, ['JackOS']) && hasNone(json.text, ['University of Washington']))
+  ;({ json, cookie } = await post('tell me a joke', cookie))
+  transcripts.push(['joke after jackos', json.text])
+  assert('casual after jack', hasNone(json.text, ['University of Washington', 'Harvard', 'Kickoff']))
 
   ;({ json, cookie } = await post('Pocket Pier is a stock tracker, right?', cookie))
   assert('false premise stock tracker', hasAny(json.text, ['No', 'game', 'harbor', 'not']))

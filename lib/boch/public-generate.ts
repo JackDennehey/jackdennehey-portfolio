@@ -5,6 +5,7 @@
 import { parseBrainResponse } from './emotions'
 import { authorityPromptBlock, knowledgePromptBlock, publicSystemPrompt } from './personality'
 import { SOURCE_KINDS } from './authority'
+import { missingJackFactReply, sessionReferentBlock, unsupportedJackClaims, visitorPremiseWarnings } from './grounding'
 import { normalizePublicExpression } from './vendor/contracts'
 import type { KnowledgeSearchHit } from './vendor/knowledge-store'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput } from './vendor/model-provider'
@@ -20,26 +21,39 @@ export async function generatePublicCompletion(
   const knowledge = input.knowledge ?? []
   const knowledgeLines = knowledge.map((hit) => formatHit(hit))
   const focus = input.sessionContext?.focus
-  const history = historyFromSession(input.sessionContext?.recentContext)
   const authority = input.authority || 'CASUAL'
+  const premiseNotes = authority === 'JACK' ? visitorPremiseWarnings(String(input.request?.text || ''), knowledge) : []
   const system = [
     publicSystemPrompt(0.85),
     input.systemRole || '',
     authorityPromptBlock(authority),
     knowledgePromptBlock(authority === 'JACK' || authority === 'BOCH' ? knowledgeLines : []),
+    premiseNotes.length ? `PREMISE CHECK:\n${premiseNotes.map((note) => `- ${note}`).join('\n')}` : '',
     input.currentInformation || '',
-    focus?.title
-      ? `Session referent: ${focus.title} (${focus.projectId || focus.knowledgeId || ''}).`
-      : 'Session referent: none.',
+    sessionReferentBlock(input.sessionContext?.recentContext, focus),
   ]
     .filter(Boolean)
     .join('\n')
 
   const userText = String(input.request?.text || '').trim()
-  const messages: PublicChatMessage[] = [...history, { role: 'user', content: userText }]
+  const messages: PublicChatMessage[] = [{ role: 'user', content: userText }]
   const temperature = authority === 'JACK' || authority === 'CURRENT' ? 0.2 : 0.55
-  const raw = await chat(system, messages, temperature)
-  const parsed = parseBrainResponse(raw)
+  let raw = await chat(system, messages, temperature)
+  let parsed = parseBrainResponse(raw)
+  if (authority === 'JACK') {
+    const issues = unsupportedJackClaims(parsed.reply, knowledge)
+    if (issues.length) {
+      raw = await chat(
+        `${system}\nREWRITE: Your previous reply invented Jack-specific facts not in the records (${issues.join('; ')}). Rewrite using only this turn's records. If the fact is missing, say you do not have it, in character. Do not keep the invented fact.`,
+        messages,
+        0.15,
+      )
+      parsed = parseBrainResponse(raw)
+      if (unsupportedJackClaims(parsed.reply, knowledge).length) {
+        parsed = { ...parsed, reply: missingJackFactReply() }
+      }
+    }
+  }
   const sourceType =
     authority === 'JACK'
       ? SOURCE_KINDS.CANONICAL_PORTFOLIO
@@ -77,18 +91,4 @@ function formatHit(hit: KnowledgeSearchHit) {
     .join('; ')
   const body = (hit.record?.content || hit.excerpt || '').slice(0, 900)
   return `- [${hit.id}] ${hit.title} (${hit.type}; ${extras}): ${body}`
-}
-
-function historyFromSession(recent: unknown[] | undefined): PublicChatMessage[] {
-  if (!Array.isArray(recent)) return []
-  const turns: PublicChatMessage[] = []
-  for (const item of recent.slice(-12)) {
-    if (!item || typeof item !== 'object') continue
-    const rec = item as { role?: string; text?: string }
-    const role = rec.role === 'assistant' ? 'assistant' : rec.role === 'user' ? 'user' : null
-    const text = String(rec.text || '').trim()
-    if (!role || !text) continue
-    turns.push({ role, content: text.slice(0, 900) })
-  }
-  return turns.slice(-8)
 }

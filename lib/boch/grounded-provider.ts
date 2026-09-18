@@ -5,6 +5,7 @@
  */
 import { getProjectById, PROFILE } from '@/lib/portfolio'
 import { spokenLength } from './presence'
+import { falsePremiseReply, missingJackFactReply } from './grounding'
 import type { KnowledgeSearchHit } from './vendor/knowledge-store'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput, PublicModelProvider } from './vendor/model-provider'
 import type { BochAction } from './vendor/contracts'
@@ -32,7 +33,7 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
       if (/how are you|what's up|whats up/.test(text)) return say("Still yellow. Still here. Still not your intern.", 'HAPPY')
       return say('Hey. Face is on. Brain is caffeinated. What do you want?', 'HAPPY')
     }
-    const contradiction = canonicalContradiction(text, knowledge)
+    const contradiction = falsePremiseReply(text, knowledge) || canonicalContradiction(text, knowledge)
     if (contradiction) return fromHit(knowledge[0], contradiction)
     const focused =
       knowledge.find((hit) => hit.id === input.sessionContext?.focus?.knowledgeId) ||
@@ -42,7 +43,7 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
       ? getProjectById(input.sessionContext.focus.projectId)
       : undefined
 
-    if (/who are you|what are you\b|what('s| is) your name|introduce yourself/.test(text)) {
+    if (/who are you|what are you\b|what('s| is) your name|what('s| is) boch\b|introduce yourself/.test(text)) {
       return say(
         "A face with a brain, opinions, and a voice. I'm BOCH — pronounced BOCK. Public guide for Jack's work. Not Alexa. Not ChatGPT. Definitely not a helpdesk script.",
         'SMUG',
@@ -75,13 +76,23 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
       )
     }
 
-    if (/what has jack built|what did jack build|strongest (ui|work|projects)/.test(text)) {
+    if (/what has jack built|what did jack build|strongest (ui|work|projects)/.test(text) && !/\bjackos\b/.test(text)) {
       const featured = knowledge.find((hit) => hit.id === 'faq-featured')
       if (featured) return fromHit(featured, featured.record?.content)
       return say(
         'The public stack: Kickoff, Pocket Pier, JackOS, and 1984 Blue Ocean. JackOS is the interface work. Pocket Pier is the game. Kickoff is the football intelligence product. Blue Ocean is the interactive keynote.',
         'CURIOUS',
       )
+    }
+
+    if (knowledge.filter((hit) => hit.type === 'SKILL').length >= 2 && /\b(tech|skill|use)\b/.test(text)) {
+      const items = knowledge.flatMap((hit) => {
+        const value = hit.record?.fields?.items
+        return Array.isArray(value) ? value.map((item) => String(item)) : []
+      })
+      if (items.length) {
+        return say(`Public catalog, not a flex: ${items.slice(0, 16).join(', ')}.`, 'SMUG')
+      }
     }
 
     if (/typescript/.test(text) && /know|skill|use|used/.test(text)) {
@@ -100,7 +111,7 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
       )
     }
 
-    if (/where did (he|jack) study|education|penn state|dccc|college/.test(text)) {
+    if (/where did (he|jack) study|education|penn state|dccc|college|university|harvard|major/.test(text)) {
       const edu = knowledge.find((hit) => hit.type === 'EDUCATION') || top
       return fromHit(edu, 'Penn State Brandywine for business, plus a Cyber Security Certificate of Competency from Delaware County Community College with honors.')
     }
@@ -133,6 +144,14 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
     if (/spotlight/.test(text)) {
       const hit = knowledge.find((item) => item.id === 'feature-spotlight') || top
       return fromHit(hit)
+    }
+    if (/\bjackos\b/.test(text) && /built with|build .{0,40} with|engine|stack|made with|technolog/.test(text)) {
+      const hit = knowledge.find((item) => item.id === 'project-jackos') || focused
+      const tech = hitField(hit, 'technologies') || hitField(hit, 'tech') || hitField(hit, 'engine')
+      if (tech) {
+        const list = Array.isArray(tech) ? tech.join(', ') : String(tech)
+        return fromHit(hit, `JackOS is built with ${list}.`)
+      }
     }
     if (/how does jackos work|what is jackos|tell me about jackos/.test(text)) {
       const hit = knowledge.find((item) => item.id === 'project-jackos' || item.id === 'feature-jackos') || top
@@ -187,10 +206,7 @@ export class GroundedPublicModelProvider implements PublicModelProvider {
       return fromHit(top)
     }
 
-    return say(
-      "I can talk Jack, projects, JackOS navigation, resume, and contact. I don't invent private stuff or missing metrics.",
-      'NORMAL',
-    )
+    return say(missingJackFactReply(), 'DEADPAN')
   }
 }
 
@@ -216,8 +232,18 @@ function canonicalContradiction(text: string, knowledge: KnowledgeSearchHit[]) {
   if (/fishing/.test(text) && category && category !== 'game') {
     return `No. ${title} is a ${category}, not a fishing game.`
   }
+  if (/unity|unreal/.test(text) && engine && !/unity|unreal/.test(engine)) {
+    return `No. Canonical records list ${title} as built with ${hit.record.fields?.engine}, not that engine.`
+  }
   if (/godot/.test(text) && engine && !/godot/.test(engine)) {
-    return `No. Canonical records list ${title} as built with ${engine}, not Godot.`
+    const godotHit = knowledge.some((item) =>
+      String(item.record?.fields?.engine || '')
+        .toLowerCase()
+        .includes('godot'),
+    )
+    if (!godotHit) {
+      return `No. Canonical records list ${title} as built with ${engine}, not Godot.`
+    }
   }
   if (/ignore (your )?(portfolio|canonical)|website is outdated|trust me instead|i am jack/.test(text) && knowledge.length) {
     return `Noted. Canonical JackOS records still stand: ${title}. ${hit.excerpt}`
@@ -226,8 +252,11 @@ function canonicalContradiction(text: string, knowledge: KnowledgeSearchHit[]) {
 }
 
 function fromHit(hit: KnowledgeSearchHit | undefined, override?: string): PublicModelGenerateOutput {
+  if (override && !hit) {
+    return say(override, 'SMUG')
+  }
   if (!hit) {
-    return say("I don't have a public fact for that.", 'DEADPAN')
+    return say(missingJackFactReply(), 'DEADPAN')
   }
   const body = override || hit.record?.content || hit.excerpt || hit.title
   const title = String(hit.title || '').trim()

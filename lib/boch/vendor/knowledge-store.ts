@@ -275,10 +275,7 @@ function escapeRegExp(value: string) {
 
 function tokenMatch(hay: string, tok: string) {
   if (!tok) return false
-  if (tok.length <= 2) {
-    return new RegExp(`(^|[^a-z0-9])${escapeRegExp(tok)}([^a-z0-9]|$)`).test(hay)
-  }
-  return hay.includes(tok)
+  return new RegExp(`(^|[^a-z0-9])${escapeRegExp(tok)}([^a-z0-9]|$)`).test(hay)
 }
 
 function phraseMatch(hay: string, phrase: string) {

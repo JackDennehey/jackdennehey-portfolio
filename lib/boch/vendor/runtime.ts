@@ -22,6 +22,7 @@ import { PublicKnowledgeStore, type KnowledgeSearchHit, type PublicKnowledgeReco
 import { PublicSessionStore, type PublicSession, type PublicSessionFocus } from './session-store'
 import { classifyPublicQuery, isClockQuestion, sourceKindForAuthority, SOURCE_KINDS } from '../authority'
 import { createCurrentInformationProvider, formatCurrentEvidence, RuntimeClockCurrentInformationProvider, type PublicCurrentInformationProvider } from '../current-information'
+import { selectJackEvidence } from '../grounding'
 import { recordBochDiagnostic } from '../diagnostics'
 import { resolveBrainBackend, resolveProviderMode } from '../hosted-provider'
 
@@ -398,36 +399,7 @@ export class PublicBochRuntime {
         .map((rec) => asHit(rec, 'HIGH'))
     }
 
-    const raw = this.knowledge.search(text, { limit: limit + 2 })
-    const strong = raw.filter((hit) => hit.confidence !== 'LOW')
-    let hits = (strong.length ? strong : raw).slice(0, limit)
-
-    for (const rec of namedRecords) {
-      if (!hits.find((hit) => hit.id === rec.id)) hits = [asHit(rec, 'HIGH'), ...hits].slice(0, limit)
-    }
-
-    if (isAnaphora(text) && session.focus?.knowledgeId) {
-      const rec = this.knowledge.getById(session.focus.knowledgeId)
-      if (rec) {
-        hits = [asHit(rec, 'HIGH'), ...hits.filter((hit) => hit.id !== rec.id)].slice(0, limit)
-      }
-    }
-
-    if (/ui\/?ux|frontend work|front-end/i.test(text) && /project|work/i.test(text)) {
-      const tagged = this.knowledge.getByTag('ui').concat(this.knowledge.getByTag('ux'))
-      const projects = tagged.filter((record) => record.type === 'PROJECT')
-      for (const rec of projects) {
-        if (!hits.find((hit) => hit.id === rec.id)) hits.push(asHit(rec, 'HIGH'))
-      }
-      hits = hits.slice(0, limit)
-    }
-
-    if (!hits.length) {
-      const featured = this.knowledge.getByTag('featured').filter((record) => record.type === 'PROJECT')
-      hits = featured.slice(0, limit).map((rec) => asHit(rec, 'HIGH'))
-    }
-
-    return hits
+    return selectJackEvidence(this.knowledge, text, session, limit)
   }
 
   private adoptFocus(
@@ -735,15 +707,6 @@ function asksUnknownMetric(text: string) {
 function unpublishedMetricReply(field: string) {
   if (field === 'salary') return "That's not public. I don't have Jack's salary."
   return "I don't have a public number for that — unpublished, not invented."
-}
-
-function isAnaphora(text: string) {
-  const t = text.toLowerCase().trim()
-  if (/\bwhich\b/.test(t) && !/\b(it|that|this)\b/.test(t)) return false
-  return (
-    /\b(it|that|this|the project|the game|the app)\b/.test(t) ||
-    /^(what engine|what tech|built with|the engine)/.test(t)
-  )
 }
 
 function stripRecord(hit: KnowledgeSearchHit): KnowledgeSearchHit {

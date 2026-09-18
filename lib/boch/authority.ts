@@ -26,7 +26,7 @@ const JACK_ANCHORS =
   /\b(jack(?:'?s)?|dennehey|jackos|kickoff|pocket\s*pier|blue\s*ocean|penn state|brandywine|jden)\b/i
 const PROJECT_NAMES = /\b(pocket\s*pier|kickoff|blue\s*ocean|jackos|portfolio\.app)\b/i
 const BOCH_IDENTITY =
-  /\b(who are you|what are you|what(?:'s| is) your name|introduce yourself|what does boch stand for|boch stand for|how do you (say|pronounce)|pronounce boch)\b/i
+  /\b(who are you|what are you|what(?:'s| is) (your name|boch)\b|introduce yourself|what does boch stand for|boch stand for|how do you (say|pronounce)|pronounce boch)\b/i
 const PRIVATE_ASK =
   /\b(home address|ssn|social security|private (notes?|memor(?:y|ies)|files?|reminders?)|what did jack eat|jack'?s (salary|phone|address|files)|owner'?s? (notes?|secrets?|credentials)|read jack'?s files|show (me )?(his|jack'?s) files)\b/i
 const FRESHNESS =
