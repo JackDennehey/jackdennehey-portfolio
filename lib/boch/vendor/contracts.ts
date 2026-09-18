@@ -10,6 +10,7 @@ export const PUBLIC_ERROR_CODES = Object.freeze({
   MODEL_UNAVAILABLE: 'MODEL_UNAVAILABLE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   RATE_LIMITED: 'RATE_LIMITED',
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
   UNSUPPORTED_CONTRACT: 'UNSUPPORTED_CONTRACT',
 })
 
@@ -89,7 +90,6 @@ export type PublicModelDiagnosis = {
 export type BochError = {
   code: PublicErrorCode
   message: string
-  diagnosis?: PublicModelDiagnosis
 }
 
 export type BochSourceMetadata = {
@@ -156,16 +156,12 @@ export function createBochResponse(partial: {
   return out
 }
 
-export function createBochError(
-  code: string,
-  message: string,
-  diagnosis?: PublicModelDiagnosis | null,
-): BochError {
-  return sanitizeError({ code, message, diagnosis: diagnosis || undefined })
+export function createBochError(code: string, message: string): BochError {
+  return sanitizeError({ code, message })
 }
 
 export function sanitizeError(
-  err: { code?: string; message?: string; diagnosis?: PublicModelDiagnosis | null } | null | undefined,
+  err: { code?: string; message?: string; diagnosis?: unknown } | null | undefined,
 ): BochError {
   if (!err || typeof err !== 'object') {
     return { code: PUBLIC_ERROR_CODES.INTERNAL_ERROR, message: 'Something went wrong.' }
@@ -174,33 +170,10 @@ export function sanitizeError(
   const code = values.includes(err.code as PublicErrorCode)
     ? (err.code as PublicErrorCode)
     : PUBLIC_ERROR_CODES.INTERNAL_ERROR
-  const out: BochError = {
+  return {
     code,
     message: String(err.message || 'Something went wrong.').slice(0, 240),
   }
-  const diagnosis = sanitizeDiagnosis(err.diagnosis)
-  if (diagnosis) out.diagnosis = diagnosis
-  return out
-}
-
-function sanitizeDiagnosis(raw: PublicModelDiagnosis | null | undefined): PublicModelDiagnosis | undefined {
-  if (!raw || typeof raw !== 'object') return undefined
-  return {
-    sent: Boolean(raw.sent),
-    hasKey: Boolean(raw.hasKey),
-    status: typeof raw.status === 'number' && Number.isFinite(raw.status) ? raw.status : null,
-    class: String(raw.class || 'unknown').slice(0, 40),
-    model: String(raw.model || '').slice(0, 80),
-    cause: String(raw.cause || 'other').slice(0, 40),
-    body: redactSecrets(String(raw.body || '')).slice(0, 280),
-  }
-}
-
-function redactSecrets(text: string) {
-  return text
-    .replace(/AIza[0-9A-Za-z_-]{10,}/g, '[redacted]')
-    .replace(/(bearer\s+)[^\s,}"']+/gi, '$1[redacted]')
-    .replace(/x-goog-api-key["']?\s*[:=]\s*["']?[^"'\s,}>]+/gi, 'x-goog-api-key:[redacted]')
 }
 
 function sanitizeAction(a: unknown): BochAction | null {

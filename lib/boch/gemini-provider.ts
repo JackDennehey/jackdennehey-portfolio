@@ -8,6 +8,7 @@
  * Not sent: API key in logs/responses, Personal BOCH memory, private notes, filesystem,
  * credentials, unpublished owner data.
  */
+import { publicCodeFromProviderHttp } from './public-failure.mjs'
 import { generatePublicCompletion, type PublicChatMessage } from './public-generate'
 import { readServerEnv } from './server-env'
 import type { PublicModelDiagnosis } from './vendor/contracts'
@@ -34,7 +35,12 @@ export class GeminiPublicModelProvider implements PublicModelProvider {
       return await generatePublicCompletion(input, geminiChat)
     } catch (error) {
       const diagnosed = error as DiagnosedError
-      const code = diagnosed.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE'
+      const code =
+        diagnosed.code === 'QUOTA_EXCEEDED'
+          ? 'QUOTA_EXCEEDED'
+          : diagnosed.code === 'RATE_LIMITED'
+            ? 'RATE_LIMITED'
+            : 'MODEL_UNAVAILABLE'
       const err = new Error('Model unavailable') as DiagnosedError
       err.code = code
       err.diagnosis = diagnosed.diagnosis || missingKeyDiagnosis()
@@ -82,7 +88,7 @@ async function geminiChat(system: string, messages: PublicChatMessage[], tempera
       if (!response.ok) {
         const diagnosis = diagnosisFromHttp(response.status, model, rawText, hasKey)
         logGeminiDiagnosis(diagnosis)
-        lastError = diagnosedError(diagnosis.cause === 'quota' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE', diagnosis)
+        lastError = diagnosedError(publicCodeFromProviderHttp(response.status, rawText), diagnosis)
         if (diagnosis.cause === 'quota' || diagnosis.cause === 'invalid_key' || diagnosis.cause === 'restricted_key') {
           break
         }

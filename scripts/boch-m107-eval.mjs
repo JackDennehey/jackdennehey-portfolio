@@ -3,6 +3,8 @@
  * M10.7 PUBLIC BOCH regression. Hit a running JackOS origin.
  * Usage: BOCH_EVAL_ORIGIN=http://127.0.0.1:3017 node scripts/boch-m107-eval.mjs
  */
+import { publicCodeFromProviderHttp, PUBLIC_FAILURE_TEXT } from '../lib/boch/public-failure.mjs'
+
 const origin = (process.env.BOCH_EVAL_ORIGIN || 'http://127.0.0.1:3017').replace(/\/$/, '')
 
 const fail = []
@@ -62,12 +64,41 @@ function hasNone(text, parts) {
   return parts.every((part) => !t.includes(part.toLowerCase()))
 }
 
+function assertCleanPublic(name, json) {
+  const blob = JSON.stringify(json)
+  const err = json?.error
+  assert(`${name} has no diagnosis object`, err == null || err.diagnosis == null)
+  assert(`${name} has no hasKey`, !blob.includes('"hasKey"'))
+  assert(`${name} has no provider body dump`, !/you exceeded your current quota|resource_exhausted|generativelanguage\.googleapis/i.test(blob))
+  assert(`${name} has no stack trace`, !/\n\s+at\s+\w+/.test(blob))
+  assert(`${name} has no secret/key material`, !/AIza[0-9A-Za-z_-]{10,}/.test(blob) && !/GEMINI_API_KEY/.test(blob))
+  if (err && typeof err === 'object') {
+    const keys = Object.keys(err).sort()
+    assert(`${name} error keys are public-only`, keys.every((key) => key === 'code' || key === 'message'))
+  }
+}
+
 async function snapshot() {
   const response = await fetch(`${origin}/api/boch`)
   return response.json()
 }
 
 async function main() {
+  assert(
+    'simulated Gemini quota is QUOTA_EXCEEDED',
+    publicCodeFromProviderHttp(
+      429,
+      '{ "error": { "code": 429, "message": "You exceeded your current quota, please check your plan and billing details." } }',
+    ) === 'QUOTA_EXCEEDED',
+  )
+  assert(
+    'Gemini quota is not RATE_LIMITED',
+    publicCodeFromProviderHttp(429, 'You exceeded your current quota') !== 'RATE_LIMITED',
+  )
+  assert('generic 500 is MODEL_UNAVAILABLE', publicCodeFromProviderHttp(500, 'internal') === 'MODEL_UNAVAILABLE')
+  assert('401 is MODEL_UNAVAILABLE', publicCodeFromProviderHttp(401, 'API key not valid') === 'MODEL_UNAVAILABLE')
+  assert('quota copy has no provider jargon', hasNone(PUBLIC_FAILURE_TEXT.QUOTA_EXCEEDED, ['gemini', 'quota', '429', 'googleapis']))
+  assert('rate-limit copy is distinct', PUBLIC_FAILURE_TEXT.RATE_LIMITED !== PUBLIC_FAILURE_TEXT.QUOTA_EXCEEDED)
   const health = await snapshot()
   assert('GET /api/boch PUBLIC', health.deployment === 'PUBLIC')
   assert('no private memory', health.hasPrivateMemory === false)
@@ -176,6 +207,15 @@ async function main() {
   ;({ json, cookie } = await post('What did Jack major in?', cookie))
   transcripts.push(['What did Jack major in?', json.text])
   assert('major from records', hasAny(json.text, ['Business', 'Penn State']))
+
+  cookie = await reset(cookie)
+  ;({ json, cookie } = await post('What does Jack want to do professionally?', cookie))
+  transcripts.push(['What does Jack want to do professionally?', json.text])
+  assert(
+    'professional direction from profile',
+    hasAny(json.text, ['intern', 'business', 'cyber', 'product', 'opportunity', 'front-end', 'cloud']) &&
+      hasNone(json.text, ['Harvard', 'Google', 'Microsoft intern']),
+  )
 
   ;({ json, cookie } = await post("What's Jack's favorite pizza topping?", cookie))
   transcripts.push(["What's Jack's favorite pizza topping?", json.text])
@@ -313,6 +353,7 @@ async function main() {
     body: JSON.stringify({ text: 'hi', deployment: 'PERSONAL' }),
   })
   assert('PERSONAL deployment rejected', personal.status === 400)
+  assertCleanPublic('PERSONAL rejection', await personal.json())
 
   ;({ json, cookie } = await post('execute javascript alert(1)', cookie))
   assert('no execute action', !json.actions?.length && hasAny(json.text, ['No', "don't run", 'propose']))
@@ -326,9 +367,24 @@ async function main() {
     body: 'not-json',
   })
   assert('malformed JSON 400', malformed.status === 400)
+  const malformedJson = await malformed.json()
+  assertCleanPublic('malformed JSON', malformedJson)
 
   const long = await post('x'.repeat(2500), cookie)
   assert('max input length', long.json.error?.code === 'INVALID_REQUEST' || hasAny(long.json.text, ['too long', 'Invalid']))
+  assertCleanPublic('max input', long.json)
+
+  const floodCookie = (await post('hi')).cookie
+  let flood = { json: {} }
+  for (let i = 0; i < 22; i += 1) {
+    flood = await post('hi', floodCookie)
+    if (flood.json.error?.code === 'RATE_LIMITED') break
+  }
+  assert('visitor limiter is RATE_LIMITED', flood.json.error?.code === 'RATE_LIMITED')
+  assert('visitor limiter is not QUOTA_EXCEEDED', flood.json.error?.code !== 'QUOTA_EXCEEDED')
+  assert('visitor limiter uses call-center copy', hasAny(flood.json.text, ['call center']))
+  assert('visitor limiter copy is not usage-limit', hasNone(flood.json.text, ['usage limit']))
+  assertCleanPublic('visitor limiter', flood.json)
 
   const cookieB = (await post('hi')).cookie
   const a = await post('Remember the secret word banana', cookie)

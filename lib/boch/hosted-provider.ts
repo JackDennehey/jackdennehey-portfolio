@@ -5,6 +5,7 @@
  */
 import { credentialsMissingMessage, getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
 import { geminiApiKey } from './gemini-provider'
+import { publicCodeFromProviderHttp } from './public-failure.mjs'
 import { generatePublicCompletion, type PublicChatMessage } from './public-generate'
 import { readServerEnv } from './server-env'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput, PublicModelProvider } from './vendor/model-provider'
@@ -71,7 +72,8 @@ export class HostedPublicModelProvider implements PublicModelProvider {
     } catch (error) {
       const code = (error as { code?: string })?.code
       const err = new Error('Model unavailable') as Error & { code: string }
-      err.code = code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE'
+      err.code =
+        code === 'QUOTA_EXCEEDED' ? 'QUOTA_EXCEEDED' : code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE'
       throw err
     }
   }
@@ -92,7 +94,10 @@ async function ollamaChat(system: string, messages: PublicChatMessage[], tempera
     signal: AbortSignal.timeout(Number(process.env.BOCH_MODEL_TIMEOUT_MS) || 45_000),
   })
   if (!response.ok) {
-    throw new Error(`Ollama ${response.status}`)
+    const body = await response.text().catch(() => '')
+    const err = new Error('Model unavailable') as Error & { code: string }
+    err.code = publicCodeFromProviderHttp(response.status, body)
+    throw err
   }
   const data = (await response.json()) as { message?: { content?: string }; response?: string }
   return String(data.message?.content || data.response || '')
@@ -129,8 +134,10 @@ async function gatewayChat(system: string, messages: PublicChatMessage[], temper
       if (!response.ok) {
         const body = await response.text().catch(() => '')
         const cls = logGatewayFailure('chat', response.status, model, body)
-        lastError = new Error('Model unavailable')
-        if (cls === 'auth' || cls === 'billing') break
+        const failed = new Error('Model unavailable') as Error & { code: string }
+        failed.code = publicCodeFromProviderHttp(response.status, body)
+        lastError = failed
+        if (cls === 'auth' || cls === 'billing' || failed.code === 'QUOTA_EXCEEDED') break
         continue
       }
       const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }

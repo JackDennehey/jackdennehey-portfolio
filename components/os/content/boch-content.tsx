@@ -188,14 +188,18 @@ export function BochContent({ onExecuteDestinations }: Props) {
         }),
       })
       const payload = (await response.json()) as BochResponse
+      const errorCode = payload.error?.code
       const nextPublic = payload.expression || 'NORMAL'
+      const brainOffline = errorCode === 'MODEL_UNAVAILABLE' || errorCode === 'QUOTA_EXCEEDED'
       const nextFace = (
-        payload.error?.code === 'MODEL_UNAVAILABLE'
+        brainOffline
           ? 'sleepy'
-          : PUBLIC_TO_FACE[nextPublic] || String(payload.emotion || 'happy')
+          : errorCode === 'RATE_LIMITED'
+            ? 'annoyed'
+            : PUBLIC_TO_FACE[nextPublic] || String(payload.emotion || 'happy')
       ).toLowerCase()
       const textOut = payload.text || "Brain's offline. Face still works. Tragic."
-      setPublicExpression(payload.error?.code === 'MODEL_UNAVAILABLE' ? 'SLEEP' : nextPublic)
+      setPublicExpression(brainOffline ? 'SLEEP' : errorCode === 'RATE_LIMITED' ? 'ANNOYED' : nextPublic)
       setFaceExpression(nextFace)
       setReply(textOut)
       setLog((current) => [...current.slice(-8), `BOCH: ${textOut}`])

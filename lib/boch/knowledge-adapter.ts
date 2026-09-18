@@ -56,7 +56,7 @@ export function buildPublicKnowledgeBundle(): PublicKnowledgeBundle {
     [formatProfileBrief(), `Product: ${PROFILE.productName}.`].join(' '),
     {
       tags: ['jack', 'bio', 'profile'],
-      aliases: ['Jack', 'Jack Dennehey', 'who is jack'],
+      aliases: ['Jack', 'Jack Dennehey', 'who is jack', 'professional goals', 'career', 'internships'],
       fields: {
         name: PROFILE.name,
         headline: PROFILE.headline,

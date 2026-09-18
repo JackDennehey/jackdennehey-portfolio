@@ -19,10 +19,11 @@ const EDUCATION_ASK =
 const JACKOS_ASK = /\bjackos\b/i
 const BUILT_ASK = /\b(what has jack built|what did jack build|projects has jack|strongest (ui|work|projects)|what projects)\b/i
 const SKILL_ASK = /\b(skills?|technologies does jack|what does jack (use|know)|typescript|know about)\b/i
-const BIO_ASK = /\b(who is jack|who'?s jack|tell me about jack)\b/i
+const BIO_ASK =
+  /\b(who is jack|who'?s jack|tell me about jack|professional(?:ly)?|career|internships?|what does jack want|opportunit(?:y|ies))\b/i
 const ENGINE_WORDS = ['godot', 'unity', 'unreal', 'gamemaker', 'gdscript']
 const FAILED_ASSISTANT =
-  /brain'?s offline|call center|try me in a minute|slow down a second|model unavailable|rate limited/i
+  /brain'?s offline|brain hit its usage limit|call center|try me again in a minute|try me later|slow down a second|model unavailable|rate limited|quota exceeded/i
 const DENIAL =
   /\b(don'?t have|do not have|didn'?t|did not|no (public|record|mention)|not in|isn'?t|is not|wasn'?t|was not|not built|not a |hid that|didn'?t happen|no mention|not listed|unsupported|not something|either he hid)\b/i
 

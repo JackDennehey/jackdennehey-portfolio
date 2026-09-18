@@ -11,8 +11,8 @@ import {
   type BochResponse,
   type BochSourceMetadata,
   type PublicLimits,
-  type PublicModelDiagnosis,
 } from './contracts'
+import { PUBLIC_FAILURE_TEXT } from '../public-failure.mjs'
 import { JackOSActionValidator } from './action-validator'
 import { MockPublicModelProvider, type PublicModelProvider } from './model-provider'
 import { PRIVATE_MARKERS, PUBLIC_EFFECTIVE_POLICY, ResponsePolicyValidator, resolvePublicDeployment } from './policy'
@@ -131,9 +131,11 @@ export class PublicBochRuntime {
       const code =
         thrown === 'MODEL_UNAVAILABLE'
           ? PUBLIC_ERROR_CODES.MODEL_UNAVAILABLE
-          : thrown === 'RATE_LIMITED'
-            ? PUBLIC_ERROR_CODES.RATE_LIMITED
-            : PUBLIC_ERROR_CODES.INTERNAL_ERROR
+          : thrown === 'QUOTA_EXCEEDED'
+            ? PUBLIC_ERROR_CODES.QUOTA_EXCEEDED
+            : thrown === 'RATE_LIMITED'
+              ? PUBLIC_ERROR_CODES.RATE_LIMITED
+              : PUBLIC_ERROR_CODES.INTERNAL_ERROR
       recordBochDiagnostic({
         at: Date.now(),
         provider: resolveProviderMode(),
@@ -151,22 +153,25 @@ export class PublicBochRuntime {
         requestId: (rawRequest as { requestId?: string })?.requestId || '',
         text:
           code === 'MODEL_UNAVAILABLE'
-            ? "Brain's offline. Face still works. Tragic."
-            : code === 'RATE_LIMITED'
-              ? "Easy. I'm not a call center. Try me in a minute."
-              : 'Something went sideways. Try again.',
+            ? PUBLIC_FAILURE_TEXT.MODEL_UNAVAILABLE
+            : code === 'QUOTA_EXCEEDED'
+              ? PUBLIC_FAILURE_TEXT.QUOTA_EXCEEDED
+              : code === 'RATE_LIMITED'
+                ? PUBLIC_FAILURE_TEXT.RATE_LIMITED
+                : 'Something went sideways. Try again.',
         emotion: code === 'RATE_LIMITED' ? 'annoyed' : 'confused',
         energy: 0.4,
-        expression: code === 'RATE_LIMITED' ? 'ANNOYED' : 'CONFUSED',
+        expression: code === 'RATE_LIMITED' ? 'ANNOYED' : code === 'QUOTA_EXCEEDED' || code === 'MODEL_UNAVAILABLE' ? 'SLEEP' : 'CONFUSED',
         actions: [],
         error: createBochError(
           code,
           code === 'MODEL_UNAVAILABLE'
             ? 'Model unavailable.'
-            : code === 'RATE_LIMITED'
-              ? 'Rate limited.'
-              : 'Internal error.',
-          (err as { diagnosis?: PublicModelDiagnosis }).diagnosis,
+            : code === 'QUOTA_EXCEEDED'
+              ? 'Quota exceeded.'
+              : code === 'RATE_LIMITED'
+                ? 'Rate limited.'
+                : 'Internal error.',
         ),
       })
     }
@@ -207,7 +212,7 @@ export class PublicBochRuntime {
     if (!rl.allowed) {
       return createBochResponse({
         requestId: req.requestId,
-        text: 'Easy there — slow down a second.',
+        text: PUBLIC_FAILURE_TEXT.RATE_LIMITED,
         emotion: 'annoyed',
         expression: 'ANNOYED',
         error: createBochError(PUBLIC_ERROR_CODES.RATE_LIMITED, 'Rate limited.'),
@@ -339,7 +344,7 @@ export class PublicBochRuntime {
       })
     } catch (err) {
       const code = (err as { code?: string })?.code
-      if (code === 'MODEL_UNAVAILABLE' || code === 'RATE_LIMITED') throw err
+      if (code === 'MODEL_UNAVAILABLE' || code === 'RATE_LIMITED' || code === 'QUOTA_EXCEEDED') throw err
       const e = new Error('Model unavailable') as Error & { code: string }
       e.code = 'MODEL_UNAVAILABLE'
       throw e
