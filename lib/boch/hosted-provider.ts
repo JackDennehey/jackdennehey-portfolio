@@ -4,7 +4,7 @@
  * Production never uses localhost Ollama. Vercel never uses Jack's Mac.
  */
 import { parseBrainResponse } from './emotions'
-import { getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
+import { credentialsMissingMessage, getGatewayAuthToken, logGatewayFailure } from './gateway-auth'
 import { authorityPromptBlock, knowledgePromptBlock, publicSystemPrompt } from './personality'
 import { SOURCE_KINDS } from './authority'
 import { normalizePublicExpression } from './vendor/contracts'
@@ -179,7 +179,7 @@ async function gatewayChat(system: string, messages: ChatMessage[], temperature 
   const key = await getGatewayAuthToken()
   if (!key) {
     console.error('[boch] AI Gateway auth missing (no API key, no request OIDC)')
-    throw new Error('AI Gateway credentials missing')
+    throw new Error(credentialsMissingMessage())
   }
   const models = [
     process.env.BOCH_MODEL || 'anthropic/claude-sonnet-4.6',

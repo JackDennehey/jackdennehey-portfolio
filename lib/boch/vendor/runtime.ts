@@ -154,7 +154,11 @@ export class PublicBochRuntime {
         actions: [],
         error: createBochError(
           code,
-          code === 'MODEL_UNAVAILABLE' ? 'Model unavailable.' : 'Internal error.',
+          err instanceof Error && err.message
+            ? err.message.slice(0, 240)
+            : code === 'MODEL_UNAVAILABLE'
+              ? 'Model unavailable.'
+              : 'Internal error.',
         ),
       })
     }

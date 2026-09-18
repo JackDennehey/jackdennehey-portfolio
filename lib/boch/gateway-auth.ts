@@ -5,37 +5,90 @@
  */
 import { AsyncLocalStorage } from 'node:async_hooks'
 
-const gatewayTokenStore = new AsyncLocalStorage<string>()
+export type GatewayAuthSource = 'api-key' | 'request' | 'context' | 'next-headers' | 'env' | 'missing'
 
-export function readGatewayTokenFromRequest(request: Request) {
-  return request.headers.get('x-vercel-oidc-token')?.trim() || null
+export type GatewayAuthSnapshot = {
+  token: string | null
+  source: GatewayAuthSource
+  vercelHeaders: string[]
 }
 
-export function runWithGatewayAuth<T>(token: string | null | undefined, fn: () => T): T {
-  const value = token?.trim()
-  if (!value) return fn()
-  return gatewayTokenStore.run(value, fn)
+const gatewayAuthStore = new AsyncLocalStorage<GatewayAuthSnapshot>()
+
+export function runWithGatewayAuth<T>(snapshot: GatewayAuthSnapshot, fn: () => T): T {
+  return gatewayAuthStore.run(snapshot, fn)
 }
 
-export async function getGatewayAuthToken(): Promise<string | null> {
-  const apiKey = process.env.AI_GATEWAY_API_KEY?.trim()
-  if (apiKey) return apiKey
+export function gatewayAuthSnapshot(): GatewayAuthSnapshot {
+  return gatewayAuthStore.getStore() || { token: null, source: 'missing', vercelHeaders: [] }
+}
 
-  const fromRequest = gatewayTokenStore.getStore()?.trim()
-  if (fromRequest) return fromRequest
-
-  const fromContext = readOidcFromVercelContext()
-  if (fromContext) return fromContext
-
+export async function collectGatewayAuth(request: Request): Promise<GatewayAuthSnapshot> {
+  const fromRequest = headerNames(request.headers)
+  let fromNext: string[] = []
+  let nextToken: string | null = null
   try {
     const { headers } = await import('next/headers')
-    const token = (await headers()).get('x-vercel-oidc-token')?.trim()
-    if (token) return token
+    const h = await headers()
+    fromNext = headerNames(h)
+    nextToken = pickOidcHeader(h)
   } catch {
     // Not a Next.js request.
   }
 
+  const vercelHeaders = uniqueSorted([...fromRequest, ...fromNext])
+  const apiKey = process.env.AI_GATEWAY_API_KEY?.trim() || null
+  if (apiKey) return { token: apiKey, source: 'api-key', vercelHeaders }
+
+  const requestToken = pickOidcHeader(request.headers)
+  if (requestToken) return { token: requestToken, source: 'request', vercelHeaders }
+
+  const contextToken = readOidcFromVercelContext()
+  if (contextToken) return { token: contextToken, source: 'context', vercelHeaders }
+
+  if (nextToken) return { token: nextToken, source: 'next-headers', vercelHeaders }
+
+  const envToken = process.env.VERCEL_OIDC_TOKEN?.trim() || null
+  if (envToken) return { token: envToken, source: 'env', vercelHeaders }
+
+  return { token: null, source: 'missing', vercelHeaders }
+}
+
+export async function getGatewayAuthToken(): Promise<string | null> {
+  const existing = gatewayAuthStore.getStore()
+  if (existing?.token) return existing.token
+  if (process.env.AI_GATEWAY_API_KEY?.trim()) return process.env.AI_GATEWAY_API_KEY.trim()
+  const fromContext = readOidcFromVercelContext()
+  if (fromContext) return fromContext
+  try {
+    const { headers } = await import('next/headers')
+    const token = pickOidcHeader(await headers())
+    if (token) return token
+  } catch {
+    // Not a Next.js request.
+  }
   return process.env.VERCEL_OIDC_TOKEN?.trim() || null
+}
+
+function pickOidcHeader(headers: Headers) {
+  return (
+    headers.get('x-vercel-oidc-token')?.trim() ||
+    headers.get('X-Vercel-Oidc-Token')?.trim() ||
+    null
+  )
+}
+
+function headerNames(headers: Headers) {
+  const names: string[] = []
+  headers.forEach((_, name) => {
+    const lower = name.toLowerCase()
+    if (lower.includes('vercel') || lower.includes('oidc')) names.push(lower)
+  })
+  return names
+}
+
+function uniqueSorted(values: string[]) {
+  return [...new Set(values)].sort()
 }
 
 function readOidcFromVercelContext() {
@@ -72,4 +125,10 @@ export function logGatewayFailure(kind: 'chat' | 'tts', status: number, model: s
     }),
   )
   return cls
+}
+
+export function credentialsMissingMessage() {
+  const snap = gatewayAuthSnapshot()
+  const hdrs = snap.vercelHeaders.join(',') || 'none'
+  return `AI Gateway credentials missing (${snap.source}; vercelHeaders=${hdrs})`
 }
