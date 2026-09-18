@@ -11,6 +11,7 @@ import {
   type BochResponse,
   type BochSourceMetadata,
   type PublicLimits,
+  type PublicModelDiagnosis,
 } from './contracts'
 import { JackOSActionValidator } from './action-validator'
 import { MockPublicModelProvider, type PublicModelProvider } from './model-provider'
@@ -164,6 +165,7 @@ export class PublicBochRuntime {
             : code === 'RATE_LIMITED'
               ? 'Rate limited.'
               : 'Internal error.',
+          (err as { diagnosis?: PublicModelDiagnosis }).diagnosis,
         ),
       })
     }

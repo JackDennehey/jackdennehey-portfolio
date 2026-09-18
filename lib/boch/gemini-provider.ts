@@ -9,9 +9,12 @@
  * credentials, unpublished owner data.
  */
 import { generatePublicCompletion, type PublicChatMessage } from './public-generate'
+import type { PublicModelDiagnosis } from './vendor/contracts'
 import type { PublicModelGenerateInput, PublicModelGenerateOutput, PublicModelProvider } from './vendor/model-provider'
 
 const GEMINI_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models'
+
+type DiagnosedError = Error & { code: string; diagnosis: PublicModelDiagnosis }
 
 export function geminiApiKey() {
   return process.env.GEMINI_API_KEY?.trim() || null
@@ -29,26 +32,27 @@ export class GeminiPublicModelProvider implements PublicModelProvider {
     try {
       return await generatePublicCompletion(input, geminiChat)
     } catch (error) {
-      const code = (error as { code?: string })?.code
-      const err = new Error('Model unavailable') as Error & { code: string }
-      err.code = code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE'
+      const diagnosed = error as DiagnosedError
+      const code = diagnosed.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE'
+      const err = new Error('Model unavailable') as DiagnosedError
+      err.code = code
+      err.diagnosis = diagnosed.diagnosis || missingKeyDiagnosis()
       throw err
     }
   }
 }
 
 async function geminiChat(system: string, messages: PublicChatMessage[], temperature: number) {
+  const hasKey = Boolean(geminiApiKey())
   const key = geminiApiKey()
   if (!key) {
-    const err = new Error('Model unavailable') as Error & { code: string }
-    err.code = 'MODEL_UNAVAILABLE'
-    throw err
+    throw diagnosedError('MODEL_UNAVAILABLE', missingKeyDiagnosis())
   }
 
   const maxTokens = Number(process.env.BOCH_MAX_OUTPUT_TOKENS) || 400
   const timeoutMs = Number(process.env.BOCH_MODEL_TIMEOUT_MS) || 45_000
   const contents = toGeminiContents(messages)
-  let lastError: Error | null = null
+  let lastError: DiagnosedError | null = null
 
   for (const model of geminiModelIds()) {
     const url = `${GEMINI_ROOT}/${encodeURIComponent(model)}:generateContent`
@@ -72,17 +76,32 @@ async function geminiChat(system: string, messages: PublicChatMessage[], tempera
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       })
+      const rawText = await response.text().catch(() => '')
       if (!response.ok) {
-        const cls = classifyGeminiHttp(response.status)
-        console.error(JSON.stringify({ boch: true, provider: 'gemini', status: response.status, class: cls, model }))
-        lastError = Object.assign(new Error('Model unavailable'), {
-          code: cls === 'rate' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE',
-        }) as Error & { code: string }
-        if (cls === 'rate' || cls === 'auth') break
+        const diagnosis = diagnosisFromHttp(response.status, model, rawText, hasKey)
+        logGeminiDiagnosis(diagnosis)
+        lastError = diagnosedError(diagnosis.cause === 'quota' ? 'RATE_LIMITED' : 'MODEL_UNAVAILABLE', diagnosis)
+        if (diagnosis.cause === 'quota' || diagnosis.cause === 'invalid_key' || diagnosis.cause === 'restricted_key') {
+          break
+        }
         continue
       }
-      const data = (await response.json()) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+      let data: { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+      try {
+        data = JSON.parse(rawText) as typeof data
+      } catch {
+        const diagnosis = makeDiagnosis({
+          sent: true,
+          hasKey,
+          status: response.status,
+          class: 'parse',
+          model,
+          cause: 'parse',
+          body: 'Gemini JSON parse failed',
+        })
+        logGeminiDiagnosis(diagnosis)
+        lastError = diagnosedError('MODEL_UNAVAILABLE', diagnosis)
+        continue
       }
       const text = (data.candidates || [])
         .flatMap((candidate) => candidate.content?.parts || [])
@@ -90,21 +109,117 @@ async function geminiChat(system: string, messages: PublicChatMessage[], tempera
         .join('')
         .trim()
       if (text) return text
-      lastError = new Error('Model unavailable')
+      const diagnosis = makeDiagnosis({
+        sent: true,
+        hasKey,
+        status: response.status,
+        class: 'parse',
+        model,
+        cause: 'parse',
+        body: 'Gemini empty candidates',
+      })
+      logGeminiDiagnosis(diagnosis)
+      lastError = diagnosedError('MODEL_UNAVAILABLE', diagnosis)
     } catch (error) {
-      if ((error as { code?: string })?.code === 'RATE_LIMITED') throw error
-      lastError = error instanceof Error ? error : new Error('Model unavailable')
+      const name = error instanceof Error ? error.name : 'Error'
+      const diagnosis = makeDiagnosis({
+        sent: true,
+        hasKey,
+        status: null,
+        class: 'network',
+        model,
+        cause: 'network',
+        body: name === 'TimeoutError' || name === 'AbortError' ? `Gemini ${name}` : 'Gemini fetch failed',
+      })
+      logGeminiDiagnosis(diagnosis)
+      lastError = diagnosedError('MODEL_UNAVAILABLE', diagnosis)
     }
   }
 
-  throw lastError || new Error('Model unavailable')
+  throw lastError || diagnosedError('MODEL_UNAVAILABLE', missingKeyDiagnosis())
 }
 
-function classifyGeminiHttp(status: number) {
-  if (status === 401 || status === 403) return 'auth'
-  if (status === 429) return 'rate'
-  if (status === 404) return 'model'
-  return 'gemini'
+function missingKeyDiagnosis(): PublicModelDiagnosis {
+  return makeDiagnosis({
+    sent: false,
+    hasKey: false,
+    status: null,
+    class: 'auth',
+    model: geminiModelIds()[0] || 'gemini-2.5-flash',
+    cause: 'missing_key',
+    body: 'GEMINI_API_KEY not detected',
+  })
+}
+
+function diagnosisFromHttp(status: number, model: string, raw: string, hasKey: boolean): PublicModelDiagnosis {
+  const body = sanitizeGeminiBody(raw)
+  const lower = body.toLowerCase()
+  let cause = 'other'
+  let cls = 'gemini'
+  if (status === 401 || /api[_ ]key not valid|api_key_invalid|invalid api key/.test(lower)) {
+    cause = 'invalid_key'
+    cls = 'auth'
+  } else if (/api has not been used|service_disabled|not been enabled|enable it/.test(lower)) {
+    cause = 'api_not_enabled'
+    cls = 'auth'
+  } else if (status === 403 || /permission_denied|permission denied/.test(lower)) {
+    cause = 'restricted_key'
+    cls = 'auth'
+  } else if (status === 404 || /not found|is not found for api version/.test(lower)) {
+    cause = 'model_unavailable'
+    cls = 'model'
+  } else if (status === 429 || /resource_exhausted|quota|rate limit/.test(lower)) {
+    cause = 'quota'
+    cls = 'rate'
+  } else if (status === 400 || /invalid_argument|invalid argument/.test(lower)) {
+    cause = 'malformed_request'
+    cls = 'malformed'
+  }
+  return makeDiagnosis({ sent: true, hasKey, status, class: cls, model, cause, body })
+}
+
+function makeDiagnosis(diagnosis: PublicModelDiagnosis): PublicModelDiagnosis {
+  return {
+    sent: Boolean(diagnosis.sent),
+    hasKey: Boolean(diagnosis.hasKey),
+    status: diagnosis.status,
+    class: diagnosis.class,
+    model: diagnosis.model,
+    cause: diagnosis.cause,
+    body: sanitizeGeminiBody(diagnosis.body),
+  }
+}
+
+function sanitizeGeminiBody(raw: string) {
+  return String(raw || '')
+    .replace(/AIza[0-9A-Za-z_-]{10,}/g, '[redacted]')
+    .replace(/(bearer\s+)[^\s,}"']+/gi, '$1[redacted]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 280)
+}
+
+function logGeminiDiagnosis(diagnosis: PublicModelDiagnosis) {
+  console.error(
+    JSON.stringify({
+      boch: true,
+      event: 'gemini-diag',
+      sent: diagnosis.sent,
+      hasKey: diagnosis.hasKey,
+      status: diagnosis.status,
+      class: diagnosis.class,
+      model: diagnosis.model,
+      cause: diagnosis.cause,
+      body: diagnosis.body,
+    }),
+  )
+}
+
+function diagnosedError(code: string, diagnosis: PublicModelDiagnosis): DiagnosedError {
+  const err = new Error('Model unavailable') as DiagnosedError
+  err.code = code
+  err.diagnosis = diagnosis
+  return err
 }
 
 function toGeminiContents(messages: PublicChatMessage[]) {
