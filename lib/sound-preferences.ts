@@ -1,6 +1,8 @@
-export const SOUND_EFFECTS_STORAGE_KEY = 'jack-os:sound-effects-enabled'
+import { JACK_OS_STORAGE_KEYS } from './os/storage'
+
+export const SOUND_EFFECTS_STORAGE_KEY = JACK_OS_STORAGE_KEYS.soundEffectsEnabled
 export const FIRST_WALLPAPER_SOUND_STORAGE_KEY =
-  'jack-os:first-wallpaper-sound-played'
+  JACK_OS_STORAGE_KEYS.firstWallpaperSoundPlayed
 
 export const DEFAULT_SOUND_EFFECTS_ENABLED = true
 

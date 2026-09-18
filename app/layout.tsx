@@ -11,6 +11,7 @@ import {
   SITE_TITLE,
   SITE_URL,
 } from '@/lib/site-metadata'
+import { JACK_OS_STORAGE_KEYS } from '@/lib/os/storage'
 import './globals.css'
 
 const socialImage = {
@@ -105,12 +106,13 @@ export const viewport: Viewport = {
   themeColor: '#eae7df',
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
 }
 
 const themeInitScript = `
 (() => {
   try {
-    const key = 'jack-os:interface-theme';
+    const key = ${JSON.stringify(JACK_OS_STORAGE_KEYS.interfaceTheme)};
     const stored = window.localStorage.getItem(key);
     const valid = stored === 'light' || stored === 'dark';
     const theme = valid ? stored : 'light';
@@ -141,7 +143,7 @@ export default function RootLayout({
       </head>
       <body className="bg-background antialiased">
         <a href="#jack-os-desktop" className="skip-link">
-          Skip to Jack OS desktop
+          Skip to JackOS desktop
         </a>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

@@ -1,6 +1,6 @@
 # 1984 Blue Ocean Keynote Architecture
 
-1984 Blue Ocean is a Jack OS desktop application built as a reusable keynote engine. V3B Phase 4 keeps the approved 31-step narrative intact while adding an immersive presentation runtime, fullscreen fallback, motion presets, cinematic chapter dividers, and a more complete Power Down lifecycle. V3B Phase 5 integrates the keynote as a flagship Jack OS experience across desktop, Welcome, Recruiter Mode, Simple Mode, Projects, Search, and J.D.
+1984 Blue Ocean is a Jack OS desktop application built as a reusable keynote engine. V3B Phase 4 keeps the approved 31-step narrative intact while adding an immersive presentation runtime, fullscreen fallback, motion presets, cinematic chapter dividers, and a more complete Power Down lifecycle. V3B Phase 5 integrates the keynote as a flagship Jack OS experience across desktop, Welcome, Recruiter Mode, Simple Mode, Projects, Search, and BOCH.
 
 ## State Model
 
@@ -117,7 +117,7 @@ Primary entry points:
 - Simple Mode: a featured interactive case-study card links into Jack OS with the `#1984-blue-ocean` hash.
 - Projects: the project metadata includes Blue Ocean as an internal Jack OS project with role, implementation, and key systems.
 - Search: the command palette recognizes keynote, business strategy, product development, and AI-assisted workflow terms.
-- J.D.: the local assistant can describe the keynote, explain AI-assisted authorship accurately, recommend it, and launch it.
+- BOCH: the JackOS assistant can describe the keynote, explain AI-assisted authorship accurately, recommend it, and launch it.
 
 The desktop tracks a lightweight launch context:
 
@@ -127,7 +127,6 @@ The desktop tracks a lightweight launch context:
 - `simple`
 - `projects`
 - `search`
-- `ask-jd`
 
 Power Down closes the keynote, then attempts to restore the originating window when it still exists. If the origin is unavailable, Jack OS falls back to the desktop. Simple Mode opens the keynote through a hash link and returns with client-side navigation after Power Down.
 

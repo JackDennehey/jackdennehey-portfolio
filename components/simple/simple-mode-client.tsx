@@ -1,28 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  ACHIEVEMENTS_STORAGE_KEY,
-  JACK_OS_ACHIEVEMENT_IDS,
-  parseStoredIds,
-  type JackOsAchievementId,
-} from '@/lib/achievements'
+import { persistAchievementId } from '@/lib/achievements'
 
 function markSimpleModeAchievement() {
-  try {
-    const current = parseStoredIds(
-      window.localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY),
-      JACK_OS_ACHIEVEMENT_IDS,
-    )
-    const achievementId: JackOsAchievementId = 'simple-mode-opened'
-    if (current.includes(achievementId)) return
-    window.localStorage.setItem(
-      ACHIEVEMENTS_STORAGE_KEY,
-      JSON.stringify([...current, achievementId]),
-    )
-  } catch {
-    // Simple Mode must stay usable even when localStorage is unavailable.
-  }
+  persistAchievementId('simple-mode-opened')
 }
 
 export function SimpleModeAchievementMarker() {

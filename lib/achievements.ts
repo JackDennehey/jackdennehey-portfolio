@@ -1,7 +1,14 @@
-export const ACHIEVEMENTS_STORAGE_KEY = 'jack-os:achievements.v1'
-export const INTERACTIVE_APPS_OPENED_STORAGE_KEY = 'jack-os:interactive-apps-opened.v1'
+import {
+  JACK_OS_STORAGE_KEYS,
+  readLocalStorageItem,
+  writeLocalStorageItem,
+} from './os/storage'
+
+export const ACHIEVEMENTS_STORAGE_KEY = JACK_OS_STORAGE_KEYS.achievements
+export const INTERACTIVE_APPS_OPENED_STORAGE_KEY =
+  JACK_OS_STORAGE_KEYS.interactiveAppsOpened
 export const FIREWALL_PRESET_COMPLETIONS_STORAGE_KEY =
-  'jack-os:firewall-presets-completed.v1'
+  JACK_OS_STORAGE_KEYS.firewallPresetsCompleted
 
 export type JackOsAchievementId =
   | 'first-boot'
@@ -30,7 +37,7 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   {
     id: 'first-boot',
     title: 'System Online',
-    description: 'Started Jack OS for the first time on this device.',
+    description: 'Started JackOS for the first time on this device.',
   },
   {
     id: 'recruiter-mode-opened',
@@ -55,12 +62,12 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   {
     id: 'timeline-opened',
     title: 'History Loaded',
-    description: 'Opened the Jack OS Timeline.',
+    description: 'Opened the JackOS Timeline.',
   },
   {
     id: 'jd-first-question',
-    title: 'Asked J.D.',
-    description: 'Submitted a valid question to the local portfolio assistant.',
+    title: 'Asked BOCH',
+    description: 'Submitted a question to the JackOS assistant.',
   },
   {
     id: 'wallpaper-changed',
@@ -70,7 +77,7 @@ export const JACK_OS_ACHIEVEMENT_REGISTRY: readonly JackOsAchievementDefinition[
   {
     id: 'secret-discovered',
     title: 'Hidden File Found',
-    description: 'Discovered a hidden part of Jack OS.',
+    description: 'Discovered a hidden part of JackOS.',
     lockedDescription: 'Requirement hidden.',
     secret: true,
   },
@@ -125,7 +132,7 @@ export const ACHIEVEMENT_MESSAGES: Record<
   },
   'jd-first-question': {
     title: 'Achievement Unlocked',
-    message: 'Asked J.D.',
+    message: 'Asked BOCH',
   },
   'wallpaper-changed': {
     title: 'Achievement Unlocked',
@@ -168,4 +175,39 @@ export function parseStoredIds<Id extends string>(
   } catch {
     return []
   }
+}
+
+export function readStoredAchievements() {
+  return parseStoredIds(readLocalStorageItem(ACHIEVEMENTS_STORAGE_KEY), JACK_OS_ACHIEVEMENT_IDS)
+}
+
+export type AchievementPersistResult = 'added' | 'exists' | 'unavailable'
+
+export function persistAchievementId(
+  achievementId: JackOsAchievementId,
+): AchievementPersistResult {
+  if (!JACK_OS_ACHIEVEMENT_IDS.includes(achievementId)) {
+    return 'unavailable'
+  }
+
+  const current = readStoredAchievements()
+  if (current.includes(achievementId)) {
+    return 'exists'
+  }
+
+  const wrote = writeLocalStorageItem(
+    ACHIEVEMENTS_STORAGE_KEY,
+    JSON.stringify([...current, achievementId]),
+  )
+  return wrote ? 'added' : 'unavailable'
+}
+
+export function recordInteractiveAppOpened(id: JackOsInteractiveAppId) {
+  const current = parseStoredIds(
+    readLocalStorageItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY),
+    JACK_OS_5B_APP_IDS,
+  )
+  const next = current.includes(id) ? current : [...current, id]
+  writeLocalStorageItem(INTERACTIVE_APPS_OPENED_STORAGE_KEY, JSON.stringify(next))
+  return next
 }

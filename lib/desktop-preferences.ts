@@ -3,8 +3,9 @@ import {
   isSelectableWallpaperId,
   type WallpaperId,
 } from './wallpapers'
+import { JACK_OS_STORAGE_KEYS } from './os/storage'
 
-export const DESKTOP_PREFERENCES_STORAGE_KEY = 'jack-os.desktop-preferences.v1'
+export const DESKTOP_PREFERENCES_STORAGE_KEY = JACK_OS_STORAGE_KEYS.desktopPreferences
 
 export type DesktopPreferences = {
   wallpaperId: WallpaperId

@@ -1,43 +1,19 @@
-export const SITE_URL = 'https://jackdennehey.com'
-export const SITE_DOMAIN = 'jackdennehey.com'
-export const SITE_NAME = 'Jack OS'
-export const SITE_AUTHOR = 'Jack Dennehey'
-export const SITE_TITLE = 'Jack Dennehey | Jack OS Portfolio'
-export const SITE_OG_TITLE = 'Jack Dennehey - Jack OS V3B Interactive Portfolio'
-export const SITE_DESCRIPTION =
-  "Explore Jack Dennehey's Jack OS portfolio: a retro desktop with 1984 Blue Ocean, Recruiter Mode, Network Firewall, Timeline, Road Map, Achievements, Simple Mode, cybersecurity credentials, projects, cloud learning, and AI studies."
-export const SITE_OG_ALT =
-  "Jack OS - Jack Dennehey's interactive cybersecurity, business, and technology portfolio"
-export const SITE_OG_SUBTITLE = 'Cybersecurity, Business, Cloud & AI'
-export const SITE_LAST_UPDATED = '2026-08-05T00:00:00-04:00'
+import { PROFILE, SEO_COPY } from './portfolio'
 
-export const SITE_KEYWORDS = [
-  'Jack Dennehey',
-  'Jack OS',
-  'Jack Dennehey portfolio',
-  'cybersecurity portfolio',
-  'business student portfolio',
-  'Penn State Brandywine',
-  'Penn State Brandywine business student',
-  'network firewall simulation',
-  'packet simulator',
-  'networking portfolio',
-  'Cisco Networking Academy',
-  'cloud computing',
-  'Microsoft Azure AI',
-  'artificial intelligence',
-  'technology portfolio',
-  'interactive portfolio',
-  '1984 Blue Ocean',
-  'interactive keynote',
-  'business strategy portfolio',
-  'AI-assisted product development',
-  'Recruiter Mode',
-  'portfolio timeline',
-  'portfolio guestbook',
-  'portfolio roadmap',
-  'simple portfolio',
-  'portfolio achievements',
-  'Delaware County Community College',
-  'cybersecurity certificate',
-]
+export const SITE_URL = `https://${PROFILE.contact.domain}`
+export const SITE_DOMAIN = PROFILE.contact.domain
+export const SITE_NAME = SEO_COPY.siteName
+export const SITE_AUTHOR = PROFILE.name
+export const SITE_TITLE = SEO_COPY.title
+export const SITE_OG_TITLE = SEO_COPY.ogTitle
+export const SITE_DESCRIPTION = SEO_COPY.description
+export const SITE_OG_ALT = SEO_COPY.ogAlt
+export const SITE_OG_SUBTITLE = SEO_COPY.ogSubtitle
+export const SITE_KEYWORDS = [...SEO_COPY.keywords]
+
+export function getSiteLastModified(): Date | undefined {
+  const raw = process.env.VERCEL_GIT_COMMIT_DATE
+  if (!raw) return undefined
+  const parsed = new Date(raw)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}

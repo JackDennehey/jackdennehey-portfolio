@@ -161,16 +161,16 @@ export function GuestbookContent({ onSigned }: { onSigned: () => void }) {
     <div className="mx-auto flex min-h-full w-full max-w-[1120px] flex-col gap-4">
       <header className="os-border bg-secondary p-3">
         <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-          Jack OS Guestbook
+          JackOS Guestbook
         </p>
         <h3 className="mt-1 font-pixel text-[13px] leading-relaxed text-foreground">
           Visitor Log
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground text-pretty">
-          Leave a message in the Jack OS visitor log. Entries appear after review.
+          Leave a message in the JackOS visitor log. Entries appear after review.
         </p>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground text-pretty">
-          Messages are reviewed before publication. Jack OS does not publicly display IP
+          Messages are reviewed before publication. JackOS does not publicly display IP
           addresses or require a visitor account.
         </p>
       </header>
@@ -187,7 +187,7 @@ export function GuestbookContent({ onSigned }: { onSigned: () => void }) {
             <button
               type="button"
               onClick={() => loadEntries()}
-              className="os-border bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+              className="os-border min-h-11 bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
             >
               Refresh
             </button>
@@ -337,7 +337,7 @@ export function GuestbookContent({ onSigned }: { onSigned: () => void }) {
                 className="mt-0.5 size-4 shrink-0 accent-foreground"
               />
               <span>
-                I understand that approved entries may appear publicly in the Jack OS Guestbook.
+                I understand that approved entries may appear publicly in the JackOS Guestbook.
               </span>
             </label>
             {fieldErrors.consent ? (

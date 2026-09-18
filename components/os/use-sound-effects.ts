@@ -9,11 +9,10 @@ import {
 } from '@/lib/sound-preferences'
 import type { SecretId } from '@/lib/secrets'
 import {
-  ACHIEVEMENTS_STORAGE_KEY,
-  JACK_OS_ACHIEVEMENT_IDS,
-  parseStoredIds,
+  persistAchievementId,
   type JackOsAchievementId,
 } from '@/lib/achievements'
+import { canUseLocalStorage } from '@/lib/os/storage'
 
 export const SOUND_EFFECT_SOURCES = {
   appOpen: '/sounds/app-open.mp3',
@@ -148,7 +147,7 @@ function normalizeAmbienceOffset(offset: number, loopPoints: AmbienceLoopPoints)
 }
 
 function canUseBrowserStorage() {
-  return typeof window !== 'undefined' && 'localStorage' in window
+  return canUseLocalStorage()
 }
 
 function readSoundEffectsEnabled() {
@@ -688,27 +687,12 @@ export function useSoundEffects() {
   }, [playSound])
 
   const markAchievementUnlocked = useCallback((achievementId: JackOsAchievementId) => {
-    if (!JACK_OS_ACHIEVEMENT_IDS.includes(achievementId)) {
+    const persistResult = persistAchievementId(achievementId)
+    if (persistResult === 'exists') {
       return false
     }
-
-    if (canUseBrowserStorage()) {
-      try {
-        const current = parseStoredIds(
-          window.localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY),
-          JACK_OS_ACHIEVEMENT_IDS,
-        )
-        if (current.includes(achievementId)) {
-          return false
-        }
-        window.localStorage.setItem(
-          ACHIEVEMENTS_STORAGE_KEY,
-          JSON.stringify([...current, achievementId]),
-        )
-        return true
-      } catch {
-        // Fall through to in-memory protection for locked-down browsers.
-      }
+    if (persistResult === 'added') {
+      return true
     }
 
     if (achievementFallbackIds.current.has(achievementId)) {

@@ -517,7 +517,7 @@ export function NetworkFirewallContent({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-pixel text-[8px] leading-relaxed text-muted-foreground">
-              Jack OS Network Firewall
+              JackOS Network Firewall
             </p>
             <h3 className="mt-1 font-pixel text-[13px] leading-relaxed text-foreground">
               Packet Visualizer
@@ -775,7 +775,7 @@ export function NetworkFirewallContent({
               setEvents([])
               setSelectedPacketId(null)
             }}
-            className="os-border bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
+            className="os-border min-h-11 bg-card px-2 py-1 font-pixel text-[8px] leading-relaxed text-foreground transition-colors hover:bg-foreground hover:text-primary-foreground focus-visible:bg-foreground focus-visible:text-primary-foreground focus-visible:outline-none"
           >
             Clear Log
           </button>

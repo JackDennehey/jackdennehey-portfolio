@@ -3,8 +3,9 @@ import {
   type Wallpaper,
   type WallpaperId,
 } from './wallpapers'
+import { JACK_OS_STORAGE_KEYS } from './os/storage'
 
-export const SECRET_UNLOCKS_STORAGE_KEY = 'jack-os:unlocked-secrets.v1'
+export const SECRET_UNLOCKS_STORAGE_KEY = JACK_OS_STORAGE_KEYS.unlockedSecrets
 
 export type SecretId =
   | 'signal-loss'

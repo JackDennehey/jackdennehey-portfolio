@@ -72,6 +72,34 @@ export function JackDocumentIcon(props: IconProps) {
   )
 }
 
+export function JackFolderIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M3 8h6l2 2h10v10H3z" />
+      <path d="M3 8V6h5l2 2" />
+    </JackIcon>
+  )
+}
+
+export function JackFilesIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <path d="M3 7h7l2 2h9v11H3z" />
+      <path d="M3 7V5h6l2 2" />
+      <path d="M7 13h10M7 16h7" />
+    </JackIcon>
+  )
+}
+
+export function JackSearchIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="M16 16l4 4" />
+    </JackIcon>
+  )
+}
+
 export function JackMailIcon(props: IconProps) {
   return (
     <JackIcon {...props}>
@@ -183,18 +211,17 @@ export function JackRecruiterIcon(props: IconProps) {
   )
 }
 
-export function JackAssistantIcon(props: IconProps) {
+export function JackBochIcon(props: IconProps) {
   return (
-    <JackIcon {...props}>
-      <image
-        href="/images/jd/jd-icon.png"
-        x="2"
-        y="2"
-        width="20"
-        height="20"
-        preserveAspectRatio="xMidYMid meet"
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="10" fill="#f7d400" />
+      <ellipse cx="9.2" cy="10.2" rx="1.35" ry="2.2" fill="#17170e" />
+      <ellipse cx="14.8" cy="10.2" rx="1.35" ry="2.2" fill="#17170e" />
+      <path
+        d="M6.2 13.6c2.2 3.4 9.4 3.4 11.6 0c-2.1 2.6-9.5 2.6-11.6 0"
+        fill="#17170e"
       />
-    </JackIcon>
+    </svg>
   )
 }
 
@@ -247,6 +274,18 @@ export function JackFirewallIcon(props: IconProps) {
       <path d="M8 8h8M7 11h10M8 14h8" />
       <path d="M12 6v11" />
       <path d="M3 10h3M18 10h3M3 15h3M18 15h3" />
+      <rect x="10" y="10" width="4" height="4" />
+    </JackIcon>
+  )
+}
+
+export function JackKickoffIcon(props: IconProps) {
+  return (
+    <JackIcon {...props}>
+      <rect x="4" y="5" width="16" height="14" />
+      <path d="M12 5v14" />
+      <path d="M4 12h16" />
+      <path d="M7 8h3M14 8h3M7 16h3M14 16h3" />
       <rect x="10" y="10" width="4" height="4" />
     </JackIcon>
   )

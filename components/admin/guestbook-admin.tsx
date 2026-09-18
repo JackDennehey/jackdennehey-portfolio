@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { GuestbookAdminEntry } from '@/lib/guestbook'
+import { JACK_OS_STORAGE_KEYS } from '@/lib/os/storage'
 
 type ModerationStatus = GuestbookAdminEntry['status']
 
 const STATUSES: ModerationStatus[] = ['pending', 'approved', 'rejected', 'blocked']
-const TOKEN_KEY = 'jack-os:guestbook-admin-token'
+const TOKEN_KEY = JACK_OS_STORAGE_KEYS.guestbookAdminToken
 
 export function GuestbookAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -142,7 +143,7 @@ export function GuestbookAdmin() {
           </header>
           <form onSubmit={login} className="space-y-4 p-5">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Private moderation access for Jack OS.
+              Private moderation access for JackOS.
             </p>
             <label className="block space-y-1.5">
               <span className="font-pixel text-[8px] leading-relaxed">Email</span>

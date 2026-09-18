@@ -4,8 +4,10 @@
   "private": true,
   "packageManager": "pnpm@11.7.0",
   "scripts": {
+    "predev": "node scripts/copy-boch-voice-assets.mjs",
+    "prebuild": "node scripts/copy-boch-voice-assets.mjs",
     "dev": "cross-env WATCHPACK_POLLING=true next dev --webpack",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint ."
   },
@@ -14,6 +16,7 @@
     "@vercel/analytics": "1.6.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "kokoro-js": "^1.2.1",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "react": "^19",

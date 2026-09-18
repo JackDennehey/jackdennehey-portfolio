@@ -64,8 +64,8 @@ export default function Image() {
             >
               JD
             </div>
-            <div style={{ display: 'flex', flex: 1 }}>Jack OS</div>
-            <div style={{ display: 'flex', fontSize: 18 }}>Interactive Portfolio</div>
+              <div style={{ display: 'flex', flex: 1 }}>JackOS</div>
+              <div style={{ display: 'flex', fontSize: 18 }}>Interactive Portfolio</div>
           </div>
 
           <div
@@ -115,7 +115,7 @@ export default function Image() {
                 justifyContent: 'center',
               }}
             >
-              {['Network Firewall', 'Recruiter Mode', 'Timeline + Guestbook'].map((label) => (
+              {['Kickoff', 'Pocket Pier', 'JackOS'].map((label) => (
                 <div
                   key={label}
                   style={{

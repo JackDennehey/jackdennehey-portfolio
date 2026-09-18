@@ -4,11 +4,13 @@
 public/images/app icons/
 
 # Environment variables
+.env
 .env*.local
 
 # Common ignores
 node_modules
 .next/
 next-env.d.ts
+public/boch-voice/
 tsconfig.tsbuildinfo
 .DS_Store

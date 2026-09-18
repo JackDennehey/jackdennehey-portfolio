@@ -27,6 +27,8 @@ export function DesktopIcon({
       ? 'Network Firewall — flagship simulated packet firewall demonstration'
       : isBlueOcean
         ? '1984 Blue Ocean — flagship guided interactive keynote'
+        : item.kind === 'window' && item.id === 'kickoff'
+          ? 'Kickoff — flagship football intelligence platform'
         : label
   const openItem = () => {
     if (item.kind === 'window') {
@@ -45,11 +47,13 @@ export function DesktopIcon({
         ? 'firewall-icon-frame'
         : tone === 'blue-ocean'
           ? 'blue-ocean-icon-frame'
-          : externalTone === 'github'
-            ? 'github-icon-frame'
-            : externalTone === 'linkedin'
-              ? 'linkedin-icon-frame'
-              : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground'
+          : tone === 'kickoff'
+            ? 'kickoff-icon-frame'
+            : externalTone === 'github'
+              ? 'github-icon-frame'
+              : externalTone === 'linkedin'
+                ? 'linkedin-icon-frame'
+                : 'bg-paper text-foreground group-hover:bg-foreground group-hover:text-primary-foreground group-focus-visible:bg-foreground group-focus-visible:text-primary-foreground'
 
   const inner = (
     <>
@@ -68,6 +72,7 @@ export function DesktopIcon({
           tone === 'recruiter' ? 'recruiter-icon-label' : null,
           tone === 'firewall' ? 'firewall-icon-label' : null,
           tone === 'blue-ocean' ? 'blue-ocean-icon-label' : null,
+          tone === 'kickoff' ? 'kickoff-icon-label' : null,
           externalTone === 'github' ? 'github-icon-label' : null,
           externalTone === 'linkedin' ? 'linkedin-icon-label' : null,
         )}
@@ -78,7 +83,9 @@ export function DesktopIcon({
   )
 
   const className =
-    'group flex w-20 flex-col items-center gap-1 rounded-sm p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
+    variant === 'mobile'
+      ? 'group flex min-h-16 w-full flex-col items-center gap-1.5 rounded-sm p-2 outline-none select-none touch-manipulation focus-visible:ring-2 focus-visible:ring-ring'
+      : 'group flex w-20 flex-col items-center gap-1 rounded-sm p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring sm:w-24'
 
   if (item.kind === 'link') {
     return (
